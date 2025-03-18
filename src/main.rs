@@ -36,6 +36,11 @@ fn tokenize_line(line: String) {
     while curr_byte_index < line_bytes.len() {
         let curr = line_bytes[curr_byte_index];
         let curr = curr as char;
+        let mut next: Option<char> = None;
+        if curr_byte_index < line_bytes.len()-1 {
+            next = Some(line_bytes[curr_byte_index+1] as char);
+        }
+
         println!("{}", curr);
         let token = match curr {
             '+' => Token { token_type: TokenType::Plus, text: String::from(curr) },
@@ -43,12 +48,48 @@ fn tokenize_line(line: String) {
             '*' => Token { token_type: TokenType::Asterisk, text: String::from(curr) },
             '/' => Token { token_type: TokenType::Slash, text: String::from(curr) },
             '=' => {
-                let next = line_bytes[curr_byte_index+1] as char;
-                if next == '=' {
+                if (
+                    // if next isn't None and next char makes this a double equals
+                    matches!(next, Some(x) if x == '=')
+                ) {
                     curr_byte_index += 1;
                     Token { token_type: TokenType::EqualEqual, text: String::from("==") }
                 } else {
                     Token { token_type: TokenType::Equal, text: String::from("=") }
+                }
+            },
+            '<' => {
+                if (
+                    // if next isn't None and next char makes this a double equals
+                    matches!(next, Some(x) if x == '=')
+                ) {
+                    curr_byte_index += 1;
+                    Token { token_type: TokenType::LessThanEqualTo, text: String::from("<=") }
+                } else {
+                    Token { token_type: TokenType::Equal, text: String::from("=") }
+                }
+            },
+            '>' => {
+                if (
+                    // if next isn't None and next char makes this a double equals
+                    matches!(next, Some(x) if x == '=')
+                ) {
+                    curr_byte_index += 1;
+                    Token { token_type: TokenType::GreaterThanEqualTo, text: String::from(">=") }
+                } else {
+                    Token { token_type: TokenType::Equal, text: String::from("=") }
+                }
+            },
+            '!' => {
+                if (
+                    // if next isn't None and next char makes this a double equals
+                    matches!(next, Some(x) if x == '=')
+                ) {
+                    curr_byte_index += 1;
+                    Token { token_type: TokenType::GreaterThanEqualTo, text: String::from("!=") }
+                } else {
+                    // ! alone isn't supported in this lanugage
+                    Token { token_type: TokenType::UnsupportedSymbolError, text: String::from("") }
                 }
             },
             _ => Token { token_type: TokenType::UnsupportedSymbolError, text: String::from(curr) }
@@ -65,6 +106,23 @@ fn tokenize_line(line: String) {
 }
 
 //fn create_token(tokenType: TokenType, text: 
+
+fn tokenize_two_char_dequence(
+    first_char: char,
+    second_char: char,
+    mut src_file_buffer: &u8 
+) {
+    /*
+map where 
+K: first char
+V: second char
+
+so, if map.get(first_char) == second_char:
+then that this token is two characters.
+    */ 
+
+    
+}
 
 #[derive(Debug)]
 #[derive(PartialEq)]
