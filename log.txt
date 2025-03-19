@@ -1,4 +1,15 @@
-here's example text +-=/*&^3
+here's example text 
+
++
+-
+*
+/
+=
+==
+>=
+<=
+!=
+/! these == symbols >= should be / * - + skipped !!!!!!
 
 text on line 3
 
