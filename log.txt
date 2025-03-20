@@ -17,3 +17,6 @@ text on line 5
 
 i == 3
 
+here's a "string in quotes"
+
+here's a "string with no end to it

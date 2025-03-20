@@ -98,6 +98,45 @@ fn tokenize_line(line: String) {
                     token = Token { token_type: TokenType::UnsupportedSymbolError, text: String::from("") }
                 }
             },
+            '"' => {
+                let mut str_byte_buffer = curr_byte_index+1;
+                let mut end_of_string_found = false;
+                let mut end_of_string_idx: Option<usize> = None;
+                let mut string_content: String = String::new();
+                
+                println!("entering while");
+                let mut i = 0;
+                while str_byte_buffer < line_bytes.len() {
+                    if line_bytes[str_byte_buffer] as char == '"' {
+                        str_byte_buffer = line_bytes.len();
+                        //end_of_string_found = true; 
+                        end_of_string_idx = Some(str_byte_buffer);
+                    } else {
+                        println!("{} != \"", line_bytes[str_byte_buffer] as char);
+                        string_content.push(line_bytes[str_byte_buffer] as char);
+                    }
+                    str_byte_buffer += 1;
+                } 
+                println!("exiting while");
+                
+                match end_of_string_idx {
+                    None => {
+                        token = Token { 
+                        token_type: TokenType::UnsupportedSymbolError, 
+                        text: String::from("")
+                        };
+                        // TODO: this needs to make a bigger deal out of this.
+                        // This compilation should end here; unable to tokenize.
+                    },
+                    Some(new_curr_idx) => {
+                        token = Token {
+                            token_type: TokenType::Str,
+                            text: string_content
+                        };
+                        curr_byte_index = new_curr_idx;
+                    }
+                };
+            },
             _ => ()
         };
 
@@ -116,21 +155,6 @@ fn tokenize_line(line: String) {
     println!("{:#?}", tokens);
 }
 
-fn testing() {
-    let test = 1;
-    let mut other_variable = 3;
-    match test {
-        3 => { 
-            println!("not returning anything");
-        },
-        1 => {
-            other_variable = 777;
-        },
-        _ => {
-            other_variable = 999;
-        }
-    }
-}
 
 #[derive(Debug)]
 #[derive(PartialEq)]
