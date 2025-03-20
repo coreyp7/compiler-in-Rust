@@ -7,11 +7,15 @@ fn main() -> std::io::Result<()> {
 
     let f = File::open("log.txt")?;
     let reader = BufReader::new(f);
+
+    let mut i = 1;
     
     for line_result in reader.lines() {
         if let Ok(line_str) = line_result {
+            println!("Line {}", i);
             tokenize_line(line_str);         
         }
+        i += 1;
     }
 
     println!("End");
@@ -43,7 +47,6 @@ fn tokenize_line(line: String) {
         let mut skip_rest_of_line = false;
 
 
-        println!("{}", curr);
         match curr {
             '+' => token = Token { token_type: TokenType::Plus, text: String::from(curr) },
             '-' => token = Token { token_type: TokenType::Minus, text: String::from(curr) },
@@ -53,7 +56,7 @@ fn tokenize_line(line: String) {
                     // skip rest of line, return early; rest of line is coment
                     skip_rest_of_line = true; 
                 } else {
-                    token = Token { token_type: TokenType::Slash, text: String::from(curr) }
+                    token = Token { token_type: TokenType::Slash, text: String::from(curr) };
                 }
             },
             '=' => {
@@ -100,24 +103,19 @@ fn tokenize_line(line: String) {
             },
             '"' => {
                 let mut str_byte_buffer = curr_byte_index+1;
-                let mut end_of_string_found = false;
                 let mut end_of_string_idx: Option<usize> = None;
                 let mut string_content: String = String::new();
                 
-                println!("entering while");
                 let mut i = 0;
                 while str_byte_buffer < line_bytes.len() {
                     if line_bytes[str_byte_buffer] as char == '"' {
                         str_byte_buffer = line_bytes.len();
-                        //end_of_string_found = true; 
                         end_of_string_idx = Some(str_byte_buffer);
                     } else {
-                        println!("{} != \"", line_bytes[str_byte_buffer] as char);
                         string_content.push(line_bytes[str_byte_buffer] as char);
                     }
                     str_byte_buffer += 1;
                 } 
-                println!("exiting while");
                 
                 match end_of_string_idx {
                     None => {
@@ -151,6 +149,14 @@ fn tokenize_line(line: String) {
             curr_byte_index = line_bytes.len();
         }
     }
+
+    // End tokens list with new line, since this is the end of the line
+    tokens.push(
+        Token {
+            token_type: TokenType::Newline,
+            text: String::new() 
+        }
+    ); 
 
     println!("{:#?}", tokens);
 }

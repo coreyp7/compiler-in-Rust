@@ -1,22 +1,5 @@
-here's example text 
++- \"This is a string\" /! This is a comment!\n */
 
-+
--
-*
-/
-=
-==
->=
-<=
-!=
-/! these == symbols >= should be / * - + skipped !!!!!!
 
-text on line 3
 
-text on line 5
-
-i == 3
-
-here's a "string in quotes"
-
-here's a "string with no end to it
++-/! here's comment in rest + eisfjad """""""
