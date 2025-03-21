@@ -11,3 +11,6 @@ line three has this string "right here"
 here's text 903 and numbers 9876we8r0 7320ru0u 3r
 
 if then let endif etc
+
+
+testing camelCase identifierNames

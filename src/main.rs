@@ -61,10 +61,8 @@ fn tokenize_line(line: String) {
                 }
             },
             '=' => {
-                if (
-                    // if next isn't None and next char makes this a double equals
-                    matches!(next, Some(x) if x == '=')
-                ) {
+                // if next isn't None and next char makes this a double equals
+                if matches!(next, Some(x) if x == '=') {
                     curr_byte_index += 1;
                     token = Token { token_type: TokenType::EqualEqual, text: String::from("==") }
                 } else {
@@ -72,9 +70,7 @@ fn tokenize_line(line: String) {
                 }
             },
             '<' => {
-                if (
-                    matches!(next, Some(x) if x == '=')
-                ) {
+                if matches!(next, Some(x) if x == '=') {
                     curr_byte_index += 1;
                     token = Token { token_type: TokenType::LessThanEqualTo, text: String::from("<=") }
                 } else {
@@ -82,9 +78,7 @@ fn tokenize_line(line: String) {
                 }
             },
             '>' => {
-                if (
-                    matches!(next, Some(x) if x == '=')
-                ) {
+                if matches!(next, Some(x) if x == '=') {
                     curr_byte_index += 1;
                     token = Token { token_type: TokenType::GreaterThanEqualTo, text: String::from(">=") }
                 } else {
@@ -92,9 +86,7 @@ fn tokenize_line(line: String) {
                 }
             },
             '!' => {
-                if (
-                    matches!(next, Some(x) if x == '=')
-                ) {
+                if matches!(next, Some(x) if x == '=') {
                     curr_byte_index += 1;
                     token = Token { token_type: TokenType::GreaterThanEqualTo, text: String::from("!=") }
                 } else {
@@ -210,10 +202,6 @@ fn get_end_of_token(
                 So, they are both processed in here, and then we figure out
                 later if this token is a keyword instead of an Identity.
                 */
-
-                // This can either be an identity, or any keyword.
-                // First, check if it is a keyword.
-                // if not, create an identity out of this.
                 if curr_char.is_alphabetic() == false {
                     end_of_string_idx = Some(str_byte_buffer-1);
                     str_byte_buffer = line_bytes.len();
