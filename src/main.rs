@@ -1,6 +1,7 @@
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::fs::File;
+use std::str::FromStr;
 
 
 fn main() -> std::io::Result<()> {
@@ -117,6 +118,14 @@ fn tokenize_line(line: String) {
                 token = num_token;
                 curr_byte_index = new_curr_byte_idx;
             },
+            x if x.is_alphabetic() => {
+                let result = get_end_of_token(&line_bytes, curr_byte_index, TokenType::Identity);
+                let num_token = result.0;
+                let new_curr_byte_idx = result.1; 
+                
+                token = num_token;
+                curr_byte_index = new_curr_byte_idx;
+            },
             _ => ()
         };
 
@@ -171,7 +180,6 @@ fn get_end_of_token(
     let mut i = 0;
     while str_byte_buffer < line_bytes.len() {
         let curr_char = line_bytes[str_byte_buffer] as char;
-        println!("curr_char: {}", curr_char);
         // 3 cases: String, Number, or Identifier
         // this could be organized better I think but leaving as is for now,
         // since its clear to me how this is organized
@@ -186,7 +194,6 @@ fn get_end_of_token(
                     str_byte_buffer = line_bytes.len();
                 } else {
                     string_content.push(curr_char);
-                    //println!("Pushing char (which is numeric) '{}'", curr_char);
                 }
             },
             TokenType::Str => {
@@ -195,16 +202,32 @@ fn get_end_of_token(
                     str_byte_buffer = line_bytes.len();
                 } else {
                     string_content.push(curr_char);
-                    //println!("Pushing char '{}'", curr_char);
                 }
             },
             TokenType::Identity => {
+                /*
+                Identities follow the same parsing rules as keywords.
+                So, they are both processed in here, and then we figure out
+                later if this token is a keyword instead of an Identity.
+                */
 
+                // This can either be an identity, or any keyword.
+                // First, check if it is a keyword.
+                // if not, create an identity out of this.
+                if curr_char.is_alphabetic() == false {
+                    end_of_string_idx = Some(str_byte_buffer-1);
+                    str_byte_buffer = line_bytes.len();
+                } else if str_byte_buffer == line_bytes.len()-1 {
+                    string_content.push(curr_char);
+                    end_of_string_idx = Some(str_byte_buffer);
+                    str_byte_buffer = line_bytes.len();
+                } else {
+                    string_content.push(curr_char);
+                }
             },
             _ => () 
         }
 
-        //println!("incrementing str_byte_buffer; now {}", str_byte_buffer);
         str_byte_buffer += 1;
     } 
 
@@ -230,8 +253,18 @@ fn get_end_of_token(
             new_curr_byte_idx = new_curr_idx;
         }
     };
-    println!("Token created in get_end_of_token(): {:#?}", token);
-    println!("enw_curr_byte_idx returned from get_end_of_token(): {}", new_curr_byte_idx);
+
+    if token.token_type == TokenType::Identity {
+        // check if this is a keyword, and change it accordingly
+        // create function that returns the tokentype given a string keyword.
+        // if it returns Some(type) then update the tokentype.
+        // else None, then keep this as an Identity, since it doesn't match any keyword.
+        let f = TokenType::from_str(&token.text);
+        match f {
+            Ok(token_type) => token.token_type = token_type,
+            _ => ()
+        }
+    }
 
     (
         token,
@@ -250,13 +283,13 @@ fn get_end_of_token(
 #[derive(PartialEq)]
 #[allow(dead_code)]
 enum TokenType {
-    EOF,
+    EOF = 0,
     Newline,
     Number,
     Identity,
     Str,
     // Keywords
-    Label,
+    Label = 100,
     Goto,
     Print,
     Input,
@@ -268,7 +301,7 @@ enum TokenType {
     Repeat,
     EndWhile,
     // Operators
-    Equal,  
+    Equal = 200,  
     Plus,
     Minus,
     Asterisk,
@@ -279,7 +312,28 @@ enum TokenType {
     LessThanEqualTo,
     GreaterThan,
     GreaterThanEqualTo,
-    UnsupportedSymbolError,
+    UnsupportedSymbolError = 900,
     // Won't get through to the parser, just for processing in here.
     Space
+}
+
+impl FromStr for TokenType {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<TokenType, Self::Err> {
+        match input {
+            "label" => Ok(TokenType::Label),
+            "goto" => Ok(TokenType::Goto),
+            "print" => Ok(TokenType::Print),
+            "input" => Ok(TokenType::Input),
+            "let" => Ok(TokenType::Let),
+            "if" => Ok(TokenType::If),
+            "then" => Ok(TokenType::Then),
+            "endif" => Ok(TokenType::EndIf),
+            "while" => Ok(TokenType::While),
+            "repeat" => Ok(TokenType::Repeat),
+            "endWhile" => Ok(TokenType::EndWhile),
+            _ => Err(())
+        }
+    }
 }
