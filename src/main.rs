@@ -109,6 +109,14 @@ fn tokenize_line(line: String) {
                 token = str_token;
                 curr_byte_index = new_curr_byte_idx;
             },
+            x if x.is_numeric() => {
+                let result = get_end_of_token(&line_bytes, curr_byte_index, TokenType::Number);
+                let num_token = result.0;
+                let new_curr_byte_idx = result.1; 
+                
+                token = num_token;
+                curr_byte_index = new_curr_byte_idx;
+            },
             _ => ()
         };
 
@@ -162,19 +170,32 @@ fn get_end_of_token(
     
     let mut i = 0;
     while str_byte_buffer < line_bytes.len() {
+        let curr_char = line_bytes[str_byte_buffer] as char;
+        println!("curr_char: {}", curr_char);
         // 3 cases: String, Number, or Identifier
+        // this could be organized better I think but leaving as is for now,
+        // since its clear to me how this is organized
         match token_type {
             TokenType::Number => {
-
-            },
-            TokenType::Str => {
-                let curr_char = line_bytes[str_byte_buffer] as char;
-                if curr_char == '"' {
+                if curr_char.is_numeric() == false {
+                    end_of_string_idx = Some(str_byte_buffer-1);
                     str_byte_buffer = line_bytes.len();
+                } else if str_byte_buffer == line_bytes.len()-1 {
+                    string_content.push(curr_char);
                     end_of_string_idx = Some(str_byte_buffer);
+                    str_byte_buffer = line_bytes.len();
                 } else {
                     string_content.push(curr_char);
-                    println!("Pushing char '{}'", curr_char);
+                    //println!("Pushing char (which is numeric) '{}'", curr_char);
+                }
+            },
+            TokenType::Str => {
+                if curr_char == '"' {
+                    end_of_string_idx = Some(str_byte_buffer);
+                    str_byte_buffer = line_bytes.len();
+                } else {
+                    string_content.push(curr_char);
+                    //println!("Pushing char '{}'", curr_char);
                 }
             },
             TokenType::Identity => {
@@ -183,6 +204,7 @@ fn get_end_of_token(
             _ => () 
         }
 
+        //println!("incrementing str_byte_buffer; now {}", str_byte_buffer);
         str_byte_buffer += 1;
     } 
 
@@ -208,6 +230,8 @@ fn get_end_of_token(
             new_curr_byte_idx = new_curr_idx;
         }
     };
+    println!("Token created in get_end_of_token(): {:#?}", token);
+    println!("enw_curr_byte_idx returned from get_end_of_token(): {}", new_curr_byte_idx);
 
     (
         token,
