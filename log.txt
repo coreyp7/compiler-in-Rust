@@ -1,5 +1,7 @@
-+- \"This is a string\" /! This is a comment!\n */
++- \"This is a string\"\\\\ /! This is a comment!\n */
 
+\"This is a string\"
 
+line three has this string "right here"
 
 +-/! here's comment in rest + eisfjad """""""

@@ -102,38 +102,12 @@ fn tokenize_line(line: String) {
                 }
             },
             '"' => {
-                let mut str_byte_buffer = curr_byte_index+1;
-                let mut end_of_string_idx: Option<usize> = None;
-                let mut string_content: String = String::new();
+                let result = get_end_of_token(&line_bytes, curr_byte_index+1, TokenType::Str);
+                let str_token = result.0;
+                let new_curr_byte_idx = result.1; 
                 
-                let mut i = 0;
-                while str_byte_buffer < line_bytes.len() {
-                    if line_bytes[str_byte_buffer] as char == '"' {
-                        str_byte_buffer = line_bytes.len();
-                        end_of_string_idx = Some(str_byte_buffer);
-                    } else {
-                        string_content.push(line_bytes[str_byte_buffer] as char);
-                    }
-                    str_byte_buffer += 1;
-                } 
-                
-                match end_of_string_idx {
-                    None => {
-                        token = Token { 
-                        token_type: TokenType::UnsupportedSymbolError, 
-                        text: String::from("")
-                        };
-                        // TODO: this needs to make a bigger deal out of this.
-                        // This compilation should end here; unable to tokenize.
-                    },
-                    Some(new_curr_idx) => {
-                        token = Token {
-                            token_type: TokenType::Str,
-                            text: string_content
-                        };
-                        curr_byte_index = new_curr_idx;
-                    }
-                };
+                token = str_token;
+                curr_byte_index = new_curr_byte_idx;
             },
             _ => ()
         };
@@ -161,6 +135,92 @@ fn tokenize_line(line: String) {
     println!("{:#?}", tokens);
 }
 
+/**
+Can either be:
+- a String
+- a Number
+- an Identifier
+
+Specify which kind of token you're looking for the end of.
+
+Given
+- string buffer
+- start of token
+
+Will return -> (Token, new position in string buffer)
+*/
+fn get_end_of_token(
+    line_bytes: &[u8],
+    token_start: usize,
+    token_type: TokenType
+) -> (Token, usize) {
+        
+    //let mut str_byte_buffer = curr_byte_index+1;
+    let mut str_byte_buffer = token_start;
+    let mut end_of_string_idx: Option<usize> = None;
+    let mut string_content: String = String::new();
+    
+    let mut i = 0;
+    while str_byte_buffer < line_bytes.len() {
+        // 3 cases: String, Number, or Identifier
+        match token_type {
+            TokenType::Number => {
+
+            },
+            TokenType::Str => {
+                let curr_char = line_bytes[str_byte_buffer] as char;
+                if curr_char == '"' {
+                    str_byte_buffer = line_bytes.len();
+                    end_of_string_idx = Some(str_byte_buffer);
+                } else {
+                    string_content.push(curr_char);
+                    println!("Pushing char '{}'", curr_char);
+                }
+            },
+            TokenType::Identity => {
+
+            },
+            _ => () 
+        }
+
+        str_byte_buffer += 1;
+    } 
+
+    let mut new_curr_byte_idx: usize = 0;
+    let mut token = Token { 
+        token_type: TokenType::UnsupportedSymbolError, 
+        text: String::from("")
+    };
+        
+    
+    match end_of_string_idx {
+        None => {
+            // TODO: this needs to make a bigger deal out of this.
+            // This compilation should end here; unable to tokenize.
+            ()
+        },
+        Some(new_curr_idx) => {
+            token = Token {
+                //token_type: TokenType::Str,
+                token_type: token_type,
+                text: string_content
+            };
+            new_curr_byte_idx = new_curr_idx;
+        }
+    };
+
+    (
+        token,
+        new_curr_byte_idx
+    )
+
+    /*
+    (
+        Token { token_type: TokenType::UnsupportedSymbolError, text: String::new() },
+        0
+    )
+    */
+}
 
 #[derive(Debug)]
 #[derive(PartialEq)]
