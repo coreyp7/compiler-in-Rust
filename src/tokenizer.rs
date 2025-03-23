@@ -17,6 +17,7 @@ pub fn tokenize_file(src_file: &mut File) -> Vec<Token> {
         }
         i += 1;
     }
+    token_vec.push(Token { text: String::new(), token_type: TokenType::EOF } );
 
     return token_vec;
 }
@@ -256,8 +257,8 @@ fn get_end_of_token(
 
 #[derive(Debug)]
 pub struct Token {
-    text: String, // used for identifiers, strings, numbers
-    token_type: TokenType 
+    pub text: String, // used for identifiers, strings, numbers
+    pub token_type: TokenType 
 }
 
 #[derive(Debug)]
@@ -298,6 +299,10 @@ pub enum TokenType {
     Space
 }
 
+/**
+ * This allows for easy matching of a keyword (as a String) to its 
+ * TokenType counterpart.
+*/
 impl FromStr for TokenType {
     type Err = ();
 
