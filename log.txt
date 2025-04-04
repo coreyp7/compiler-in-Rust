@@ -1,3 +1,6 @@
-print "hello, world"
-print "here's the second line of printed text"
-print "third AND LAST line"
+/! print "hello, world"
+/! print "here's the second line of printed text"
+/! print "third AND LAST line"
+if(x == 1) then {
+    print "test";
+} endif

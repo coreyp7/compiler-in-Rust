@@ -23,6 +23,7 @@ impl TokenList<> {
         for token in &self.vec {
             println!("{:#?}", token);
         }
+        println!("real output: -----------------------------");
 
         self.program();
     }
@@ -66,16 +67,50 @@ impl TokenList<> {
             },
             TokenType::If => {
                 self.next_token();
+
+                // parse comparison (part in parentheses)
+                self.parse_comparison();
+
+                // check for starting curly brace and newline
+                self.assert_curr_type_or_fail(TokenType::Then);
+                self.next_token();
+                self.assert_curr_type_or_fail(TokenType::Newline);
+                self.next_token();
+
+                // parse statement inside of body while curr isn't end if
+                while !self.is_curr_token_type(TokenType::EndIf) {
+                    self.statement(); 
+                }
+
+                // parse end if token
+                self.assert_curr_type_or_fail(TokenType::EndIf);
+                self.next_token();
+                
             },
+            TokenType::Newline => (),
+            /*
             x if *x != TokenType::Newline => {
                 // Generic catch-all for all non implemented rules
                 self.next_token();
             },
-            _ => todo!()
+            */
+            _ => {
+                println!("Skipping token below; not implemented yet.");
+                self.next_token();
+            }//todo!()
         }
         
-        self.ensure_newline();
+        self.assert_curr_type_or_fail(TokenType::Newline);
         self.next_token();
+    }
+
+    fn parse_comparison(&mut self) {
+        //TODO: COREY write this next.
+        
+        // temp for testing
+        while !self.is_curr_token_type(TokenType::EndIf) {
+            self.next_token(); 
+        }
     }
 
     fn is_curr_token_type(&mut self, t_type: TokenType) -> bool{
@@ -88,5 +123,13 @@ impl TokenList<> {
             process::abort();
         }
     } 
+
+    fn assert_curr_type_or_fail(&mut self, t_type: TokenType){
+       if(self.is_curr_token_type(t_type) == false){
+        // TODO: print error information for user
+            println!("exiting via assert_curr_type_or_fail");
+            std::process::exit(0);
+        } 
+    }
 }
 
