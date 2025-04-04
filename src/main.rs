@@ -20,7 +20,6 @@ fn main() -> std::io::Result<()> {
     let mut parser: TokenList = TokenList {vec: tokenized_file, curr_idx: 0};
     parser.parse_tokens();
 
-    println!("End");
     Ok(())
 }
 

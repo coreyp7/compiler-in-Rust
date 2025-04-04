@@ -32,30 +32,47 @@ impl TokenList<> {
 
         // Parse every statement in the src file
         while self.get_curr_token().token_type != TokenType::EOF {
-            println!("start of loop: token type is {:#?}", self.get_curr_token().token_type);
+            //println!("start of loop: token type is {:#?}", self.get_curr_token().token_type);
             self.statement();
         }
+        println!("Reached EOF");
     }
 
     fn statement(&mut self) {
         // print stuff
         // print (expression || string)
-        if self.get_curr_token().token_type == TokenType::Print {
-            self.next_token();
 
-            // from here, needs to be either expression or a string
-            if self.get_curr_token().token_type == TokenType::Str {
-                // Simple string
+        /*
+        * Borrowing this because the match statement allows you to take ownership
+        * inside of the match statement.
+        * Specifically, here the 'x if x != TokenType::NewLine' was taking ownership
+        * of token_type (I believe). Gives some insight into how things are 
+        * actually passed around.
+        */
+        match &self.get_curr_token().token_type {
+            TokenType::Print => {
                 self.next_token();
-            } else {
-                // Must be an expression
-                //self.expression();
+
+                // from here, needs to be either expression or a string
+                if self.get_curr_token().token_type == TokenType::Str {
+                    // Simple string
+                    self.next_token();
+                } else {
+                    // Must be an expression
+                    //self.expression();
+                    self.next_token();
+                }
+
+            },
+            TokenType::If => {
                 self.next_token();
-            }
-        } else if self.get_curr_token().token_type != TokenType::Newline {
-            // Generic catch-all for all non implemented rules
-            self.next_token();
-        }    
+            },
+            x if *x != TokenType::Newline => {
+                // Generic catch-all for all non implemented rules
+                self.next_token();
+            },
+            _ => todo!()
+        }
         
         self.ensure_newline();
         self.next_token();
