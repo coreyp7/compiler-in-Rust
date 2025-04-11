@@ -1,6 +1,8 @@
 use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
 use std::process;
+use std::io;
+use std::io::Write;
 use colored::Colorize;
 
 pub struct TokenList {
@@ -14,27 +16,31 @@ impl TokenList<> {
     }
 
     fn next_token(&mut self) {
-        println!("{:#?}", self.get_curr_token().token_type);
+        if self.get_curr_token().token_type == TokenType::Newline {
+            println!("\\n");
+        } else {
+            print!("{:#?} ", self.get_curr_token().token_type);
+            io::stdout().flush().unwrap();
+        }
         self.curr_idx += 1;
     }
 
     pub fn parse_tokens(&mut self) {
+        /*
         println!("parse_tokens called!");
         println!("here's the contents of the vec in the struct");
         for token in &self.vec {
             println!("{:#?}", token);
         }
-        println!("real output: -----------------------------");
+        */
+        println!("parser output: -----------------------------");
 
         self.program();
     }
 
     fn program(&mut self) {
-        println!("PROGRAM");
-
         // Parse every statement in the src file
         while self.get_curr_token().token_type != TokenType::EOF {
-            //println!("start of loop: token type is {:#?}", self.get_curr_token().token_type);
             self.statement();
         }
         println!("Reached EOF");
@@ -45,6 +51,7 @@ impl TokenList<> {
         // print (expression || string)
 
         /*
+        * Rust note for Corey for learning:
         * Borrowing this because the match statement allows you to take ownership
         * inside of the match statement.
         * Specifically, here the 'x if x != TokenType::NewLine' was taking ownership
@@ -67,7 +74,6 @@ impl TokenList<> {
 
             },
             TokenType::If => {
-                println!("If found; start of if statement.");
                 self.next_token();
 
                 // parse comparison (part in parentheses)
@@ -78,14 +84,11 @@ impl TokenList<> {
 
                 // parse statement inside of body while curr isn't end if
                 while !self.is_curr_token_type(TokenType::EndIf) {
-                    println!("while loop start");
                     self.statement(); 
-                    println!("while loop END");
                 }
 
                 // parse end if token
                 self.assert_curr_type_or_fail(TokenType::EndIf);
-                println!("EndIf found; end of if statement.");
                 self.next_token();
                 
             },
@@ -97,7 +100,7 @@ impl TokenList<> {
             },
             */
             _ => {
-                println!("Skipping token below; not implemented yet.");
+                //println!("Skipping token below; not implemented yet.");
                 self.next_token();
             }//todo!()
         }

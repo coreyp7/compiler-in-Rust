@@ -15,10 +15,11 @@ fn main() -> std::io::Result<()> {
     let mut f = File::open("log.txt")?;
 
     let tokenized_file: Vec<Token> = tokenize_file(&mut f); 
-    println!("File has been tokenized.");
+    println!("1. File has been tokenized.");
     
     let mut parser: TokenList = TokenList {vec: tokenized_file, curr_idx: 0};
     parser.parse_tokens();
+    println!("2. File has been parsed; it abides by grammar.");
 
     Ok(())
 }
