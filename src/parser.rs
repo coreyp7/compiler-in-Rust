@@ -69,21 +69,21 @@ impl TokenList<> {
                 self.next_token();
 
                 // parse comparison (part in parentheses)
-                self.parse_comparison();
+                self.comparison();
 
-                // check for starting curly brace and newline
                 self.assert_curr_type_or_fail(TokenType::Then);
                 self.next_token();
-                self.assert_curr_type_or_fail(TokenType::Newline);
-                self.next_token();
+
 
                 // parse statement inside of body while curr isn't end if
                 while !self.is_curr_token_type(TokenType::EndIf) {
+                    println!("while loop start");
                     self.statement(); 
                 }
 
                 // parse end if token
                 self.assert_curr_type_or_fail(TokenType::EndIf);
+                println!("Hit EndIf of loop; inside statements validated");
                 self.next_token();
                 
             },
@@ -104,17 +104,84 @@ impl TokenList<> {
         self.next_token();
     }
 
-    fn parse_comparison(&mut self) {
+    fn comparison(&mut self) {
         //TODO: COREY write this next.
+
+        //Writing this in a strongly typed strict rust will be difficult.
+        //Its a collection of rules that call each other recursively, so
+        //expect tons of compiler errors before it really works.
+
+        //Follow grammar specified in tutorial; then can explore specifics of 
+        //different implementations of it.
+        self.expression();
+        println!("expression 1 done");
+        if !self.is_curr_token_comparison_operator(){
+            std::process::exit(0);
+        }
+        self.next_token();
+        self.expression();
+        println!("expression 2 done");
         
+        /*
+        * This is for processing further expressions (because you can have more than 2)
+        * Add back when is_curr_token_comparison_operator actually written.
+
+        while self.is_curr_token_comparison_operator() {
+            self.next_token();
+            self.expression();
+        }
+        */
+         
+        /*
+        println!("comparison start ---");
         // temp for testing
-        while !self.is_curr_token_type(TokenType::EndIf) {
+        while !self.is_curr_token_type(TokenType::Then) {
             self.next_token(); 
+        }
+        println!("comparison end ---");
+        */
+    }
+
+    fn expression(&mut self) {
+        self.term();
+        while self.is_curr_token_type(TokenType::Plus) || self.is_curr_token_type(TokenType::Minus) {
+            self.next_token();
+            self.term();
+        }
+    }
+
+    fn term(&mut self) {
+        self.unary();
+        while self.is_curr_token_type(TokenType::Asterisk) || self.is_curr_token_type(TokenType::Slash) {
+            self.next_token();
+            self.unary();
+        }
+    }
+
+    fn unary(&mut self) {
+        if self.is_curr_token_type(TokenType::Plus) || self.is_curr_token_type(TokenType::Minus) {
+            self.next_token();
+        }
+        self.primary();
+    }
+
+    fn primary(&mut self) {
+        if self.is_curr_token_type(TokenType::Number) {
+            self.next_token();
+        } else if self.is_curr_token_type(TokenType::Identity) {
+            self.next_token();
+        } else {
+            std::process::exit(0);
         }
     }
 
     fn is_curr_token_type(&mut self, t_type: TokenType) -> bool{
         return self.get_curr_token().token_type == t_type;
+    }
+
+    fn is_curr_token_comparison_operator(&mut self) -> bool {
+        // Stub
+        return true;
     }
 
     fn ensure_newline(&mut self){
