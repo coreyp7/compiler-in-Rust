@@ -1,6 +1,7 @@
 use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
 use std::process;
+use colored::Colorize;
 
 pub struct TokenList {
     pub vec: Vec<Token>,
@@ -66,11 +67,11 @@ impl TokenList<> {
 
             },
             TokenType::If => {
+                println!("If found; start of if statement.");
                 self.next_token();
 
                 // parse comparison (part in parentheses)
                 self.comparison();
-
                 self.assert_curr_type_or_fail(TokenType::Then);
                 self.next_token();
 
@@ -79,11 +80,12 @@ impl TokenList<> {
                 while !self.is_curr_token_type(TokenType::EndIf) {
                     println!("while loop start");
                     self.statement(); 
+                    println!("while loop END");
                 }
 
                 // parse end if token
                 self.assert_curr_type_or_fail(TokenType::EndIf);
-                println!("Hit EndIf of loop; inside statements validated");
+                println!("EndIf found; end of if statement.");
                 self.next_token();
                 
             },
@@ -105,41 +107,24 @@ impl TokenList<> {
     }
 
     fn comparison(&mut self) {
-        //TODO: COREY write this next.
-
-        //Writing this in a strongly typed strict rust will be difficult.
-        //Its a collection of rules that call each other recursively, so
-        //expect tons of compiler errors before it really works.
-
-        //Follow grammar specified in tutorial; then can explore specifics of 
-        //different implementations of it.
         self.expression();
-        println!("expression 1 done");
         if !self.is_curr_token_comparison_operator(){
+            println!("ERROR: Comparison operator not found between expressions in if statement.");
+            println!("Found {:#?} instead of comparison operator.", self.get_curr_token().token_type);
             std::process::exit(0);
         }
         self.next_token();
         self.expression();
-        println!("expression 2 done");
         
         /*
         * This is for processing further expressions (because you can have more than 2)
         * Add back when is_curr_token_comparison_operator actually written.
-
+        */
         while self.is_curr_token_comparison_operator() {
             self.next_token();
             self.expression();
         }
-        */
          
-        /*
-        println!("comparison start ---");
-        // temp for testing
-        while !self.is_curr_token_type(TokenType::Then) {
-            self.next_token(); 
-        }
-        println!("comparison end ---");
-        */
     }
 
     fn expression(&mut self) {
@@ -180,8 +165,15 @@ impl TokenList<> {
     }
 
     fn is_curr_token_comparison_operator(&mut self) -> bool {
-        // Stub
-        return true;
+        match &self.get_curr_token().token_type {
+            TokenType::EqualEqual => true,
+            TokenType::NotEqual => true,
+            TokenType::LessThan => true,
+            TokenType::LessThanEqualTo => true,
+            TokenType::GreaterThan => true,
+            TokenType::GreaterThanEqualTo => true,
+            _ => false
+        }
     }
 
     fn ensure_newline(&mut self){
