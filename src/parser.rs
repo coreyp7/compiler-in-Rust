@@ -6,18 +6,41 @@ use std::io::Write;
 use colored::Colorize;
 
 pub struct TokenList {
-    pub vec: Vec<Token>,
-    pub curr_idx: usize
+    vec: Vec<Token>,
+    curr_idx: usize,
+    line_number: u32
 }
 
 impl TokenList<> {
+    pub fn new(token_vec: Vec<Token>) -> TokenList {
+        TokenList{ 
+            vec: token_vec, 
+            curr_idx: 0,
+            line_number: 1 
+        }
+    }
+
     fn get_curr_token(&self) -> &Token {
         return &self.vec[self.curr_idx];
     }
 
     fn next_token(&mut self) {
+        // If we're in the middle of parsing a statement or something and we
+        // don't see a keyword we're expecting, then we'll go past EOF and crash.
+        // So, check here if current token is EOF, since we can't go next from EOF.
+        // In future, maybe we can keep track of what we're expecting and print
+        // it as debug text.
+        if self.get_curr_token().token_type == TokenType::EOF {
+            println!("-");
+            println!("ERROR: Found EOF without close to statement.");
+            println!("Check your syntax and see if there's something wrong.");
+        }
+
         if self.get_curr_token().token_type == TokenType::Newline {
             println!("\\n");
+            self.line_number = self.line_number + 1;
+            print!("{}| ", self.line_number);
+            io::stdout().flush().unwrap();
         } else {
             print!("{:#?} ", self.get_curr_token().token_type);
             io::stdout().flush().unwrap();
@@ -39,17 +62,14 @@ impl TokenList<> {
     }
 
     fn program(&mut self) {
-        // Parse every statement in the src file
         while self.get_curr_token().token_type != TokenType::EOF {
+            //println!("{:?} != TokenType::EOF", self.get_curr_token().token_type);
             self.statement();
         }
         println!("Reached EOF");
     }
 
     fn statement(&mut self) {
-        // print stuff
-        // print (expression || string)
-
         /*
         * Rust note for Corey for learning:
         * Borrowing this because the match statement allows you to take ownership
@@ -78,17 +98,17 @@ impl TokenList<> {
 
                 // parse comparison (part in parentheses)
                 self.comparison();
-                self.assert_curr_type_or_fail(TokenType::Then);
+                self.assert_curr_type_or_fail(&TokenType::Then);
                 self.next_token();
 
 
                 // parse statement inside of body while curr isn't end if
-                while !self.is_curr_token_type(TokenType::EndIf) {
+                while !self.is_curr_token_type(&TokenType::EndIf) {
                     self.statement(); 
                 }
 
                 // parse end if token
-                self.assert_curr_type_or_fail(TokenType::EndIf);
+                self.assert_curr_type_or_fail(&TokenType::EndIf);
                 self.next_token();
                 
             },
@@ -105,7 +125,7 @@ impl TokenList<> {
             }//todo!()
         }
         
-        self.assert_curr_type_or_fail(TokenType::Newline);
+        self.assert_curr_type_or_fail(&TokenType::Newline);
         self.next_token();
     }
 
@@ -132,7 +152,7 @@ impl TokenList<> {
 
     fn expression(&mut self) {
         self.term();
-        while self.is_curr_token_type(TokenType::Plus) || self.is_curr_token_type(TokenType::Minus) {
+        while self.is_curr_token_type(&TokenType::Plus) || self.is_curr_token_type(&TokenType::Minus) {
             self.next_token();
             self.term();
         }
@@ -140,31 +160,31 @@ impl TokenList<> {
 
     fn term(&mut self) {
         self.unary();
-        while self.is_curr_token_type(TokenType::Asterisk) || self.is_curr_token_type(TokenType::Slash) {
+        while self.is_curr_token_type(&TokenType::Asterisk) || self.is_curr_token_type(&TokenType::Slash) {
             self.next_token();
             self.unary();
         }
     }
 
     fn unary(&mut self) {
-        if self.is_curr_token_type(TokenType::Plus) || self.is_curr_token_type(TokenType::Minus) {
+        if self.is_curr_token_type(&TokenType::Plus) || self.is_curr_token_type(&TokenType::Minus) {
             self.next_token();
         }
         self.primary();
     }
 
     fn primary(&mut self) {
-        if self.is_curr_token_type(TokenType::Number) {
+        if self.is_curr_token_type(&TokenType::Number) {
             self.next_token();
-        } else if self.is_curr_token_type(TokenType::Identity) {
+        } else if self.is_curr_token_type(&TokenType::Identity) {
             self.next_token();
         } else {
             std::process::exit(0);
         }
     }
 
-    fn is_curr_token_type(&mut self, t_type: TokenType) -> bool{
-        return self.get_curr_token().token_type == t_type;
+    fn is_curr_token_type(&mut self, t_type: &TokenType) -> bool{
+        return self.get_curr_token().token_type == *t_type;
     }
 
     fn is_curr_token_comparison_operator(&mut self) -> bool {
@@ -180,16 +200,18 @@ impl TokenList<> {
     }
 
     fn ensure_newline(&mut self){
-        if !self.is_curr_token_type(TokenType::Newline){
+        if !self.is_curr_token_type(&TokenType::Newline){
             println!("NO NEW LINE PRESENT; something very wrong.");
             process::abort();
         }
     } 
 
-    fn assert_curr_type_or_fail(&mut self, t_type: TokenType){
+    fn assert_curr_type_or_fail(&mut self, t_type: &TokenType){
        if(self.is_curr_token_type(t_type) == false){
         // TODO: print error information for user
-            println!("exiting via assert_curr_type_or_fail");
+            println!("assert_curr_type_or_fail({:#?}): curr type is actually {:#?}",
+                t_type, self.get_curr_token().token_type);
+            //println!("exiting via assert_curr_type_or_fail");
             std::process::exit(0);
         } 
     }
