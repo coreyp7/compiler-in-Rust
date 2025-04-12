@@ -203,10 +203,9 @@ impl TokenList<> {
         if self.is_curr_token_type(&TokenType::Number) {
             self.next_token();
         } else if self.is_curr_token_type(&TokenType::Identity) {
-            // TODO: check hashset for symbol
             if !self.symbols.contains(&self.get_curr_token().text) {
                 println!("ERROR");
-                println!("|PARSER| symbol doesn't exist: '{}'", 
+                println!("|PARSER| referencing symbol before assignment: '{}'", 
                     self.get_curr_token().text 
                 );
                 std::process::exit(0);
