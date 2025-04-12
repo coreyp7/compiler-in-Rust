@@ -118,6 +118,22 @@ impl TokenList<> {
                 self.next_token();
                 self.expression();
             },
+            TokenType::While => {
+                self.next_token();
+                self.comparison();
+                self.assert_curr_type_or_fail(&TokenType::Do);
+                self.next_token();
+
+                // parse statement inside of body while curr isn't end if
+                while !self.is_curr_token_type(&TokenType::EndWhile) {
+                    self.statement(); 
+                }
+
+                // parse end while token
+                self.assert_curr_type_or_fail(&TokenType::EndWhile);
+                self.next_token();
+
+            },
             TokenType::Newline => (),
             /*
             x if *x != TokenType::Newline => {

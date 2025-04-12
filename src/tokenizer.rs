@@ -11,7 +11,6 @@ pub fn tokenize_file(src_file: &mut File) -> Vec<Token> {
     
     for line_result in reader.lines() {
         if let Ok(line_str) = line_result {
-            //println!("Line {}", i);
             let mut tokens = tokenize_line(line_str);         
             token_vec.append(&mut tokens);
         }
@@ -67,7 +66,7 @@ fn tokenize_line(line: String) -> Vec<Token> {
                     curr_byte_index += 1;
                     token = Token { token_type: TokenType::LessThanEqualTo, text: String::from("<=") }
                 } else {
-                    token = Token { token_type: TokenType::Equal, text: String::from("=") }
+                    token = Token { token_type: TokenType::LessThan, text: String::from("=") }
                 }
             },
             '>' => {
@@ -75,16 +74,20 @@ fn tokenize_line(line: String) -> Vec<Token> {
                     curr_byte_index += 1;
                     token = Token { token_type: TokenType::GreaterThanEqualTo, text: String::from(">=") }
                 } else {
-                    token = Token { token_type: TokenType::Equal, text: String::from("=") }
+                    token = Token { token_type: TokenType::GreaterThan, text: String::from("=") }
                 }
             },
             '!' => {
+                println!("in here! 1");
                 if matches!(next, Some(x) if x == '=') {
                     curr_byte_index += 1;
-                    token = Token { token_type: TokenType::GreaterThanEqualTo, text: String::from("!=") }
-                } else {
+                    token = Token { token_type: TokenType::NotEqual, text: String::from("!=") }
+                } else if matches!(next, Some(x) if x != ' ') {
+                    println!("! pairing isn't supported");
                     // ! alone isn't supported in this lanugage
-                    token = Token { token_type: TokenType::UnsupportedSymbolError, text: String::from("") }
+                    //token = Token { token_type: TokenType::UnsupportedSymbolError, text: String::from("") }
+                    println!("TOKENIZER: Found something after a bang that isn't =. Invalid operator.");
+                    std::process::exit(0);
                 }
             },
             '"' => {
@@ -113,6 +116,10 @@ fn tokenize_line(line: String) -> Vec<Token> {
             },
             _ => ()
         };
+
+        if curr == '!' {
+            println!("here's the token set: {:#?}", token);
+        }
 
         curr_byte_index += 1;
    
@@ -243,9 +250,12 @@ fn get_end_of_token(
         // if it returns Some(type) then update the tokentype.
         // else None, then keep this as an Identity, since it doesn't match any keyword.
         let f = TokenType::from_str(&token.text);
+        //println!("{}", &token.text);
         match f {
             Ok(token_type) => token.token_type = token_type,
-            _ => ()
+            _ => {
+                println!("HERE IT IS: {:#?}", &token.text);
+            }
         }
     }
 
@@ -280,7 +290,7 @@ pub enum TokenType {
     Then,
     EndIf,
     While,
-    Repeat,
+    Do,
     EndWhile,
     // Operators
     Equal = 200,  
@@ -288,12 +298,12 @@ pub enum TokenType {
     Minus,
     Asterisk,
     Slash,
-    EqualEqual,
+    EqualEqual, // 205
     NotEqual,
     LessThan,
     LessThanEqualTo,
     GreaterThan,
-    GreaterThanEqualTo,
+    GreaterThanEqualTo, // 210
     UnsupportedSymbolError = 900,
     // Won't get through to the parser, just for processing in here.
     Space
@@ -315,9 +325,9 @@ impl FromStr for TokenType {
             "let" => Ok(TokenType::Let),
             "if" => Ok(TokenType::If),
             "then" => Ok(TokenType::Then),
-            "endif" => Ok(TokenType::EndIf),
+            "endIf" => Ok(TokenType::EndIf),
             "while" => Ok(TokenType::While),
-            "repeat" => Ok(TokenType::Repeat),
+            "do" => Ok(TokenType::Do),
             "endWhile" => Ok(TokenType::EndWhile),
             _ => Err(())
         }
