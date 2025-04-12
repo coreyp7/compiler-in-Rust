@@ -49,13 +49,11 @@ impl TokenList<> {
     }
 
     pub fn parse_tokens(&mut self) {
-        /*
         println!("parse_tokens called!");
         println!("here's the contents of the vec in the struct");
         for token in &self.vec {
             println!("{:#?}", token);
         }
-        */
         println!("parser output: -----------------------------");
 
         self.program();
@@ -111,6 +109,14 @@ impl TokenList<> {
                 self.assert_curr_type_or_fail(&TokenType::EndIf);
                 self.next_token();
                 
+            },
+            TokenType::Let => {
+                self.next_token();
+                self.assert_curr_type_or_fail(&TokenType::Identity);
+                self.next_token();
+                self.assert_curr_type_or_fail(&TokenType::Equal);
+                self.next_token();
+                self.expression();
             },
             TokenType::Newline => (),
             /*
@@ -179,6 +185,11 @@ impl TokenList<> {
         } else if self.is_curr_token_type(&TokenType::Identity) {
             self.next_token();
         } else {
+            println!("");
+            println!("ERROR: when parsing token on line {}; {:?}", 
+                self.line_number, 
+                self.get_curr_token().token_type
+            );
             std::process::exit(0);
         }
     }
