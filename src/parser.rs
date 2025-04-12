@@ -4,11 +4,13 @@ use std::process;
 use std::io;
 use std::io::Write;
 use colored::Colorize;
+use std::collections::HashSet;
 
 pub struct TokenList {
     vec: Vec<Token>,
     curr_idx: usize,
-    line_number: u32
+    line_number: u32,
+    symbols: HashSet<String>
 }
 
 impl TokenList<> {
@@ -16,7 +18,8 @@ impl TokenList<> {
         TokenList{ 
             vec: token_vec, 
             curr_idx: 0,
-            line_number: 1 
+            line_number: 1,
+            symbols: HashSet::new()
         }
     }
 
@@ -113,6 +116,7 @@ impl TokenList<> {
             TokenType::Let => {
                 self.next_token();
                 self.assert_curr_type_or_fail(&TokenType::Identity);
+                self.symbols.insert(self.get_curr_token().text.clone());
                 self.next_token();
                 self.assert_curr_type_or_fail(&TokenType::Equal);
                 self.next_token();
@@ -199,10 +203,18 @@ impl TokenList<> {
         if self.is_curr_token_type(&TokenType::Number) {
             self.next_token();
         } else if self.is_curr_token_type(&TokenType::Identity) {
+            // TODO: check hashset for symbol
+            if !self.symbols.contains(&self.get_curr_token().text) {
+                println!("ERROR");
+                println!("|PARSER| symbol doesn't exist: '{}'", 
+                    self.get_curr_token().text 
+                );
+                std::process::exit(0);
+            }
             self.next_token();
         } else {
-            println!("");
-            println!("ERROR: when parsing token on line {}; {:?}", 
+            println!("ERROR");
+            println!("|PARSER| when parsing token on line {}; {:?}", 
                 self.line_number, 
                 self.get_curr_token().token_type
             );
