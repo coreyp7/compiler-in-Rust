@@ -10,7 +10,8 @@ pub struct TokenList {
     vec: Vec<Token>,
     curr_idx: usize,
     line_number: u32,
-    symbols: HashSet<String>
+    symbols: HashSet<String>,
+    code_str: String
 }
 
 impl TokenList<> {
@@ -19,7 +20,8 @@ impl TokenList<> {
             vec: token_vec, 
             curr_idx: 0,
             line_number: 1,
-            symbols: HashSet::new()
+            symbols: HashSet::new(),
+            code_str: String::new()
         }
     }
 
@@ -60,14 +62,25 @@ impl TokenList<> {
         println!("parser output: -----------------------------");
 
         self.program();
+
+        println!("Here's the code_str after running program():");
+        println!("{}", self.code_str.green().bold());
     }
 
     fn program(&mut self) {
+        self.code_str.push_str("#include <stdio.h>\n");
+        self.code_str.push_str("int main() {\n");
+
         while self.get_curr_token().token_type != TokenType::EOF {
             //println!("{:?} != TokenType::EOF", self.get_curr_token().token_type);
             self.statement();
         }
+        // Testing
+        self.code_str.push_str("printf(\"hello, compiler\");\n");
+
         println!("Reached EOF");
+        self.code_str.push_str("}\n");
+
     }
 
     fn statement(&mut self) {
