@@ -1,6 +1,46 @@
-/! print "hello, world"
-/! print "here's the second line of printed text"
-/! print "third AND LAST line"
-if(x == 1) then {
-    print "test";
-} endif
+ /!print "hello, world"
+ /!print "here's the second line of printed text"
+ /!print "third AND LAST line"
+ /!if (x <= 1) then {
+    /!print "test";
+/!} endIf
+
+/!let foo = bar * 3 + 2
+/!if foo > 0 then
+   /!print "yes!"
+/!endIf
+
+/!let foo = 1
+
+/!while foo < 0 do
+    /!print "testing this"
+    /!if 1 > 2 then
+        /!print "here it is"
+    /!endIf
+/!endWhile
+
+/!let bar = 23456
+/!let foo = bar * 3 + 2
+/!if foo > 0 then
+    /!if 10 * 10 < 100 then
+        /!print bar
+    /!endIf
+/!endIf
+
+/!print "How many fibonacci numbers do you want?"
+/!INPUT nums
+/!let nums = 4
+/!print ""
+
+/!let a = 0
+/!let b = 1
+/!while nums > 0 do
+    /!print a
+    /!let c = a + b
+    /!let a = b
+    /!let b = c
+    /!let nums = nums - 1
+/!endWhile
+
+/! Here is the first program of plank.
+print "hello, world"

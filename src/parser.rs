@@ -29,6 +29,7 @@ impl TokenList<> {
         return &self.vec[self.curr_idx];
     }
 
+
     fn next_token(&mut self) {
         // If we're in the middle of parsing a statement or something and we
         // don't see a keyword we're expecting, then we'll go past EOF and crash.
@@ -76,7 +77,7 @@ impl TokenList<> {
             self.statement();
         }
         // Testing
-        self.code_str.push_str("printf(\"hello, compiler\");\n");
+        //self.code_str.push_str("printf(\"hello, compiler\");\n");
 
         println!("Reached EOF");
         self.code_str.push_str("}\n");
@@ -92,17 +93,28 @@ impl TokenList<> {
         * of token_type (I believe). Gives some insight into how things are 
         * actually passed around.
         */
+        //let curr_token: &Token = &self.get_curr_token();
         match &self.get_curr_token().token_type {
+        //match curr_token.token_type {
             TokenType::Print => {
+                self.code_str.push_str("printf(\"");
                 self.next_token();
 
                 // from here, needs to be either expression or a string
                 if self.get_curr_token().token_type == TokenType::Str {
-                    // Simple string
+                    // This is a shit solution, but I was confused figuring out
+                    // where a mutable borrow was ocurring here.
+                    // Cloning the token text solves this, although clumsily.
+                    let string_content: String = self.get_curr_token().text.clone();
+                    self.code_str.push_str(
+                        &string_content
+                    );
+                    self.code_str.push_str("\");\n");
                     self.next_token();
                 } else {
                     // Must be an expression
                     //self.expression();
+                    // TODO: need to figure out how to turn this to c code
                     self.next_token();
                 }
 
