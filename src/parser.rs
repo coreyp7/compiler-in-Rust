@@ -123,7 +123,9 @@ impl TokenList<> {
                 self.next_token();
 
                 // parse comparison (part in parentheses)
+                self.code_str.push_str("if (");
                 self.comparison();
+                self.code_str.push_str(") {\n");
                 self.assert_curr_type_or_fail(&TokenType::Then);
                 self.next_token();
 
@@ -135,6 +137,7 @@ impl TokenList<> {
 
                 // parse end if token
                 self.assert_curr_type_or_fail(&TokenType::EndIf);
+                self.code_str.push_str("}\n");
                 self.next_token();
                 
             },
@@ -187,6 +190,8 @@ impl TokenList<> {
             println!("Found {:#?} instead of comparison operator.", self.get_curr_token().token_type);
             std::process::exit(0);
         }
+        let string_content: String = self.get_curr_token().text.clone();
+        self.code_str.push_str(&string_content);
         self.next_token();
         self.expression();
         
@@ -204,6 +209,9 @@ impl TokenList<> {
     fn expression(&mut self) {
         self.term();
         while self.is_curr_token_type(&TokenType::Plus) || self.is_curr_token_type(&TokenType::Minus) {
+            let string_content: String = self.get_curr_token().text.clone();
+            self.code_str.push_str(&string_content);
+
             self.next_token();
             self.term();
         }
@@ -212,6 +220,9 @@ impl TokenList<> {
     fn term(&mut self) {
         self.unary();
         while self.is_curr_token_type(&TokenType::Asterisk) || self.is_curr_token_type(&TokenType::Slash) {
+            let string_content: String = self.get_curr_token().text.clone();
+            self.code_str.push_str(&string_content);
+
             self.next_token();
             self.unary();
         }
@@ -219,6 +230,9 @@ impl TokenList<> {
 
     fn unary(&mut self) {
         if self.is_curr_token_type(&TokenType::Plus) || self.is_curr_token_type(&TokenType::Minus) {
+            let string_content: String = self.get_curr_token().text.clone();
+            self.code_str.push_str(&string_content);
+
             self.next_token();
         }
         self.primary();
@@ -226,6 +240,9 @@ impl TokenList<> {
 
     fn primary(&mut self) {
         if self.is_curr_token_type(&TokenType::Number) {
+            let string_content: String = self.get_curr_token().text.clone();
+            self.code_str.push_str(&string_content);
+
             self.next_token();
         } else if self.is_curr_token_type(&TokenType::Identity) {
             if !self.symbols.contains(&self.get_curr_token().text) {
@@ -235,6 +252,9 @@ impl TokenList<> {
                 );
                 std::process::exit(0);
             }
+            let string_content: String = self.get_curr_token().text.clone();
+            self.code_str.push_str(&string_content);
+
             self.next_token();
         } else {
             println!("ERROR");

@@ -43,4 +43,7 @@
 /!endWhile
 
 /! Here is the first program of plank.
-print "hello, world"
+if 1 > 2 then
+    print "hello, world"
+endIf
+

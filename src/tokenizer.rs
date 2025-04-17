@@ -66,7 +66,7 @@ fn tokenize_line(line: String) -> Vec<Token> {
                     curr_byte_index += 1;
                     token = Token { token_type: TokenType::LessThanEqualTo, text: String::from("<=") }
                 } else {
-                    token = Token { token_type: TokenType::LessThan, text: String::from("=") }
+                    token = Token { token_type: TokenType::LessThan, text: String::from("<") }
                 }
             },
             '>' => {
@@ -74,7 +74,7 @@ fn tokenize_line(line: String) -> Vec<Token> {
                     curr_byte_index += 1;
                     token = Token { token_type: TokenType::GreaterThanEqualTo, text: String::from(">=") }
                 } else {
-                    token = Token { token_type: TokenType::GreaterThan, text: String::from("=") }
+                    token = Token { token_type: TokenType::GreaterThan, text: String::from(">") }
                 }
             },
             '!' => {
