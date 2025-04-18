@@ -43,7 +43,19 @@
 /!endWhile
 
 /! Here is the first program of plank.
-if 1 > 2 then
-    print "hello, world"
+/!if 1 > 2 then
+    /!print "hello, world"
+/!endIf
+
+/!Number x: 7
+/!Update x <= 5
+
+/! Here is the first program of plank rewritten with new syntax.
+Number x: 14
+Number y: 98
+update x <= 145
+
+if x > y then
+    print "hello, plank"
 endIf
 

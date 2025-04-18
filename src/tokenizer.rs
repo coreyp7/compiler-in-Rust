@@ -44,6 +44,7 @@ fn tokenize_line(line: String) -> Vec<Token> {
             '+' => token = Token { token_type: TokenType::Plus, text: String::from(curr) },
             '-' => token = Token { token_type: TokenType::Minus, text: String::from(curr) },
             '*' => token = Token { token_type: TokenType::Asterisk, text: String::from(curr) },
+            ':' => token = Token { token_type: TokenType::Colon, text: String::from(curr) },
             '/' => {
                 if matches!(next, Some(x) if x == '!') {
                     // skip rest of line, return early; rest of line is coment
@@ -281,7 +282,9 @@ pub enum TokenType {
     Identity,
     Str,
     // Keywords
-    Label = 100,
+    Label = 100,//unused
+    NumberType, // for declaring variable 'Number'
+    UpdateKeyword, // assigning to variables
     Goto,
     Print,
     Input,
@@ -304,6 +307,7 @@ pub enum TokenType {
     LessThanEqualTo,
     GreaterThan,
     GreaterThanEqualTo, // 210
+    Colon,
     UnsupportedSymbolError = 900,
     // Won't get through to the parser, just for processing in here.
     Space
@@ -329,6 +333,8 @@ impl FromStr for TokenType {
             "while" => Ok(TokenType::While),
             "do" => Ok(TokenType::Do),
             "endWhile" => Ok(TokenType::EndWhile),
+            "Number" => Ok(TokenType::NumberType),
+            "update" => Ok(TokenType::UpdateKeyword),
             _ => Err(())
         }
     }
