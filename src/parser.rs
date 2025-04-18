@@ -120,12 +120,13 @@ impl TokenList<> {
 
             },
             TokenType::If => {
+                self.code_str.push_str("if (");
                 self.next_token();
 
                 // parse comparison (part in parentheses)
-                self.code_str.push_str("if (");
                 self.comparison();
                 self.code_str.push_str(") {\n");
+
                 self.assert_curr_type_or_fail(&TokenType::Then);
                 self.next_token();
 
@@ -142,12 +143,43 @@ impl TokenList<> {
                 
             },
             TokenType::Let => {
+                // this will require some more complex logic to turn this into code.
+                // what do I need to know to emit text.
+                // - variable name
+                // - type
+                // in fact, should we rewrite the tokenizer/parser to check for a type?
+                // it would make emitting much easier, but perhaps lazy.
+                // The reason the teeny tiny parser doesn't run into this is
+                // because let is only used for declaring numbers, which is generically
+                // a float in c (uses label keyword for strings).
+                // Do what you feel.
+
+                /*
+                Ideas:
+                - Have the declaration being with a type that will be tokenized,
+                and we can read it in order easily here; assignment statements
+                will just begin with variable name (so, if the parser sees a symbol
+                that isn't a keyword or recognized thing in the first position of a line,
+                then we'd just check if it is a symbol in the symbol map. More complications
+                from this though.....
+                - Have distinct keywords for each datatype, at start of statement.
+                string, number, etc. Maybe just these two. We'd have to tokenize 
+                these different types now, and change parse logic around. But in
+                general would make things a bit easier for me when emitting
+                (emitting to c, could be harder if going to rust)
+                */
+
                 self.next_token();
                 self.assert_curr_type_or_fail(&TokenType::Identity);
-                self.symbols.insert(self.get_curr_token().text.clone());
+
+                let variable_name: String = self.get_curr_token().text.clone();
+                //self.symbols.insert(self.get_curr_token().text.clone());
+                self.symbols.insert(&variable_name);
+
                 self.next_token();
                 self.assert_curr_type_or_fail(&TokenType::Equal);
                 self.next_token();
+
                 self.expression();
             },
             TokenType::While => {
