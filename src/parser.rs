@@ -177,7 +177,9 @@ impl TokenList<> {
             },
             TokenType::While => {
                 self.next_token();
+                self.code_str.push_str("while (");
                 self.comparison();
+                self.code_str.push_str(") {\n");
                 self.assert_curr_type_or_fail(&TokenType::Do);
                 self.next_token();
 
@@ -188,6 +190,7 @@ impl TokenList<> {
 
                 // parse end while token
                 self.assert_curr_type_or_fail(&TokenType::EndWhile);
+                self.code_str.push_str("}\n");
                 self.next_token();
 
             },

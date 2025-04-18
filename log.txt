@@ -59,3 +59,8 @@ if x > y then
     print "hello, plank"
 endIf
 
+/! Here's a while statement!
+while x > y do
+    update x <= x - 1
+endWhile
+
