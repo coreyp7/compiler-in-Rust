@@ -11,7 +11,7 @@ pub struct TokenList {
     curr_idx: usize,
     line_number: u32,
     symbols: HashSet<String>,
-    code_str: String
+    pub code_str: String
 }
 
 impl TokenList<> {
@@ -42,6 +42,7 @@ impl TokenList<> {
             println!("Check your syntax and see if there's something wrong.");
         }
 
+        /*
         if self.get_curr_token().token_type == TokenType::Newline {
             println!("\\n");
             self.line_number = self.line_number + 1;
@@ -51,16 +52,19 @@ impl TokenList<> {
             print!("{:#?} ", self.get_curr_token().token_type);
             io::stdout().flush().unwrap();
         }
+        */
+
+        // Increment idx position in vec
         self.curr_idx += 1;
     }
 
     pub fn parse_tokens(&mut self) {
-        println!("parse_tokens called!");
-        println!("here's the contents of the vec in the struct");
-        for token in &self.vec {
-            println!("{:#?}", token);
-        }
-        println!("parser output: -----------------------------");
+        //println!("parse_tokens called!");
+        //println!("here's the contents of the vec in the struct");
+        //for token in &self.vec {
+            //println!("{:#?}", token);
+        //}
+        //println!("parser output: -----------------------------");
 
         self.program();
 
@@ -80,7 +84,7 @@ impl TokenList<> {
         // Testing
         //self.code_str.push_str("printf(\"hello, compiler\");\n");
 
-        println!("Reached EOF");
+        //println!("Reached EOF");
         self.code_str.push_str("}\n");
 
     }

@@ -14,7 +14,6 @@ pub fn tokenize_file(src_file: &mut File) -> Vec<Token> {
             let mut tokens = tokenize_line(line_str);         
             token_vec.append(&mut tokens);
         }
-        i += 1;
     }
     token_vec.push(Token { text: String::new(), token_type: TokenType::EOF } );
 
@@ -79,12 +78,12 @@ fn tokenize_line(line: String) -> Vec<Token> {
                 }
             },
             '!' => {
-                println!("in here! 1");
+                //println!("in here! 1");
                 if matches!(next, Some(x) if x == '=') {
                     curr_byte_index += 1;
                     token = Token { token_type: TokenType::NotEqual, text: String::from("!=") }
                 } else if matches!(next, Some(x) if x != ' ') {
-                    println!("! pairing isn't supported");
+                    //println!("! pairing isn't supported");
                     // ! alone isn't supported in this lanugage
                     //token = Token { token_type: TokenType::UnsupportedSymbolError, text: String::from("") }
                     println!("TOKENIZER: Found something after a bang that isn't =. Invalid operator.");
@@ -119,7 +118,7 @@ fn tokenize_line(line: String) -> Vec<Token> {
         };
 
         if curr == '!' {
-            println!("here's the token set: {:#?}", token);
+            //println!("here's the token set: {:#?}", token);
         }
 
         curr_byte_index += 1;
@@ -255,7 +254,7 @@ fn get_end_of_token(
         match f {
             Ok(token_type) => token.token_type = token_type,
             _ => {
-                println!("HERE IT IS: {:#?}", &token.text);
+                //println!("HERE IT IS: {:#?}", &token.text);
             }
         }
     }

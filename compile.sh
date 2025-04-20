@@ -5,6 +5,7 @@
 # have rust output the c code into a file into a funny dir (using $2)
 
 # run gcc in here and compile the produced c code into an executable
+cargo build
 
 plankCompilerPath="plank_compiler"
 exitEarly=0
@@ -49,11 +50,16 @@ if [ $exitEarly -eq 1 ]; then
     exit
 fi
 
+# This is where the c code will be put and compiled
+mkdir $outputDir/plank_target
+
 echo "Giving $src to rust file"
 
 # Let rust do its thing
 # Pass it src and outputDir
-./$plankCompilerPath #TODO: pass arguments and export c code from rust
+echo "Running command:"
+echo "./$plankCompilerPath $src $outputDir"
+./$plankCompilerPath $src $outputDir
 
 
 
