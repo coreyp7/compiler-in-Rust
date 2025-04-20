@@ -25,58 +25,69 @@ while [ "${1:-}" != '' ]; do
     shift
   done
 
-echo $src
-echo $outputDir
-echo $plankCompilerPath
+# echo $src
+# echo $outputDir
+# echo $plankCompilerPath
 
 # Validate all paths are valid
 if [ ! -f $plankCompilerPath ]; then
-    echo "plank compiler doesn't exist, path is incorrect"
+    echo "setup error: plank compiler doesn't exist, path is incorrect"
     exitEarly=1
 fi
 
-if [ ! -f $src ]; then
-    echo "src doesn't exist"
+if [[ -z "$src" ]]; then
+    echo "Missing arg; specify -s (--src) of plank source code file to compile"
+    exitEarly=1
+elif [ ! -f $src ]; then
+    echo "Invalid arg -s (--src); file doesn't exist ($src)"
     exitEarly=1
 fi
 
-if [ ! -d $outputDir ]; then
-    echo "output dir doesn't exist"
+if [[ -z "$outputDir" ]]; then
+    echo "Missing arg; specify -o (--output) output directory to put plank exe"
+    exitEarly=1
+elif [ ! -d $outputDir ]; then
+    echo "Invalid arg -o (--output); directory doesn't exist ($outputDir)"
     exitEarly=1
 fi
+
 
 if [ $exitEarly -eq 1 ]; then
-    echo "Exiting early."
+    echo "Fix incorrect args to compile."
     exit
 fi
 
 # This is where the c code will be put and compiled
-cCodeDir="$outputDir/plank_target"
-if [ ! -d $cCodeDir ]; then
-    mkdir cCodeDir
-    echo "creating cCodeDir..."
-    exitEarly=1
-fi
+#cCodeDir="$outputDir/plank_target"
+#if [ ! -d $cCodeDir ]; then
+    #mkdir $cCodeDir
+    #echo "creating cCodeDir..."
+    #exitEarly=1
+#fi
 
-echo "Giving $src to rust file"
+#echo "Giving $src to rust file"
 
 # Let rust do its thing
 # Pass it src and outputDir
 echo "Running command:"
-echo "./$plankCompilerPath $src $cCodeDir"
-./$plankCompilerPath $src $cCodeDir
+#echo "./$plankCompilerPath $src $cCodeDir"
+echo "./$plankCompilerPath $src $outputDir"
+./$plankCompilerPath $src $outputDir
 
 # Ensure that the source code file was created
-cCodeFile="$cCodeDir/main.c"
-if [ ! -f $cCodeFile ]; then
-    echo "Something went wrong when compiling your file: cannot create executable."
-    echo "$cCodeFile"
-    exitEarly=1
-fi
+#cCodeFile="$cCodeDir/main.c"
+#if [ ! -f $cCodeFile ]; then
+    #echo "Something went wrong when compiling your file: cannot create executable."
+    #echo "$cCodeFile"
+    #exitEarly=1
+#fi
 
 echo "Created C code :D"
 
-gcc $cCodeFile -o $outputDir/main.plank
+gcc $outputDir/main.c -o $outputDir/plank_program.exe
+rm $outputDir/main.c
+
+
 
 
 

@@ -50,6 +50,7 @@ fn main() -> std::io::Result<()> {
     println!("path: {}", path);
     let mut output_file = File::create(path)?;
     output_file.write_all(parser.code_str.as_bytes());
+    println!("write_all on path above");
 
     Ok(())
 }
