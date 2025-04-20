@@ -76,5 +76,7 @@ fi
 
 echo "Created C code :D"
 
+gcc $cCodeFile -o $outputDir/main.plank
+
 
 

@@ -64,7 +64,7 @@ endIf
 while x > y do
     update x <= x - 1
     if x <= y then
-        print "hello, plank"
+        print "x<=y, last iteration of while loop"
     endIf
 endWhile
 

@@ -72,7 +72,6 @@ impl TokenList<> {
         println!("Here's the compiled c code:");
         println!("{}", self.code_str.green().bold());
     }
-
     fn program(&mut self) {
         self.code_str.push_str("#include <stdio.h>\n");
         self.code_str.push_str("int main() {\n");
@@ -115,6 +114,7 @@ impl TokenList<> {
                         &string_content
                     );
                     self.code_str.push_str("\");\n");
+                    self.code_str.push_str("printf(\"\\n\");");
                     self.next_token();
                 } else {
                     // Must be an expression
