@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::BufReader;
+use std::io::prelude::*;
 
 mod tokenizer;
 use tokenizer::tokenize_file;
@@ -44,6 +45,11 @@ fn main() -> std::io::Result<()> {
     let mut parser: TokenList = TokenList::new(tokenized_file);
     parser.parse_tokens();
     //println!("2. File has been parsed; it abides by grammar.");
+
+    let path = format!("{output_path}/main.c");
+    println!("path: {}", path);
+    let mut output_file = File::create(path)?;
+    output_file.write_all(parser.code_str.as_bytes());
 
     Ok(())
 }

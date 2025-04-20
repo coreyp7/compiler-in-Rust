@@ -51,15 +51,30 @@ if [ $exitEarly -eq 1 ]; then
 fi
 
 # This is where the c code will be put and compiled
-mkdir $outputDir/plank_target
+cCodeDir="$outputDir/plank_target"
+if [ ! -d $cCodeDir ]; then
+    mkdir cCodeDir
+    echo "creating cCodeDir..."
+    exitEarly=1
+fi
 
 echo "Giving $src to rust file"
 
 # Let rust do its thing
 # Pass it src and outputDir
 echo "Running command:"
-echo "./$plankCompilerPath $src $outputDir"
-./$plankCompilerPath $src $outputDir
+echo "./$plankCompilerPath $src $cCodeDir"
+./$plankCompilerPath $src $cCodeDir
+
+# Ensure that the source code file was created
+cCodeFile="$cCodeDir/main.c"
+if [ ! -f $cCodeFile ]; then
+    echo "Something went wrong when compiling your file: cannot create executable."
+    echo "$cCodeFile"
+    exitEarly=1
+fi
+
+echo "Created C code :D"
 
 
 

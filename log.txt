@@ -54,6 +54,7 @@
 Number x: 14
 Number y: 98
 update x <= 145
+update x <= 345
 
 if x > y then
     print "hello, plank"
