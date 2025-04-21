@@ -1,7 +1,5 @@
 #!/bin/bash
 
-cargo build
-
 #plankCompilerPath="plank_compiler"
 plankCompilerPath="./target/release/compiler"
 exitEarly=0
@@ -26,20 +24,19 @@ while [ "${1:-}" != '' ]; do
   done
 
 if [ $setup -eq 1 ]; then
-    echo "Setup flag specified; going to build compiler and setup current 
-        directory for Plank compiler."
+    echo "SETUP: Setup flag specified; going to build compiler and setup current directory for Plank compiler."
 
-    cargo build --release
+    # TODO: need to clean up code so there's no warnings anymore
+    cargo build --quiet --release
     
     # Ensure it was built correctly.
     if [ ! -f './target/release/compiler' ]; then
-        echo "Building compiler has failed; aborting."
+        echo "SETUP: Building compiler has failed; aborting."
     else
-        echo "Have successfully built Plank compiler."
+        echo "SETUP: Have successfully built Plank compiler."
         touch ./hello_world.plank
         echo $helloplank > hello_world.plank
-        echo "Example file has been created in current directory, will compile
-        in curr dir."
+        echo "SETUP: Example file has been created in current directory, will compile in curr dir."
         src=hello_world.plank
         outputDir=.
     fi
@@ -47,15 +44,15 @@ fi
 
 # Validate all paths are valid
 if [ ! -f $plankCompilerPath ]; then
-    echo "setup error: plank compiler doesn't exist, path is incorrect"
+    echo "Invalid arg: plank compiler doesn't exist, path is incorrect"
     exitEarly=1
 fi
 
 if [[ -z "$src" ]]; then
-    echo "Missing arg; specify -s (--src) of plank source code file to compile"
+    echo "Missing arg; specify -i (--src) of plank source code file to compile"
     exitEarly=1
 elif [ ! -f $src ]; then
-    echo "Invalid arg -s (--src); file doesn't exist ($src)"
+    echo "Invalid arg -i (--src); file doesn't exist ($src)"
     exitEarly=1
 fi
 
@@ -70,28 +67,30 @@ fi
 
 if [ $exitEarly -eq 1 ]; then
     echo "Fix incorrect args to compile."
+    echo "(If you haven't ran this script with --setup, do it now)"
     exit
 fi
 
 # Let rust do its thing
 # Pass it src and outputDir
-echo "Running command:"
-echo "./$plankCompilerPath $src $outputDir"
-./$plankCompilerPath $src $outputDir
+# echo "Running command:"
+# echo "$plankCompilerPath $src $outputDir"
+$plankCompilerPath $src $outputDir
 
 # Ensure that the source code file was created
-#cCodeFile="$cCodeDir/main.c"
-#if [ ! -f $cCodeFile ]; then
-    #echo "Something went wrong when compiling your file: cannot create executable."
-    #echo "$cCodeFile"
-    #exitEarly=1
-#fi
+cCodeFile="$outputDir/main.c"
+if [ ! -f $cCodeFile ]; then
+    echo "ERROR: Something went wrong when compiling your file: cannot create executable."
+    exitEarly=1
+fi
 
-echo "Created C code :D"
+#echo "Created C code :D"
 
-gcc $outputDir/main.c -o $outputDir/plank_program.exe
-rm $outputDir/main.c
+# Compile the C code into exe.
+gcc $cCodeFile -o $outputDir/plank_program.exe
+rm $cCodeFile
 
+echo "Plank compiled: '$outputDir/plank_program.exe'."
 
 
 

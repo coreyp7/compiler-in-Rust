@@ -1,11 +1,11 @@
 use std::fs::File;
-use std::io::BufReader;
+//use std::io::BufReader;
 use std::io::prelude::*;
 
 mod tokenizer;
 use tokenizer::tokenize_file;
 use tokenizer::Token;
-use tokenizer::TokenType;
+//use tokenizer::TokenType;
 
 mod parser;
 use parser::TokenList;
@@ -18,13 +18,13 @@ fn main() -> std::io::Result<()> {
     let src_path: &String = &args[1];
     let output_path: &String = &args[2];
 
-    println!("RUST OUTPUT START:");
-    println!("src_path: '{}'", src_path);
-    println!("output_path: {}", output_path);
+    //println!("RUST OUTPUT START:");
+    //println!("src_path: '{}'", src_path);
+    //println!("output_path: {}", output_path);
    
     // TODO: add error handler for reading the file
     let mut f = File::open(src_path)?;
-    println!("file openend");
+    //println!("file openend");
 
     let tokenized_file: Vec<Token> = tokenize_file(&mut f); 
     //println!("1. File has been tokenized.");
@@ -36,9 +36,9 @@ fn main() -> std::io::Result<()> {
     //println!("2. File has been parsed; it abides by grammar.");
 
     let path = format!("{output_path}/main.c");
-    println!("path: {}", path);
     let mut output_file = File::create(path)?;
-    output_file.write_all(parser.code_str.as_bytes());
+    //TODO: add error handling
+    let _ = output_file.write_all(parser.code_str.as_bytes());
 
     Ok(())
 }

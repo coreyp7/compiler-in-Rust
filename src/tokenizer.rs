@@ -7,7 +7,6 @@ pub fn tokenize_file(src_file: &mut File) -> Vec<Token> {
     let reader = BufReader::new(src_file);
 
     let mut token_vec: Vec<Token> = Vec::new();
-    let mut i = 1;
     
     for line_result in reader.lines() {
         if let Ok(line_str) = line_result {
@@ -171,7 +170,6 @@ fn get_end_of_token(
     let mut end_of_string_idx: Option<usize> = None;
     let mut string_content: String = String::new();
     
-    let mut i = 0;
     while str_byte_buffer < line_bytes.len() {
         let curr_char = line_bytes[str_byte_buffer] as char;
         // 3 cases: String, Number, or Identifier

@@ -1,9 +1,6 @@
 use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
-use std::process;
-use std::io;
-use std::io::Write;
-use colored::Colorize;
+//use colored::Colorize;
 use std::collections::HashSet;
 
 pub struct TokenList {
@@ -68,9 +65,12 @@ impl TokenList<> {
 
         self.program();
 
+        /* TODO; add arg that allows you to view debug info.
+            This is a cool visual so leaving here.
         println!("");
         println!("Here's the compiled c code:");
         println!("{}", self.code_str.green().bold());
+        */
     }
     fn program(&mut self) {
         self.code_str.push_str("#include <stdio.h>\n");
@@ -314,15 +314,8 @@ impl TokenList<> {
         }
     }
 
-    fn ensure_newline(&mut self){
-        if !self.is_curr_token_type(&TokenType::Newline){
-            println!("NO NEW LINE PRESENT; something very wrong.");
-            process::abort();
-        }
-    } 
-
     fn assert_curr_type_or_fail(&mut self, t_type: &TokenType){
-       if(self.is_curr_token_type(t_type) == false){
+       if self.is_curr_token_type(t_type) == false {
         // TODO: print error information for user
             println!("assert_curr_type_or_fail({:#?}): curr type is actually {:#?}",
                 t_type, self.get_curr_token().token_type);
