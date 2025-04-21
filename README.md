@@ -1,5 +1,6 @@
-# Plank Programming Lanuguage
+# About
 I wrote my first lanugage programming lanugage (compiler) so I could learn Rust. <br>
+The language is named plank.
 If you'd like to use this wonderful language, feel free. 
 ```
 /! Here's an example Plank program.
@@ -17,7 +18,7 @@ print "plank"
 - gcc
 - run in a bash shell
 
-## Getting Started
+## Install Instructions
 1. Clone the repo
 2. Run `./compile.sh --setup` <br>
 *This will create an example program in your directory and compile it into an executable to ensure that setup is successful.* <br>
