@@ -2,13 +2,16 @@
 
 cargo build
 
-plankCompilerPath="plank_compiler"
+#plankCompilerPath="plank_compiler"
+plankCompilerPath="./target/release/compiler"
 exitEarly=0
+setup=0
+helloplank="print \"hello, plank\""
 
 # Obtain args from user
 while [ "${1:-}" != '' ]; do
     case "$1" in
-      '-s' | '--src')
+      '-i' | '--src')
         shift
         src=$1
         ;;
@@ -16,9 +19,31 @@ while [ "${1:-}" != '' ]; do
         shift
         outputDir=$1
         ;;
+        '-s' | '--setup')
+        setup=1  
     esac
     shift
   done
+
+if [ $setup -eq 1 ]; then
+    echo "Setup flag specified; going to build compiler and setup current 
+        directory for Plank compiler."
+
+    cargo build --release
+    
+    # Ensure it was built correctly.
+    if [ ! -f './target/release/compiler' ]; then
+        echo "Building compiler has failed; aborting."
+    else
+        echo "Have successfully built Plank compiler."
+        touch ./hello_world.plank
+        echo $helloplank > hello_world.plank
+        echo "Example file has been created in current directory, will compile
+        in curr dir."
+        src=hello_world.plank
+        outputDir=.
+    fi
+fi
 
 # Validate all paths are valid
 if [ ! -f $plankCompilerPath ]; then
