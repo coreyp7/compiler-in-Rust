@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# run main.rs with provided argument of filepath ($1)
-
-# have rust output the c code into a file into a funny dir (using $2)
-
-# run gcc in here and compile the produced c code into an executable
 cargo build
 
 plankCompilerPath="plank_compiler"
@@ -24,10 +19,6 @@ while [ "${1:-}" != '' ]; do
     esac
     shift
   done
-
-# echo $src
-# echo $outputDir
-# echo $plankCompilerPath
 
 # Validate all paths are valid
 if [ ! -f $plankCompilerPath ]; then
@@ -57,20 +48,9 @@ if [ $exitEarly -eq 1 ]; then
     exit
 fi
 
-# This is where the c code will be put and compiled
-#cCodeDir="$outputDir/plank_target"
-#if [ ! -d $cCodeDir ]; then
-    #mkdir $cCodeDir
-    #echo "creating cCodeDir..."
-    #exitEarly=1
-#fi
-
-#echo "Giving $src to rust file"
-
 # Let rust do its thing
 # Pass it src and outputDir
 echo "Running command:"
-#echo "./$plankCompilerPath $src $cCodeDir"
 echo "./$plankCompilerPath $src $outputDir"
 ./$plankCompilerPath $src $outputDir
 

@@ -22,24 +22,13 @@ fn main() -> std::io::Result<()> {
     println!("src_path: '{}'", src_path);
     println!("output_path: {}", output_path);
    
-
-    /*
-    args from vec:
-    index 1: plank src code
-    index 2: output dir that the bash script created for the c stuff
-    
-    Then, when we get the c code from the parser, we need to save it to
-    a file that the bash script should've already created.
-    */
-
     // TODO: add error handler for reading the file
-    //let mut f = File::open("log.txt")?;
     let mut f = File::open(src_path)?;
     println!("file openend");
 
     let tokenized_file: Vec<Token> = tokenize_file(&mut f); 
     //println!("1. File has been tokenized.");
-    println!("passed tokenized file");
+    //println!("passed tokenized file");
     
     //let mut parser: TokenList = TokenList {vec: tokenized_file, curr_idx: 0};
     let mut parser: TokenList = TokenList::new(tokenized_file);
@@ -50,7 +39,6 @@ fn main() -> std::io::Result<()> {
     println!("path: {}", path);
     let mut output_file = File::create(path)?;
     output_file.write_all(parser.code_str.as_bytes());
-    println!("write_all on path above");
 
     Ok(())
 }

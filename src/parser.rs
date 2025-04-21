@@ -113,8 +113,8 @@ impl TokenList<> {
                     self.code_str.push_str(
                         &string_content
                     );
-                    self.code_str.push_str("\");\n");
-                    self.code_str.push_str("printf(\"\\n\");");
+                    self.code_str.push_str("\\n\");\n");
+                    //self.code_str.push_str("printf(\"\\n\");");
                     self.next_token();
                 } else {
                     // Must be an expression
