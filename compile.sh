@@ -73,8 +73,6 @@ fi
 
 # Let rust do its thing
 # Pass it src and outputDir
-# echo "Running command:"
-# echo "$plankCompilerPath $src $outputDir"
 $plankCompilerPath $src $outputDir
 
 # Ensure that the source code file was created
