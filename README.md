@@ -30,5 +30,30 @@ To compile a .plank file, run compile.sh with the following args:
 | -o (--output) | Directory to output executable in |
 | -s (--setup) | Compiles the Plank compiler in the repo you cloned (not needed after initial setup)|
 
-## Programming Language Specification
-tba
+## An Uncouth Programming Language "Specification"
+```
+/! Here's how you comment your code.
+
+/! Declaring a variable.
+Number num: 14
+Number another: 1
+
+/! Assigning to a variable.
+update num <= 26
+
+/! If conditional branch
+if num > another then
+    /! Here's how to print to console.
+    print "wow! num is greater than that other variable"
+endIf
+
+/! Here's an example while loop
+while num >= another do
+    update another <= another + 1
+    if num > another then
+        print "still smaller"
+    endIf
+endWhile
+
+print "now greater!"
+```
