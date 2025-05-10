@@ -77,15 +77,12 @@ fn tokenize_line(line: String) -> Vec<Token> {
                 }
             },
             '!' => {
-                //println!("in here! 1");
                 if matches!(next, Some(x) if x == '=') {
                     curr_byte_index += 1;
                     token = Token { token_type: TokenType::NotEqual, text: String::from("!=") }
                 } else if matches!(next, Some(x) if x != ' ') {
-                    //println!("! pairing isn't supported");
                     // ! alone isn't supported in this lanugage
-                    //token = Token { token_type: TokenType::UnsupportedSymbolError, text: String::from("") }
-                    println!("TOKENIZER: Found something after a bang that isn't =. Invalid operator.");
+                    println!("TOKENIZER: Found something after a ! that isn't =. Invalid operator.");
                     std::process::exit(0);
                 }
             },
@@ -116,10 +113,6 @@ fn tokenize_line(line: String) -> Vec<Token> {
             _ => ()
         };
 
-        if curr == '!' {
-            //println!("here's the token set: {:#?}", token);
-        }
-
         curr_byte_index += 1;
    
         if token.token_type != TokenType::UnsupportedSymbolError {  
@@ -141,7 +134,6 @@ fn tokenize_line(line: String) -> Vec<Token> {
     ); 
 
 
-    //println!("{:#?}", tokens);
     tokens
 }
 
@@ -248,12 +240,9 @@ fn get_end_of_token(
         // if it returns Some(type) then update the tokentype.
         // else None, then keep this as an Identity, since it doesn't match any keyword.
         let f = TokenType::from_str(&token.text);
-        //println!("{}", &token.text);
         match f {
             Ok(token_type) => token.token_type = token_type,
-            _ => {
-                //println!("HERE IT IS: {:#?}", &token.text);
-            }
+            _ => {}
         }
     }
 
