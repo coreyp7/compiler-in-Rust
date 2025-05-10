@@ -2,13 +2,17 @@ use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
 //use colored::Colorize;
 use std::collections::HashSet;
+use std::io;
+use std::io::Write;
+use colored::Colorize;
 
 pub struct TokenList {
     vec: Vec<Token>,
     curr_idx: usize,
     line_number: u32,
     symbols: HashSet<String>,
-    pub code_str: String
+    pub code_str: String,
+    debug: bool
 }
 
 impl TokenList<> {
@@ -18,7 +22,8 @@ impl TokenList<> {
             curr_idx: 0,
             line_number: 1,
             symbols: HashSet::new(),
-            code_str: String::new()
+            code_str: String::new(),
+            debug: true
         }
     }
 
@@ -39,51 +44,53 @@ impl TokenList<> {
             println!("Check your syntax and see if there's something wrong.");
         }
 
-        /*
-        if self.get_curr_token().token_type == TokenType::Newline {
-            println!("\\n");
-            self.line_number = self.line_number + 1;
-            print!("{}| ", self.line_number);
-            io::stdout().flush().unwrap();
-        } else {
-            print!("{:#?} ", self.get_curr_token().token_type);
-            io::stdout().flush().unwrap();
+        if self.debug {
+            if self.get_curr_token().token_type == TokenType::Newline {
+                println!("\\n");
+                self.line_number = self.line_number + 1;
+                print!("{}| ", self.line_number);
+                io::stdout().flush().unwrap();
+            } else {
+                print!("{:#?} ", self.get_curr_token().token_type);
+                io::stdout().flush().unwrap();
+            }
         }
-        */
 
         // Increment idx position in vec
         self.curr_idx += 1;
     }
 
     pub fn parse_tokens(&mut self) {
-        //println!("parse_tokens called!");
-        //println!("here's the contents of the vec in the struct");
-        //for token in &self.vec {
-            //println!("{:#?}", token);
-        //}
-        //println!("parser output: -----------------------------");
+        if self.debug {
+            println!("parse_tokens called!");
+            println!("here's the contents of the vec in the struct");
+            for token in &self.vec {
+                println!("{:#?}", token);
+            }
+            println!("parser output: -----------------------------");
+        }
 
         self.program();
 
         /* TODO; add arg that allows you to view debug info.
             This is a cool visual so leaving here.
-        println!("");
-        println!("Here's the compiled c code:");
-        println!("{}", self.code_str.green().bold());
         */
+        if self.debug {
+            println!("");
+            println!("Here's the compiled c code:");
+            println!("{}", self.code_str.green().bold());
+        }
     }
     fn program(&mut self) {
         self.code_str.push_str("#include <stdio.h>\n");
         self.code_str.push_str("int main() {\n");
 
         while self.get_curr_token().token_type != TokenType::EOF {
-            //println!("{:?} != TokenType::EOF", self.get_curr_token().token_type);
             self.statement();
         }
         // Testing
         //self.code_str.push_str("printf(\"hello, compiler\");\n");
 
-        //println!("Reached EOF");
         self.code_str.push_str("}\n");
 
     }
@@ -206,7 +213,9 @@ impl TokenList<> {
             },
             */
             _ => {
-                //println!("Skipping token below; not implemented yet.");
+                if self.debug {
+                    println!("Skipping token below; not implemented yet.");
+                }
                 self.next_token();
             }//todo!()
         }
@@ -316,10 +325,8 @@ impl TokenList<> {
 
     fn assert_curr_type_or_fail(&mut self, t_type: &TokenType){
        if self.is_curr_token_type(t_type) == false {
-        // TODO: print error information for user
             println!("assert_curr_type_or_fail({:#?}): curr type is actually {:#?}",
                 t_type, self.get_curr_token().token_type);
-            //println!("exiting via assert_curr_type_or_fail");
             std::process::exit(0);
         } 
     }
