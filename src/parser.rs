@@ -23,7 +23,7 @@ impl TokenList<> {
             line_number: 1,
             symbols: HashSet::new(),
             code_str: String::new(),
-            debug: true
+            debug: false
         }
     }
 

@@ -4,7 +4,33 @@
 plankCompilerPath="./target/release/compiler"
 exitEarly=0
 setup=0
-helloplank="print \"hello, plank\""
+debug=0
+#helloplank="print \"hello, plank\""
+helloplank=$"
+/! Declaring a variable.
+Number num: 14
+Number another: 1
+
+/! Assigning to a variable.
+update num <= 5
+
+/! If conditional branch
+if num > another then
+    /! Here's how to print to console.
+    print \"Welcome to plank. This is an example program.\"
+endIf
+
+/! Here's an example while loop
+while num >= another do
+    update another <= another + 1
+    if num > another then
+        print \"hello, \"
+    endIf
+endWhile
+
+print \"world!\"
+
+"
 
 # Obtain args from user
 while [ "${1:-}" != '' ]; do
@@ -35,8 +61,9 @@ if [ $setup -eq 1 ]; then
     else
         echo "SETUP: Have successfully built Plank compiler."
         touch ./hello_world.plank
-        echo $helloplank > hello_world.plank
-        echo "SETUP: Example file has been created in current directory, will compile in curr dir."
+        echo "$helloplank" > hello_world.plank
+        echo "SETUP: Example file 'hello_world.plank' has been created in current directory."
+        echo "SETUP: This file will be compiled into an executable in the current dir, named 'plank_program.exe'."
         src=hello_world.plank
         outputDir=.
     fi
