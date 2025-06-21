@@ -7,6 +7,9 @@ mod tokenizer;
 use tokenizer::Token;
 use tokenizer::Tokenizer;
 
+mod ast;
+use ast::AstBuilder;
+
 //mod parser;
 //use parser::TokenList;
 
@@ -30,9 +33,11 @@ fn main() -> std::io::Result<()> {
     let mut tokenizer = Tokenizer::new();
     let tokens: Vec<Token> = tokenizer.tokenize_file(&mut f);
 
-    for token in tokens {
+    for token in &tokens {
         println!("{:?}", token);
     } 
+
+    let mut ast = AstBuilder::new(tokens);
     
     /*
     let mut parser: TokenList = TokenList::new(tokenized_file);
