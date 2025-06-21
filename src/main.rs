@@ -15,18 +15,24 @@ use std::env;
 
 fn main() -> std::io::Result<()> {
 
+    /* When running from command line, not used when testing
     let args: Vec<String> = env::args().collect();
     let src_path: &String = &args[1];
     let output_path: &String = &args[2];
+    */
+
+    let src_path: String = String::from("./hello_world.plank");
 
     // TODO: add error handler for reading the file
     let mut f = File::open(src_path)?;
 
     //let tokenized_file: Vec<Token> = tokenize_file(&mut f); 
-    let tokenizer = Tokenizer::new();
-    //tokenizer.tokenize_file(&mut f);
+    let mut tokenizer = Tokenizer::new();
+    let tokens: Vec<Token> = tokenizer.tokenize_file(&mut f);
 
-    
+    for token in tokens {
+        println!("{:?}", token);
+    } 
     
     /*
     let mut parser: TokenList = TokenList::new(tokenized_file);
