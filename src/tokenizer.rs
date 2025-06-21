@@ -5,14 +5,23 @@ use std::fs::File;
 
 
 pub struct Tokenizer {
-    line_number: u32
+    line_number: u8,
+    /*
+    Okay, so having this here is pretty wack, but allows easy tracking of the
+    current column in the current line being parsed.
+
+    So, this is exclusively used in tokenize_line. And purely for informational
+    purposes to show as error messages to the user.
+    */
+    curr_byte_index_in_line: usize
 }
 
 impl Tokenizer<> {
     
     pub fn new() -> Tokenizer {
         Tokenizer {
-            line_number: 1
+            line_number: 1,
+            curr_byte_index_in_line: 0
         }
     }
 
@@ -28,11 +37,7 @@ impl Tokenizer<> {
                 self.line_number = self.line_number + 1
             }
         }
-        token_vec.push(Token { 
-            text: String::new(), 
-            token_type: TokenType::EOF,
-            line_number: self.line_number
-        } );
+        token_vec.push(self.create_token(TokenType::EOF, String::new()));
 
         return token_vec;
     }
@@ -41,7 +46,8 @@ impl Tokenizer<> {
         Token {
             token_type: token_type_param,
             text: text_param,
-            line_number: self.line_number
+            line_number: self.line_number,
+            col_number: self.curr_byte_index_in_line+1
         }
     }
 
@@ -50,14 +56,15 @@ impl Tokenizer<> {
     fn tokenize_line(&mut self, line: String) -> Vec<Token> {
         let mut tokens: Vec<Token> = Vec::new();
         let line_bytes: &[u8] = line.as_bytes();
-        let mut curr_byte_index = 0;
+        //let mut curr_byte_index = 0;
+        self.curr_byte_index_in_line = 0;
 
-        while curr_byte_index < line_bytes.len() {
-            let curr = line_bytes[curr_byte_index];
+        while self.curr_byte_index_in_line < line_bytes.len() {
+            let curr = line_bytes[self.curr_byte_index_in_line];
             let curr = curr as char;
             let mut next: Option<char> = None;
-            if curr_byte_index < line_bytes.len()-1 {
-                next = Some(line_bytes[curr_byte_index+1] as char);
+            if self.curr_byte_index_in_line < line_bytes.len()-1 {
+                next = Some(line_bytes[self.curr_byte_index_in_line+1] as char);
             }
 
             //let mut token: Token = Token { token_type: TokenType::UnsupportedSymbolError, text: String::from(curr) };
@@ -81,7 +88,7 @@ impl Tokenizer<> {
                 '=' => {
                     // if next isn't None and next char makes self a double equals
                     if matches!(next, Some(x) if x == '=') {
-                        curr_byte_index += 1;
+                        self.curr_byte_index_in_line += 1;
                         token = self.create_token(TokenType::EqualEqual, String::from("=="));
                     } else {
                         token = self.create_token(TokenType::Equal, String::from("="));
@@ -89,7 +96,7 @@ impl Tokenizer<> {
                 },
                 '<' => {
                     if matches!(next, Some(x) if x == '=') {
-                        curr_byte_index += 1;
+                        self.curr_byte_index_in_line += 1;
                         token = self.create_token(TokenType::LessThanEqualTo, String::from("<="));
                     } else {
                         token = self.create_token(TokenType::LessThan, String::from("<"));
@@ -97,7 +104,7 @@ impl Tokenizer<> {
                 },
                 '>' => {
                     if matches!(next, Some(x) if x == '=') {
-                        curr_byte_index += 1;
+                        self.curr_byte_index_in_line += 1;
                         token = self.create_token(TokenType::GreaterThanEqualTo, String::from(">="));
                     } else {
                         token = self.create_token(TokenType::GreaterThan, String::from(">"));
@@ -105,7 +112,7 @@ impl Tokenizer<> {
                 },
                 '!' => {
                     if matches!(next, Some(x) if x == '=') {
-                        curr_byte_index += 1;
+                        self.curr_byte_index_in_line += 1;
                         token = self.create_token(TokenType::NotEqual, String::from("!="))
                     } else if matches!(next, Some(x) if x != ' ') {
                         // ! alone isn't supported in this lanugage
@@ -114,33 +121,33 @@ impl Tokenizer<> {
                     }
                 },
                 '"' => {
-                    let result = self.get_end_of_token(&line_bytes, curr_byte_index+1, TokenType::Str);
+                    let result = self.get_end_of_token(&line_bytes, self.curr_byte_index_in_line+1, TokenType::Str);
                     let str_token = result.0;
                     let new_curr_byte_idx = result.1; 
                     
                     token = str_token;
-                    curr_byte_index = new_curr_byte_idx;
+                    self.curr_byte_index_in_line = new_curr_byte_idx;
                 },
                 x if x.is_numeric() => {
-                    let result = self.get_end_of_token(&line_bytes, curr_byte_index, TokenType::Number);
+                    let result = self.get_end_of_token(&line_bytes, self.curr_byte_index_in_line, TokenType::Number);
                     let num_token = result.0;
                     let new_curr_byte_idx = result.1; 
                     
                     token = num_token;
-                    curr_byte_index = new_curr_byte_idx;
+                    self.curr_byte_index_in_line = new_curr_byte_idx;
                 },
                 x if x.is_alphabetic() => {
-                    let result = self.get_end_of_token(&line_bytes, curr_byte_index, TokenType::Identity);
+                    let result = self.get_end_of_token(&line_bytes, self.curr_byte_index_in_line, TokenType::Identity);
                     let num_token = result.0;
                     let new_curr_byte_idx = result.1; 
                     
                     token = num_token;
-                    curr_byte_index = new_curr_byte_idx;
+                    self.curr_byte_index_in_line = new_curr_byte_idx;
                 },
                 _ => ()
             };
 
-            curr_byte_index += 1;
+            self.curr_byte_index_in_line += 1;
        
             if token.token_type != TokenType::UnsupportedSymbolError {  
                 tokens.push(token); 
@@ -148,7 +155,7 @@ impl Tokenizer<> {
 
             if skip_rest_of_line {
                 // This is a comment; we're skipping the rest of the line.
-                curr_byte_index = line_bytes.len();
+                self.curr_byte_index_in_line = line_bytes.len();
             }
         }
 
@@ -182,7 +189,6 @@ impl Tokenizer<> {
         token_type: TokenType
     ) -> (Token, usize) {
             
-        //let mut str_byte_buffer = curr_byte_index+1;
         let mut str_byte_buffer = token_start;
         let mut end_of_string_idx: Option<usize> = None;
         let mut string_content: String = String::new();
@@ -279,7 +285,8 @@ impl Tokenizer<> {
 pub struct Token {
     pub text: String, // used for identifiers, strings, numbers
     pub token_type: TokenType,
-    pub line_number: u32
+    pub line_number: u8,
+    pub col_number: usize
 }
 
 #[derive(Debug)]
