@@ -38,6 +38,7 @@ impl AstBuilder<> {
         &self.tokens[self.curr_idx]
     }
 
+
     fn next_token(&mut self){
         self.curr_idx = self.curr_idx + 1;
     }
@@ -52,16 +53,28 @@ impl AstBuilder<> {
 
     fn statement(&mut self) {
         let mut statement: Option<Statement> = None;
-        let curr_token = self.get_curr_token();
-        match curr_token.token_type {
+        //let curr_token = self.get_curr_token();
+        match self.get_curr_token().token_type {
             TokenType::Print => {
                 //println!("{:?}", curr_token);                
+                self.next_token();
+                let string_content: String = self.get_curr_token().text.clone();
+                
+                if self.get_curr_token().token_type != TokenType::Str {
+                    println!("ERROR: expecting string, got {:#?}", 
+                        self.get_curr_token().token_type
+                    );
+                }
+
                 statement = Some(
                     Statement::Print{
-                        content: curr_token.text.clone(),
-                        line_number: curr_token.line_number
+                        content: string_content,
+                        line_number: self.get_curr_token().line_number
                     }
                 );
+            },
+            TokenType::Newline => {
+                // I don't think I have to do anything here.
             },
             _ => {
                 
@@ -73,7 +86,18 @@ impl AstBuilder<> {
                 println!("{:?}", value);                
                 self.statements.push(value);
             },
-            None => println!("No statement generated. Skipping.")
+            None => {
+                let line_number = self.get_curr_token().line_number;
+                let col_number = self.get_curr_token().col_number;
+                let token_type = &self.get_curr_token().token_type;
+                if *token_type != TokenType::Newline {
+                    println!("Skipping {:?} at {},{}", 
+                        token_type,
+                        line_number,
+                        col_number
+                    );
+                }
+            }
         };
 
         self.next_token();
