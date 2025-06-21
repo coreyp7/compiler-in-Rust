@@ -3,14 +3,15 @@ use std::fs::File;
 use std::io::prelude::*;
 
 mod tokenizer;
-use tokenizer::tokenize_file;
+//use tokenizer::tokenize_file;
 use tokenizer::Token;
-//use tokenizer::TokenType;
+use tokenizer::Tokenizer;
 
-mod parser;
-use parser::TokenList;
+//mod parser;
+//use parser::TokenList;
 
 use std::env;
+
 
 fn main() -> std::io::Result<()> {
 
@@ -21,8 +22,13 @@ fn main() -> std::io::Result<()> {
     // TODO: add error handler for reading the file
     let mut f = File::open(src_path)?;
 
-    let tokenized_file: Vec<Token> = tokenize_file(&mut f); 
+    //let tokenized_file: Vec<Token> = tokenize_file(&mut f); 
+    let tokenizer = Tokenizer::new();
+    //tokenizer.tokenize_file(&mut f);
+
     
+    
+    /*
     let mut parser: TokenList = TokenList::new(tokenized_file);
     parser.parse_tokens();
 
@@ -31,6 +37,7 @@ fn main() -> std::io::Result<()> {
 
     //TODO: add error handling
     let _ = output_file.write_all(parser.code_str.as_bytes());
+    */
 
     Ok(())
 }
