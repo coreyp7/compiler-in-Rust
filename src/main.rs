@@ -38,6 +38,7 @@ fn main() -> std::io::Result<()> {
     } 
 
     let mut ast = AstBuilder::new(tokens);
+    ast.generate_ast();
     
     /*
     let mut parser: TokenList = TokenList::new(tokenized_file);
