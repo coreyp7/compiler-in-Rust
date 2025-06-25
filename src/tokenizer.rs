@@ -291,6 +291,7 @@ pub struct Token {
 
 #[derive(Debug)]
 #[derive(PartialEq)]
+#[derive(Clone)]
 #[allow(dead_code)]
 pub enum TokenType {
     EOF = 0,

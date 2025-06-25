@@ -51,8 +51,25 @@ impl AstBuilder<> {
         }
     }
 
-    fn statement(&mut self) {
-        let mut statement: Option<Statement> = None;
+    fn is_curr_token_type(&mut self, t_type: &TokenType) -> bool{
+        return self.get_curr_token().token_type == *t_type;
+    }
+
+    fn is_curr_token_comparison_operator(&mut self) -> bool {
+        match &self.get_curr_token().token_type {
+            TokenType::EqualEqual => true,
+            TokenType::NotEqual => true,
+            TokenType::LessThan => true,
+            TokenType::LessThanEqualTo => true,
+            TokenType::GreaterThan => true,
+            TokenType::GreaterThanEqualTo => true,
+            _ => false
+        }
+    }
+
+
+    fn statement(&mut self) -> Statement {
+        let mut statement = Statement::TestStub;
         //let curr_token = self.get_curr_token();
         match self.get_curr_token().token_type {
             TokenType::Print => {
@@ -66,12 +83,10 @@ impl AstBuilder<> {
                     );
                 }
 
-                statement = Some(
-                    Statement::Print{
+                statement = Statement::Print{
                         content: string_content,
                         line_number: self.get_curr_token().line_number
-                    }
-                );
+                    };
             },
             TokenType::If => {
                 /**
@@ -102,41 +117,119 @@ impl AstBuilder<> {
                 be an optional. Then the links to the next expression go
                 until the optional is None.
                 */
+                self.next_token();
+
+                // parse comparison
+                let comparison = self.comparison();
+
+                // TODO: assert that the next keyword is 'Then'
+                self.next_token();
+
+                let mut statements: Vec<Statement> = Vec::new();
+
+                while !self.is_curr_token_type(&TokenType::EndIf){
+                    statements.push(self.statement());
+                }
+
+                // TODO: assert the keyword is EndIf
+                self.next_token();
+
+                statement = Statement::If{
+                        comparison: comparison,
+                        statements: statements 
+                };
             },
-            TokenType::Newline => {
+            //TokenType::Newline => {
                 // I don't think I have to do anything here.
-            },
+
+            //},
             _ => {
-                
             }
         };
 
+/*
         match statement {
-            Some(value) => {
+            !Statement::TestStub => {
                 println!("{:?}", value);                
                 self.statements.push(value);
             },
-            None => {
-                let line_number = self.get_curr_token().line_number;
-                let col_number = self.get_curr_token().col_number;
-                let token_type = &self.get_curr_token().token_type;
-                if *token_type != TokenType::Newline {
-                    println!("Skipping {:?} at {},{}", 
-                        token_type,
-                        line_number,
-                        col_number
-                    );
-                }
-            }
-        };
+            _ => {
+                */
+        let line_number = self.get_curr_token().line_number;
+        let col_number = self.get_curr_token().col_number;
+        let token_type = &self.get_curr_token().token_type;
+        println!("{:#?} at line number {}", 
+            statement,
+            line_number
+        );
+        /*
+        if *token_type != tokentype::newline {
+            println!("skipping {:?} at {},{}", 
+                token_type,
+                line_number,
+                col_number
+            );
+        }
+        */
+
 
         self.next_token();
+        return statement;
     }
 
-    fn comparison(&mut self) {
-        //self.expression();j
-        //self.next_token();
+    fn comparison(&mut self) -> Comparison {
+        let mut comparison = Comparison {
+            expressions: Vec::new(),
+            operators: Vec::new()
+        };
+        let expr1: Expression = self.expression(); // have this emulate an ouput
+        comparison.expressions.push(expr1);
+
+        let op1: ComparisonOperator = convert_token_type_to_comparison_op(
+            self.get_curr_token().token_type.clone()
+        );
+        comparison.operators.push(op1);
+        self.next_token();
+
+        let expr2: Expression = self.expression(); // TODO: get current token as comparison operator
+        comparison.expressions.push(expr2);
+
+        while self.is_curr_token_comparison_operator() {
+            let op: ComparisonOperator = convert_token_type_to_comparison_op(
+                self.get_curr_token().token_type.clone()
+            );
+            comparison.operators.push(op);
+            self.next_token();
+            
+            let expr: Expression = self.expression();
+            comparison.expressions.push(expr);
+        }
+
+        return comparison;
     }
+
+    fn expression(&mut self) -> Expression {
+        // this is test shit rn
+        let expr = Expression {
+            term_left: String::from("left"),
+            operation: Operation::Plus,
+            term_right: String::from("right")
+        };
+        self.next_token();
+        return expr;
+    }
+}
+
+fn convert_token_type_to_comparison_op(token_type: TokenType) -> ComparisonOperator {
+    match token_type {
+        TokenType::EqualEqual => ComparisonOperator::equalequal,
+        TokenType::NotEqual => ComparisonOperator::notequal,
+        TokenType::LessThan => ComparisonOperator::lessthan,
+        TokenType::LessThanEqualTo => ComparisonOperator::lessthanequalto,
+        TokenType::GreaterThan => ComparisonOperator::greaterthan,
+        TokenType::GreaterThanEqualTo => ComparisonOperator::greaterthanequalto,
+        _ => ComparisonOperator::invalidop
+    }    
 }
 
 #[derive(Debug)]
@@ -155,23 +248,48 @@ enum Statement {
     },
     If {
         comparison: Comparison,
-        statement: Box<Statement>
-    }
+        statements: Vec<Statement>
+    },
+    TestStub
 }
 
+
+#[derive(Debug)]
+enum ComparisonOperator {
+    equalequal,
+    notequal,
+    lessthan,
+    lessthanequalto, 
+    greaterthan,
+    greaterthanequalto,
+    invalidop
+}
+
+
+/** 
+* The way this works:
+* These are two lists of all of the expresisons and operators in between.
+* So, it is in the order specified in code.
+* that is: expressions[0], operators[0], expressions[1], 
+*          operators[1], expressions[2], etc.....
+*/
 #[derive(Debug)]
 struct Comparison {
-    exp_left: Expression,
-    operation: Operation,
-    exp_right: Expression
+    expressions: Vec<Expression>,
+    operators: Vec<ComparisonOperator>
 }
 
 // Either + or -
 #[derive(Debug)]
 struct Expression {
+    /*
     term_left: Term,
     operation: Operation,
     term_right: Term
+    */
+    term_left: String,
+    operation: Operation,
+    term_right: String
 }
 
 #[derive(Debug)]
