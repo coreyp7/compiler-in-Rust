@@ -73,6 +73,36 @@ impl AstBuilder<> {
                     }
                 );
             },
+            TokenType::If => {
+                /**
+
+                Notes for future corey.
+
+                So, the way the structs are written are a bit naive.
+                A comparison MUST be 2 expressions with a comparison operator
+                in between them.
+
+                However, optionally, a comparison can have 0 or more expressions
+                prefixed with another operator.
+
+                How will this data look? How should this be organized?
+
+                Idea:
+                A vector (or two?) could keep these in order.
+                So, a vector<Expression>
+                and a vector<ComparisonOperator>.
+
+                As we navigate through each token we add them to these lists.
+                Keep looping through tokens until there isn't a comparison operator next.
+                Then, condition the data into what makes sense for the
+                comparison struct.
+
+                Idea 2:
+                Have this be a linkedlist of structs, and have the node pointer
+                be an optional. Then the links to the next expression go
+                until the optional is None.
+                */
+            },
             TokenType::Newline => {
                 // I don't think I have to do anything here.
             },
@@ -102,13 +132,70 @@ impl AstBuilder<> {
 
         self.next_token();
     }
+
+    fn comparison(&mut self) {
+        //self.expression();j
+        //self.next_token();
+    }
 }
 
+#[derive(Debug)]
+enum Operation {
+    Plus,
+    Minus,
+    Multiply,
+    Divide
+}
 
 #[derive(Debug)]
 enum Statement {
     Print {
         content: String,
         line_number: u8
+    },
+    If {
+        comparison: Comparison,
+        statement: Box<Statement>
+    }
+}
+
+#[derive(Debug)]
+struct Comparison {
+    exp_left: Expression,
+    operation: Operation,
+    exp_right: Expression
+}
+
+// Either + or -
+#[derive(Debug)]
+struct Expression {
+    term_left: Term,
+    operation: Operation,
+    term_right: Term
+}
+
+#[derive(Debug)]
+struct Term {
+    unary_left: Unary,
+    operation: Operation,
+    unary_right: Unary
+}
+
+#[derive(Debug)]
+struct Unary {
+    operation: Operation,
+    primary: Primary
+}
+
+#[derive(Debug)]
+enum Primary {
+    Number {
+       value: u8 
+    },
+    Identity {
+        name: String
+    },
+    Error {
+        detail: String
     }
 }
