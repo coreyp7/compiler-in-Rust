@@ -41,6 +41,7 @@ impl AstBuilder<> {
 
     fn next_token(&mut self){
         self.curr_idx = self.curr_idx + 1;
+        println!("New token: {:?}", self.get_curr_token());
     }
 
     fn program(&mut self){
@@ -109,6 +110,7 @@ impl AstBuilder<> {
 
                 // parse comparison
                 let comparison = self.comparison();
+                println!("Here's the comparison created: {:?}", comparison);
 
                 // TODO: assert that the next keyword is 'Then'
                 self.next_token();
@@ -206,7 +208,6 @@ impl AstBuilder<> {
         expr
     }
 
-    // Test stub
     fn term(&mut self) -> Term {
         let mut term = Term {
             unarys: Vec::new(),
@@ -239,13 +240,50 @@ impl AstBuilder<> {
         term
     }
 
-    fn unary(&self) -> Unary {
-        Unary {
+    fn unary(&mut self) -> Unary {
+        let mut unary = Unary {
             operation: None,
-            primary: Primary::Number {
-                value: 7 
+            primary: Primary::Error {
+                detail: String::new()
             }
+        };
+
+        if self.is_curr_token_expression_operator() {
+            unary.operation = Some(
+                convert_token_type_to_expression_op(
+                    self.get_curr_token().token_type.clone()
+                )
+            );
         }
+
+        unary.primary = self.primary();
+
+        unary
+    }
+
+    fn primary(&mut self) -> Primary {
+        
+        let primary = match self.get_curr_token().token_type {
+            TokenType::Number => {
+                Primary::Number {
+                    value: self.get_curr_token().text.clone()
+                }
+            },
+            TokenType::Identity => {
+                Primary::Identity {
+                    name: self.get_curr_token().text.clone()
+                }
+            },
+            _ => {
+                Primary::Error{
+                    detail: String::new()
+                }
+            }
+        };
+        self.next_token();
+
+        println!("Created a primary: {:?}", primary);
+        primary
     }
 }
 
@@ -362,7 +400,7 @@ struct Unary {
 #[derive(Debug)]
 enum Primary {
     Number {
-       value: u8 
+       value: String //TODO: change this to u8 and do conversions :(
     },
     Identity {
         name: String
