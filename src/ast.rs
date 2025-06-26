@@ -67,6 +67,14 @@ impl AstBuilder<> {
         }
     }
 
+    fn is_curr_token_expression_operator(&mut self) -> bool {
+        match &self.get_curr_token().token_type {
+            TokenType::Plus => true,
+            TokenType::Minus => true,
+            _ => false
+        }
+    }
+
 
     fn statement(&mut self) -> Statement {
         let mut statement = Statement::TestStub;
@@ -89,34 +97,6 @@ impl AstBuilder<> {
                     };
             },
             TokenType::If => {
-                /**
-
-                Notes for future corey.
-
-                So, the way the structs are written are a bit naive.
-                A comparison MUST be 2 expressions with a comparison operator
-                in between them.
-
-                However, optionally, a comparison can have 0 or more expressions
-                prefixed with another operator.
-
-                How will this data look? How should this be organized?
-
-                Idea:
-                A vector (or two?) could keep these in order.
-                So, a vector<Expression>
-                and a vector<ComparisonOperator>.
-
-                As we navigate through each token we add them to these lists.
-                Keep looping through tokens until there isn't a comparison operator next.
-                Then, condition the data into what makes sense for the
-                comparison struct.
-
-                Idea 2:
-                Have this be a linkedlist of structs, and have the node pointer
-                be an optional. Then the links to the next expression go
-                until the optional is None.
-                */
                 self.next_token();
 
                 // parse comparison
@@ -139,22 +119,10 @@ impl AstBuilder<> {
                         statements: statements 
                 };
             },
-            //TokenType::Newline => {
-                // I don't think I have to do anything here.
-
-            //},
             _ => {
             }
         };
 
-/*
-        match statement {
-            !Statement::TestStub => {
-                println!("{:?}", value);                
-                self.statements.push(value);
-            },
-            _ => {
-                */
         let line_number = self.get_curr_token().line_number;
         let col_number = self.get_curr_token().col_number;
         let token_type = &self.get_curr_token().token_type;
@@ -162,16 +130,6 @@ impl AstBuilder<> {
             statement,
             line_number
         );
-        /*
-        if *token_type != tokentype::newline {
-            println!("skipping {:?} at {},{}", 
-                token_type,
-                line_number,
-                col_number
-            );
-        }
-        */
-
 
         self.next_token();
         return statement;
@@ -209,14 +167,43 @@ impl AstBuilder<> {
     }
 
     fn expression(&mut self) -> Expression {
-        // this is test shit rn
-        let expr = Expression {
-            term_left: String::from("left"),
-            operation: Operation::Plus,
-            term_right: String::from("right")
+        let mut expr = Expression {
+            terms: Vec::new(),
+            operators: Vec::new()
         };
+
+        let term1 = self.term(); 
+        expr.terms.push(term1);
+
+        let op1 = convert_token_type_to_expression_op(
+            self.get_curr_token().token_type.clone()
+        );
+        expr.operators.push(op1);
         self.next_token();
+
+        let term2 = self.term();
+        expr.terms.push(term2);
+
+        while self.is_curr_token_expression_operator() {
+            let op = convert_token_type_to_expression_op(
+                self.get_curr_token().token_type.clone()
+            );
+            expr.operators.push(op);
+            self.next_token();
+
+            let term = self.term();
+            expr.terms.push(term);
+        }
+
         return expr;
+    }
+
+    // Test stub
+    fn term(&self) -> Term {
+        Term {
+            unarys: Vec::new(),
+            operations: Vec::new()
+        }
     }
 }
 
@@ -230,6 +217,14 @@ fn convert_token_type_to_comparison_op(token_type: TokenType) -> ComparisonOpera
         TokenType::GreaterThanEqualTo => ComparisonOperator::greaterthanequalto,
         _ => ComparisonOperator::invalidop
     }    
+}
+
+fn convert_token_type_to_expression_op(token_type: TokenType) -> ExpressionOperator {
+    match token_type {
+        TokenType::Plus => ExpressionOperator::Plus,
+        TokenType::Minus => ExpressionOperator::Minus,
+        _ => ExpressionOperator::invalidop
+    }
 }
 
 #[derive(Debug)]
@@ -254,16 +249,6 @@ enum Statement {
 }
 
 
-#[derive(Debug)]
-enum ComparisonOperator {
-    equalequal,
-    notequal,
-    lessthan,
-    lessthanequalto, 
-    greaterthan,
-    greaterthanequalto,
-    invalidop
-}
 
 
 /** 
@@ -279,29 +264,46 @@ struct Comparison {
     operators: Vec<ComparisonOperator>
 }
 
+#[derive(Debug)]
+enum ComparisonOperator {
+    equalequal,
+    notequal,
+    lessthan,
+    lessthanequalto, 
+    greaterthan,
+    greaterthanequalto,
+    invalidop
+}
+
 // Either + or -
 #[derive(Debug)]
 struct Expression {
-    /*
-    term_left: Term,
-    operation: Operation,
-    term_right: Term
-    */
-    term_left: String,
-    operation: Operation,
-    term_right: String
+    terms: Vec<Term>,
+    operators: Vec<ExpressionOperator>
+}
+
+#[derive(Debug)]
+enum ExpressionOperator {
+    Plus,
+    Minus,
+    invalidop
 }
 
 #[derive(Debug)]
 struct Term {
-    unary_left: Unary,
-    operation: Operation,
-    unary_right: Unary
+    unarys: Vec<Unary>,
+    operations: Vec<TermOperations>
+}
+
+#[derive(Debug)]
+enum TermOperations {
+    Multiply,
+    Divide
 }
 
 #[derive(Debug)]
 struct Unary {
-    operation: Operation,
+    operation: Option<ExpressionOperator>,
     primary: Primary
 }
 
