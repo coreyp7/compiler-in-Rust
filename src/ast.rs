@@ -34,7 +34,7 @@ impl AstBuilder<> {
         self.program() 
     }
 
-    fn get_curr_token(&mut self) -> &Token {
+    fn get_curr_token(&self) -> &Token {
         &self.tokens[self.curr_idx]
     }
 
@@ -71,6 +71,14 @@ impl AstBuilder<> {
         match &self.get_curr_token().token_type {
             TokenType::Plus => true,
             TokenType::Minus => true,
+            _ => false
+        }
+    }
+
+    fn is_curr_token_term_operator(&mut self) -> bool {
+        match &self.get_curr_token().token_type {
+            TokenType::Asterisk => true,
+            TokenType::Slash => true,
             _ => false
         }
     }
@@ -163,7 +171,7 @@ impl AstBuilder<> {
             comparison.expressions.push(expr);
         }
 
-        return comparison;
+        comparison
     }
 
     fn expression(&mut self) -> Expression {
@@ -195,14 +203,48 @@ impl AstBuilder<> {
             expr.terms.push(term);
         }
 
-        return expr;
+        expr
     }
 
     // Test stub
-    fn term(&self) -> Term {
-        Term {
+    fn term(&mut self) -> Term {
+        let mut term = Term {
             unarys: Vec::new(),
             operations: Vec::new()
+        };
+
+        let unary1 = self.unary();
+        term.unarys.push(unary1);
+
+        let op1 = convert_token_type_to_term_op(
+            self.get_curr_token().token_type.clone()
+        );
+        term.operations.push(op1);
+        self.next_token();
+
+        let unary2 = self.unary();
+        term.unarys.push(unary2);
+
+        while self.is_curr_token_term_operator() {
+            let op = convert_token_type_to_term_op(
+                self.get_curr_token().token_type.clone()
+            );
+            term.operations.push(op);
+            self.next_token();
+
+            let unary = self.unary();
+            term.unarys.push(unary);
+        }
+
+        term
+    }
+
+    fn unary(&self) -> Unary {
+        Unary {
+            operation: None,
+            primary: Primary::Number {
+                value: 7 
+            }
         }
     }
 }
@@ -224,6 +266,15 @@ fn convert_token_type_to_expression_op(token_type: TokenType) -> ExpressionOpera
         TokenType::Plus => ExpressionOperator::Plus,
         TokenType::Minus => ExpressionOperator::Minus,
         _ => ExpressionOperator::invalidop
+    }
+}
+
+
+fn convert_token_type_to_term_op(token_type: TokenType) -> TermOperator {
+    match token_type {
+        TokenType::Asterisk => TermOperator::Multiply,
+        TokenType::Slash => TermOperator::Divide,
+        _ => TermOperator::invalidop
     }
 }
 
@@ -292,13 +343,14 @@ enum ExpressionOperator {
 #[derive(Debug)]
 struct Term {
     unarys: Vec<Unary>,
-    operations: Vec<TermOperations>
+    operations: Vec<TermOperator>
 }
 
 #[derive(Debug)]
-enum TermOperations {
+enum TermOperator {
     Multiply,
-    Divide
+    Divide,
+    invalidop // TODO: these should be changed to no op
 }
 
 #[derive(Debug)]
