@@ -129,6 +129,9 @@ impl AstBuilder<> {
                         statements: statements 
                 };
             },
+            TokenType::Newline => {
+                statement = Statement::Newline;
+            },
             _ => {
             }
         };
@@ -153,6 +156,13 @@ impl AstBuilder<> {
         let expr1: Expression = self.expression(); // have this emulate an ouput
         comparison.expressions.push(expr1);
 
+        // TODO: check that we're getting the op we're expecting.
+        // Otherwise, we can include error detail and print error.
+        // NEed to figure out a good way to keep track of errors
+        // while allowing the coninuation of parsing.
+        // Maybe jsut record (invalid) in this file, and then have a whole
+        // extra step to analyze the AST and let user know we're expecting
+        // something different than what they gave. (this feels sensible)
         let op1: ComparisonOperator = convert_token_type_to_comparison_op(
             self.get_curr_token().token_type.clone()
         );
@@ -185,6 +195,7 @@ impl AstBuilder<> {
         let term1 = self.term(); 
         expr.terms.push(term1);
 
+        /*
         let op1 = convert_token_type_to_expression_op(
             self.get_curr_token().token_type.clone()
         );
@@ -193,6 +204,7 @@ impl AstBuilder<> {
 
         let term2 = self.term();
         expr.terms.push(term2);
+        */
 
         while self.is_curr_token_expression_operator() {
             let op = convert_token_type_to_expression_op(
@@ -217,6 +229,7 @@ impl AstBuilder<> {
         let unary1 = self.unary();
         term.unarys.push(unary1);
 
+        /*
         let op1 = convert_token_type_to_term_op(
             self.get_curr_token().token_type.clone()
         );
@@ -225,6 +238,7 @@ impl AstBuilder<> {
 
         let unary2 = self.unary();
         term.unarys.push(unary2);
+        */
 
         while self.is_curr_token_term_operator() {
             let op = convert_token_type_to_term_op(
@@ -254,6 +268,7 @@ impl AstBuilder<> {
                     self.get_curr_token().token_type.clone()
                 )
             );
+            self.next_token();
         }
 
         unary.primary = self.primary();
@@ -334,6 +349,7 @@ enum Statement {
         comparison: Comparison,
         statements: Vec<Statement>
     },
+    Newline,
     TestStub
 }
 
