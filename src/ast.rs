@@ -7,21 +7,6 @@ use colored::Colorize;
 // My stuff
 use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
-/*
-use crate::comparison::{
-    Comparison,
-    ComparisonOperator,
-    Expression,
-    ExpressionOperator,
-    Term,
-    TermOperator,
-    Unary,
-    Primary,
-    convert_token_type_to_comparison_op,
-    convert_token_type_to_expression_op,
-    convert_token_type_to_term_op
-};
-*/
 use crate::comparison::*;
 
 pub struct AstBuilder<> {
@@ -175,6 +160,28 @@ impl AstBuilder<> {
                         comparison: comparison,
                         statements: statements 
                 };
+            },
+            TokenType::Identity => {
+                // variable assignment (existing var)
+
+                // TODO: need to start refactoring for these lazy clones 
+                // bc my data isn't setup correctly.
+                let identity = self.get_curr_token().text.clone();
+                self.next_token(); 
+
+                self.add_error_if_curr_not_expected(TokenType::LessThanEqualTo);
+                self.next_token();
+
+                let value = self.get_curr_token().text.clone();
+                self.next_token();
+
+                statement = Statement::Assignment {
+                    identity: identity,
+                    value: value
+                };
+            },
+            TokenType::NumberType => {
+                // var init
             },
             TokenType::Newline => {
                 statement = Statement::Newline;
@@ -341,6 +348,10 @@ pub enum Statement {
     While {
         comparison: Comparison,
         statements: Vec<Statement>
+    },
+    Assignment {
+        identity: String,
+        value: String
     },
     Newline,
     TestStub
