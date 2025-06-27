@@ -14,7 +14,8 @@ pub struct AstBuilder<> {
     pub head: Node,
     pub tokens: Vec<Token>,
     curr_idx: usize,
-    statements: Vec<Statement> 
+    statements: Vec<Statement>,
+    errors: Vec<ErrMsg>
 }
 
 impl AstBuilder<> {
@@ -25,7 +26,8 @@ impl AstBuilder<> {
             head: node,
             tokens: token_vec,
             curr_idx: 0,
-            statements: Vec::new()
+            statements: Vec::new(),
+            errors: Vec::new()
         }
     }
 
@@ -42,6 +44,17 @@ impl AstBuilder<> {
     fn next_token(&mut self){
         self.curr_idx = self.curr_idx + 1;
         println!("New token: {:?}", self.get_curr_token());
+    }
+
+    fn add_error_if_curr_not_expected(&mut self, token_type: TokenType) {
+        if(self.get_curr_token().token_type != token_type){
+            self.errors.push( ErrMsg {
+                expected: token_type,
+                got: self.get_curr_token().token_type.clone(),
+                line_number: self.get_curr_token().line_number.clone(),
+                col_number: self.get_curr_token().col_number.clone()
+            });
+        }
     }
 
     fn program(&mut self){
@@ -112,7 +125,7 @@ impl AstBuilder<> {
                 let comparison = self.comparison();
                 println!("Here's the comparison created: {:?}", comparison);
 
-                // TODO: assert that the next keyword is 'Then'
+                self.add_error_if_curr_not_expected(TokenType::Then);
                 self.next_token();
 
                 let mut statements: Vec<Statement> = Vec::new();
@@ -128,6 +141,9 @@ impl AstBuilder<> {
                         comparison: comparison,
                         statements: statements 
                 };
+            },
+            TokenType::While => {
+                self.next_token();
             },
             TokenType::Newline => {
                 statement = Statement::Newline;
@@ -195,17 +211,6 @@ impl AstBuilder<> {
         let term1 = self.term(); 
         expr.terms.push(term1);
 
-        /*
-        let op1 = convert_token_type_to_expression_op(
-            self.get_curr_token().token_type.clone()
-        );
-        expr.operators.push(op1);
-        self.next_token();
-
-        let term2 = self.term();
-        expr.terms.push(term2);
-        */
-
         while self.is_curr_token_expression_operator() {
             let op = convert_token_type_to_expression_op(
                 self.get_curr_token().token_type.clone()
@@ -228,17 +233,6 @@ impl AstBuilder<> {
 
         let unary1 = self.unary();
         term.unarys.push(unary1);
-
-        /*
-        let op1 = convert_token_type_to_term_op(
-            self.get_curr_token().token_type.clone()
-        );
-        term.operations.push(op1);
-        self.next_token();
-
-        let unary2 = self.unary();
-        term.unarys.push(unary2);
-        */
 
         while self.is_curr_token_term_operator() {
             let op = convert_token_type_to_term_op(
@@ -424,4 +418,12 @@ enum Primary {
     Error {
         detail: String
     }
+}
+
+#[derive(Debug)]
+struct ErrMsg {
+    expected: TokenType,
+    got: TokenType,
+    line_number: u8,
+    col_number: usize
 }
