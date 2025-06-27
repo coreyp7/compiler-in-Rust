@@ -182,6 +182,25 @@ impl AstBuilder<> {
             },
             TokenType::NumberType => {
                 // var init
+                let var_type = self.get_curr_token().text.clone();
+                self.next_token();
+
+                let identity = self.get_curr_token().text.clone();
+                self.next_token(); 
+
+                self.add_error_if_curr_not_expected(TokenType::Colon);
+                self.next_token();
+
+                let value = self.get_curr_token().text.clone();
+                self.next_token();
+
+                statement = Statement::Instantiation {
+                    identity: identity,
+                    value: value,
+                    var_type: var_type
+                };
+                
+
             },
             TokenType::Newline => {
                 statement = Statement::Newline;
@@ -352,6 +371,11 @@ pub enum Statement {
     Assignment {
         identity: String,
         value: String
+    },
+    Instantiation {
+        identity: String,
+        value: String,
+        var_type: String
     },
     Newline,
     TestStub
