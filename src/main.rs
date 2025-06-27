@@ -3,12 +3,14 @@ use std::fs::File;
 use std::io::prelude::*;
 
 mod tokenizer;
-//use tokenizer::tokenize_file;
 use tokenizer::Token;
 use tokenizer::Tokenizer;
 
 mod ast;
 use ast::AstBuilder;
+use ast::Statement;
+
+mod comparison;
 
 //mod parser;
 //use parser::TokenList;
@@ -24,7 +26,7 @@ fn main() -> std::io::Result<()> {
     let output_path: &String = &args[2];
     */
 
-    let src_path: String = String::from("./hello_world.plank");
+    let src_path: String = String::from("./example.plank");
 
     // TODO: add error handler for reading the file
     let mut f = File::open(src_path)?;
@@ -33,13 +35,21 @@ fn main() -> std::io::Result<()> {
     let mut tokenizer = Tokenizer::new();
     let tokens: Vec<Token> = tokenizer.tokenize_file(&mut f);
 
+        
+    println!("Tokenizer output: -----------------------------------");
     for token in &tokens {
         println!("{:?}", token);
     } 
+    println!("Tokenizer output: -----------------------------------");
 
-    let mut ast = AstBuilder::new(tokens);
-    ast.generate_ast();
+    let mut ast_builder = AstBuilder::new(tokens);
+    let mut ast_vec = ast_builder.generate_ast();
     
+    println!("Ast output: -----------------------------------");
+    for node in &ast_vec {
+        println!("{:#?}", node);
+    } 
+    println!("Ast output: -----------------------------------");
     /*
     let mut parser: TokenList = TokenList::new(tokenized_file);
     parser.parse_tokens();

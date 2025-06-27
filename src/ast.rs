@@ -1,39 +1,49 @@
-use crate::tokenizer::Token;
-use crate::tokenizer::TokenType;
 //use colored::Colorize;
 use std::collections::HashSet;
 use std::io;
 use std::io::Write;
 use colored::Colorize;
 
-pub struct Node {
-   value: u8 
-}
+// My stuff
+use crate::tokenizer::Token;
+use crate::tokenizer::TokenType;
+/*
+use crate::comparison::{
+    Comparison,
+    ComparisonOperator,
+    Expression,
+    ExpressionOperator,
+    Term,
+    TermOperator,
+    Unary,
+    Primary,
+    convert_token_type_to_comparison_op,
+    convert_token_type_to_expression_op,
+    convert_token_type_to_term_op
+};
+*/
+use crate::comparison::*;
 
 pub struct AstBuilder<> {
-    pub head: Node,
     pub tokens: Vec<Token>,
     curr_idx: usize,
-    statements: Vec<Statement>,
+    //statements: Vec<Statement>,
     errors: Vec<ErrMsg>
 }
 
 impl AstBuilder<> {
     pub fn new(token_vec: Vec<Token>) -> AstBuilder {
-        let node: Node = Node {value: 1};
-
         AstBuilder {
-            head: node,
             tokens: token_vec,
             curr_idx: 0,
-            statements: Vec::new(),
+            //statements: Vec::new(),
             errors: Vec::new()
         }
     }
 
 
-    pub fn generate_ast(&mut self){
-        self.program() 
+    pub fn generate_ast(&mut self) -> Vec<Statement>{
+        self.program()
     }
 
     fn get_curr_token(&self) -> &Token {
@@ -43,7 +53,11 @@ impl AstBuilder<> {
 
     fn next_token(&mut self){
         self.curr_idx = self.curr_idx + 1;
-        println!("New token: {:?}", self.get_curr_token());
+        //println!("New token: {:?}", self.get_curr_token());
+    }
+
+    fn is_curr_token_type(&mut self, t_type: &TokenType) -> bool{
+        return self.get_curr_token().token_type == *t_type;
     }
 
     fn add_error_if_curr_not_expected(&mut self, token_type: TokenType) {
@@ -57,17 +71,17 @@ impl AstBuilder<> {
         }
     }
 
-    fn program(&mut self){
-        println!("program() start");  
+    fn program(&mut self) -> Vec<Statement> {
+        let mut statements: Vec<Statement> = Vec::new();
         
         while self.get_curr_token().token_type != TokenType::EOF {
-            self.statement();
+            let statement = self.statement();
+            statements.push(statement);
         }
+
+        statements
     }
 
-    fn is_curr_token_type(&mut self, t_type: &TokenType) -> bool{
-        return self.get_curr_token().token_type == *t_type;
-    }
 
     fn is_curr_token_comparison_operator(&mut self) -> bool {
         match &self.get_curr_token().token_type {
@@ -123,7 +137,7 @@ impl AstBuilder<> {
 
                 // parse comparison
                 let comparison = self.comparison();
-                println!("Here's the comparison created: {:?}", comparison);
+                //println!("Here's the comparison created: {:?}", comparison);
 
                 self.add_error_if_curr_not_expected(TokenType::Then);
                 self.next_token();
@@ -172,10 +186,10 @@ impl AstBuilder<> {
         let line_number = self.get_curr_token().line_number;
         let col_number = self.get_curr_token().col_number;
         let token_type = &self.get_curr_token().token_type;
-        println!("{:#?} at line number {}", 
+        /*println!("{:#?} at line number {}", 
             statement,
             line_number
-        );
+        );*/
 
         self.next_token();
         return statement;
@@ -308,50 +322,14 @@ impl AstBuilder<> {
         };
         self.next_token();
 
-        println!("Created a primary: {:?}", primary);
+        //println!("Created a primary: {:?}", primary);
         primary
     }
 }
 
-fn convert_token_type_to_comparison_op(token_type: TokenType) -> ComparisonOperator {
-    match token_type {
-        TokenType::EqualEqual => ComparisonOperator::equalequal,
-        TokenType::NotEqual => ComparisonOperator::notequal,
-        TokenType::LessThan => ComparisonOperator::lessthan,
-        TokenType::LessThanEqualTo => ComparisonOperator::lessthanequalto,
-        TokenType::GreaterThan => ComparisonOperator::greaterthan,
-        TokenType::GreaterThanEqualTo => ComparisonOperator::greaterthanequalto,
-        _ => ComparisonOperator::invalidop
-    }    
-}
-
-fn convert_token_type_to_expression_op(token_type: TokenType) -> ExpressionOperator {
-    match token_type {
-        TokenType::Plus => ExpressionOperator::Plus,
-        TokenType::Minus => ExpressionOperator::Minus,
-        _ => ExpressionOperator::invalidop
-    }
-}
-
-
-fn convert_token_type_to_term_op(token_type: TokenType) -> TermOperator {
-    match token_type {
-        TokenType::Asterisk => TermOperator::Multiply,
-        TokenType::Slash => TermOperator::Divide,
-        _ => TermOperator::invalidop
-    }
-}
 
 #[derive(Debug)]
-enum Operation {
-    Plus,
-    Minus,
-    Multiply,
-    Divide
-}
-
-#[derive(Debug)]
-enum Statement {
+pub enum Statement {
     Print {
         content: String,
         line_number: u8
@@ -366,79 +344,6 @@ enum Statement {
     },
     Newline,
     TestStub
-}
-
-
-
-
-/** 
-* The way this works:
-* These are two lists of all of the expresisons and operators in between.
-* So, it is in the order specified in code.
-* that is: expressions[0], operators[0], expressions[1], 
-*          operators[1], expressions[2], etc.....
-*/
-#[derive(Debug)]
-struct Comparison {
-    expressions: Vec<Expression>,
-    operators: Vec<ComparisonOperator>
-}
-
-#[derive(Debug)]
-enum ComparisonOperator {
-    equalequal,
-    notequal,
-    lessthan,
-    lessthanequalto, 
-    greaterthan,
-    greaterthanequalto,
-    invalidop
-}
-
-// Either + or -
-#[derive(Debug)]
-struct Expression {
-    terms: Vec<Term>,
-    operators: Vec<ExpressionOperator>
-}
-
-#[derive(Debug)]
-enum ExpressionOperator {
-    Plus,
-    Minus,
-    invalidop
-}
-
-#[derive(Debug)]
-struct Term {
-    unarys: Vec<Unary>,
-    operations: Vec<TermOperator>
-}
-
-#[derive(Debug)]
-enum TermOperator {
-    Multiply,
-    Divide,
-    invalidop // TODO: these should be changed to no op
-}
-
-#[derive(Debug)]
-struct Unary {
-    operation: Option<ExpressionOperator>,
-    primary: Primary
-}
-
-#[derive(Debug)]
-enum Primary {
-    Number {
-       value: String //TODO: change this to u8 and do conversions :(
-    },
-    Identity {
-        name: String
-    },
-    Error {
-        detail: String
-    }
 }
 
 #[derive(Debug)]
