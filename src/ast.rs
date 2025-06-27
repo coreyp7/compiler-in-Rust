@@ -134,7 +134,6 @@ impl AstBuilder<> {
                     statements.push(self.statement());
                 }
 
-                // TODO: assert the keyword is EndIf
                 self.next_token();
 
                 statement = Statement::If{
@@ -144,6 +143,24 @@ impl AstBuilder<> {
             },
             TokenType::While => {
                 self.next_token();
+
+                let comparison = self.comparison();
+
+                self.add_error_if_curr_not_expected(TokenType::Do);
+                self.next_token();
+
+                let mut statements: Vec<Statement> = Vec::new();
+
+                while !self.is_curr_token_type(&TokenType::EndWhile){
+                    statements.push(self.statement());
+                }
+
+                self.next_token();
+
+                statement = Statement::While{
+                        comparison: comparison,
+                        statements: statements 
+                };
             },
             TokenType::Newline => {
                 statement = Statement::Newline;
@@ -340,6 +357,10 @@ enum Statement {
         line_number: u8
     },
     If {
+        comparison: Comparison,
+        statements: Vec<Statement>
+    },
+    While {
         comparison: Comparison,
         statements: Vec<Statement>
     },
