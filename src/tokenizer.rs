@@ -29,7 +29,7 @@ impl Tokenizer<> {
         let reader = BufReader::new(src_file);
 
         let mut token_vec: Vec<Token> = Vec::new();
-        
+
         for line_result in reader.lines() {
             if let Ok(line_str) = line_result {
                 let mut tokens = self.tokenize_line(line_str);         
@@ -301,7 +301,8 @@ pub enum TokenType {
     Str,
     // Keywords
     Label = 100,//unused
-    NumberType, // for declaring variable 'Number'
+    //NumberType, // for declaring variable 'Number'
+    VarDeclaration,
     UpdateKeyword, // assigning to variables
     Goto,
     Print,
@@ -350,7 +351,7 @@ impl FromStr for TokenType {
             "while" => Ok(TokenType::While),
             "do" => Ok(TokenType::Do),
             "endWhile" => Ok(TokenType::EndWhile),
-            "Number" => Ok(TokenType::NumberType),
+            "Number" | "String" => Ok(TokenType::VarDeclaration),
             "update" => Ok(TokenType::UpdateKeyword),
             _ => Err(())
         }

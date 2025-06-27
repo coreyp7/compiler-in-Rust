@@ -2,6 +2,7 @@
 use std::collections::HashSet;
 use std::io;
 use std::io::Write;
+use std::str::FromStr;
 use colored::Colorize;
 
 // My stuff
@@ -180,7 +181,7 @@ impl AstBuilder<> {
                     value: value
                 };
             },
-            TokenType::NumberType => {
+            TokenType::VarDeclaration => {
                 // var init
                 let var_type = self.get_curr_token().text.clone();
                 self.next_token();
@@ -197,7 +198,7 @@ impl AstBuilder<> {
                 statement = Statement::Instantiation {
                     identity: identity,
                     value: value,
-                    var_type: var_type
+                    var_type: convert_str_to_vartype(&var_type)
                 };
                 
 
@@ -375,11 +376,39 @@ pub enum Statement {
     Instantiation {
         identity: String,
         value: String,
-        var_type: String
+        var_type: VarType
     },
     Newline,
     TestStub
 }
+
+#[derive(Debug)]
+pub enum VarType {
+    Num,
+    Str,
+    Unrecognized
+}
+
+fn convert_str_to_vartype(text: &str) -> VarType {
+    match text {
+        "Number" => VarType::Num,
+        "String" => VarType::Str,
+        _ => VarType::Unrecognized
+    }
+}
+
+impl FromStr for VarType {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<VarType, Self::Err> {
+        match input {
+            "Number" => Ok(VarType::Num),
+            "String" => Ok(VarType::Str),
+            _ => Err(())
+        }
+    }
+}
+
 
 #[derive(Debug)]
 struct ErrMsg {
