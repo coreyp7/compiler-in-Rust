@@ -114,10 +114,25 @@ impl Tokenizer<> {
                     if matches!(next, Some(x) if x == '=') {
                         self.curr_byte_index_in_line += 1;
                         token = self.create_token(TokenType::NotEqual, String::from("!="))
-                    } else if matches!(next, Some(x) if x != ' ') {
-                        // ! alone isn't supported in this lanugage
-                        println!("TOKENIZER: Found something after a ! that isn't =. Invalid operator.");
-                        std::process::exit(0);
+                    //} else if matches!(next, Some(x) if x != ' ') {
+                    } else {
+                        token = self.create_token(TokenType::Bang, String::from("!"));
+                    }
+                },
+                '&' => {
+                    if matches!(next, Some(x) if x == '&') {
+                        self.curr_byte_index_in_line += 1;
+                        token = self.create_token(TokenType::DoubleAmpersand, String::from("&&"));
+                    } else {
+                        token = self.create_token(TokenType::UnsupportedSymbolError, String::from("&"));
+                    }
+                },
+                '|' => {
+                    if matches!(next, Some(x) if x == '|') {
+                        self.curr_byte_index_in_line += 1;
+                        token = self.create_token(TokenType::DoubleBar, String::from("||"));
+                    } else {
+                        token = self.create_token(TokenType::UnsupportedSymbolError, String::from("|"));
                     }
                 },
                 '"' => {
