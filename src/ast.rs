@@ -248,14 +248,6 @@ impl AstBuilder<> {
             return logical;
         } 
 
-        /*
-        logical.operators.push(op1);
-        self.next_token();
-
-        let comp2 = self.comparison();
-        logical.comparisons.push(comp2);
-        */
-
         while self.is_curr_token_logical_operator() {
             let op: LogicalOperator = convert_token_type_to_logical_op(
                 self.get_curr_token().token_type.clone()
@@ -278,21 +270,9 @@ impl AstBuilder<> {
         let expr1: Expression = self.expression(); // have this emulate an ouput
         comparison.expressions.push(expr1);
 
-        // TODO: check that we're getting the op we're expecting.
-        // Otherwise, we can include error detail and print error.
-        // NEed to figure out a good way to keep track of errors
-        // while allowing the coninuation of parsing.
-        // Maybe jsut record (invalid) in this file, and then have a whole
-        // extra step to analyze the AST and let user know we're expecting
-        // something different than what they gave. (this feels sensible)
         let op1: ComparisonOperator = convert_token_type_to_comparison_op(
             self.get_curr_token().token_type.clone()
         );
-        comparison.operators.push(op1);
-        self.next_token();
-
-        let expr2: Expression = self.expression(); // TODO: get current token as comparison operator
-        comparison.expressions.push(expr2);
 
         while self.is_curr_token_comparison_operator() {
             let op: ComparisonOperator = convert_token_type_to_comparison_op(
