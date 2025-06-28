@@ -28,6 +28,7 @@ impl Logical {
 }
 
 #[derive(Debug)]
+#[derive(PartialEq)]
 pub enum LogicalOperator {
     And,
     Or,

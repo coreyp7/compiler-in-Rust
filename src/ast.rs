@@ -239,11 +239,22 @@ impl AstBuilder<> {
         let op1: LogicalOperator = convert_token_type_to_logical_op(
             self.get_curr_token().token_type.clone()
         );
+        
+        if op1 == LogicalOperator::invalidop {
+            // No logical operators, there's just 1 comparison to process.
+            // return the struct as is, with no operations
+            println!("skipping this because its not logical op");
+            println!("{:?}", self.get_curr_token());
+            return logical;
+        } 
+
+        /*
         logical.operators.push(op1);
         self.next_token();
 
         let comp2 = self.comparison();
         logical.comparisons.push(comp2);
+        */
 
         while self.is_curr_token_logical_operator() {
             let op: LogicalOperator = convert_token_type_to_logical_op(
