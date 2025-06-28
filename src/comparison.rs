@@ -7,6 +7,35 @@ use crate::tokenizer::TokenType;
 * that is: expressions[0], operators[0], expressions[1], 
 *          operators[1], expressions[2], etc.....
 */
+
+/*
+ * grammar:
+ * Logical := Comparison (op) Comparison [(op) Comparison]
+ */
+#[derive(Debug)]
+pub struct Logical {
+    pub comparisons: Vec<Comparison>,
+    pub operators: Vec<LogicalOperator>
+}
+
+impl Logical {
+    pub fn new() -> Logical {
+        Logical {
+            comparisons: Vec::new(),
+            operators: Vec::new()
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum LogicalOperator {
+    And,
+    Or,
+    Not,
+    invalidop
+}
+
+
 #[derive(Debug)]
 pub struct Comparison {
     pub expressions: Vec<Expression>,
@@ -97,5 +126,14 @@ pub fn convert_token_type_to_term_op(token_type: TokenType) -> TermOperator {
         TokenType::Asterisk => TermOperator::Multiply,
         TokenType::Slash => TermOperator::Divide,
         _ => TermOperator::invalidop
+    }
+}
+
+pub fn convert_token_type_to_logical_op(token_type: TokenType) -> LogicalOperator {
+    match token_type {
+        TokenType::DoubleAmpersand => LogicalOperator::And,
+        TokenType::DoubleBar => LogicalOperator::Or,
+        TokenType::Bang => LogicalOperator::Not,
+        _ => LogicalOperator::invalidop
     }
 }

@@ -67,7 +67,16 @@ impl AstBuilder<> {
 
         statements
     }
-
+    
+    // TODO: these really shouldn't be here this sucks
+    fn is_curr_token_logical_operator(&mut self) -> bool {
+        match &self.get_curr_token().token_type {
+            TokenType::DoubleAmpersand => true,
+            TokenType::DoubleBar => true,
+            TokenType::Bang => true,
+            _ => false
+        }
+    }
 
     fn is_curr_token_comparison_operator(&mut self) -> bool {
         match &self.get_curr_token().token_type {
@@ -122,8 +131,8 @@ impl AstBuilder<> {
                 self.next_token();
 
                 // parse comparison
-                let comparison = self.comparison();
-                //println!("Here's the comparison created: {:?}", comparison);
+                //let comparison = self.comparison();
+                let conditional = self.logical();
 
                 self.add_error_if_curr_not_expected(TokenType::Then);
                 self.next_token();
@@ -137,7 +146,7 @@ impl AstBuilder<> {
                 self.next_token();
 
                 statement = Statement::If{
-                        comparison: comparison,
+                        logical: conditional,
                         statements: statements 
                 };
             },
@@ -220,6 +229,34 @@ impl AstBuilder<> {
 
         self.next_token();
         return statement;
+    }
+
+    fn logical(&mut self) -> Logical {
+        let mut logical = Logical::new();
+        let comp1 = self.comparison();
+        logical.comparisons.push(comp1);
+
+        let op1: LogicalOperator = convert_token_type_to_logical_op(
+            self.get_curr_token().token_type.clone()
+        );
+        logical.operators.push(op1);
+        self.next_token();
+
+        let comp2 = self.comparison();
+        logical.comparisons.push(comp2);
+
+        while self.is_curr_token_logical_operator() {
+            let op: LogicalOperator = convert_token_type_to_logical_op(
+                self.get_curr_token().token_type.clone()
+            );
+            logical.operators.push(op);
+            self.next_token();
+            
+            let comp: Comparison = self.comparison();
+            logical.comparisons.push(comp);
+        }
+
+        logical
     }
 
     fn comparison(&mut self) -> Comparison {
@@ -362,7 +399,7 @@ pub enum Statement {
         line_number: u8
     },
     If {
-        comparison: Comparison,
+        logical: Logical,
         statements: Vec<Statement>
     },
     While {

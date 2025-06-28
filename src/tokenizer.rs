@@ -326,6 +326,9 @@ pub enum TokenType {
     LessThanEqualTo,
     GreaterThan,
     GreaterThanEqualTo, // 210
+    DoubleAmpersand,
+    DoubleBar,
+    Bang,
     Colon,
     UnsupportedSymbolError = 900,
     // Won't get through to the parser, just for processing in here.
