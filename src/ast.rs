@@ -233,6 +233,16 @@ impl AstBuilder<> {
 
     fn logical(&mut self) -> Logical {
         let mut logical = Logical::new();
+
+        // check for optional bang
+        if self.get_curr_token().token_type == TokenType::Bang {
+            let op: LogicalOperator = convert_token_type_to_logical_op(
+                TokenType::Bang
+            );
+            logical.operators.push(op);
+            self.next_token();
+        }
+
         let comp1 = self.comparison();
         logical.comparisons.push(comp1);
 
@@ -249,11 +259,21 @@ impl AstBuilder<> {
         } 
 
         while self.is_curr_token_logical_operator() {
+
             let op: LogicalOperator = convert_token_type_to_logical_op(
                 self.get_curr_token().token_type.clone()
             );
             logical.operators.push(op);
             self.next_token();
+
+            // check for optional bang
+            if self.get_curr_token().token_type == TokenType::Bang {
+                let bang: LogicalOperator = convert_token_type_to_logical_op(
+                    TokenType::Bang
+                );
+                logical.operators.push(bang);
+                self.next_token();
+            }
             
             let comp: Comparison = self.comparison();
             logical.comparisons.push(comp);
