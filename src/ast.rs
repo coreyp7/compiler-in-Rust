@@ -211,7 +211,9 @@ impl AstBuilder<> {
                 //let comparison = self.comparison();
                 let conditional = self.logical();
 
-                self.get_error_if_curr_not_expected(TokenType::Then);
+                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Then) {
+                   self.errors.push(error); 
+                }
                 self.next_token();
 
                 let mut statements: Vec<Statement> = Vec::new();
@@ -232,7 +234,9 @@ impl AstBuilder<> {
 
                 let comparison = self.comparison();
 
-                self.get_error_if_curr_not_expected(TokenType::Do);
+                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Do) {
+                    self.errors.push(error);
+                }
                 self.next_token();
 
                 let mut statements: Vec<Statement> = Vec::new();
@@ -256,7 +260,9 @@ impl AstBuilder<> {
                 let identity = self.get_curr_token().text.clone();
                 self.next_token(); 
 
-                self.get_error_if_curr_not_expected(TokenType::LessThanEqualTo);
+                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::LessThanEqualTo){
+                    self.errors.push(error);
+                }
                 self.next_token();
 
                 let assignment_token_type = self.get_curr_token().token_type.clone();
@@ -267,10 +273,12 @@ impl AstBuilder<> {
                 self.next_token();
 
                 // Ensure that the variable being assigned to has been declared.
-                self.get_error_if_var_assignment_invalid(
+                if let Some(error) = self.get_error_if_var_assignment_invalid(
                     &identity,
                     &assignment_var_type
-                );
+                ) {
+                    self.errors.push(error);
+                }
                 statement = Statement::Assignment {
                     identity: identity,
                     value: assignment_value_text,
@@ -291,7 +299,9 @@ impl AstBuilder<> {
                 let identity = self.get_curr_token().text.clone();
                 self.next_token(); 
 
-                self.get_error_if_curr_not_expected(TokenType::Colon);
+                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Colon){
+                    self.errors.push(error);
+                }
                 self.next_token();
 
                 let assignment_value_text = self.get_curr_token().text.clone();
@@ -299,10 +309,12 @@ impl AstBuilder<> {
                 let assignment_var_type = convert_tokentype_to_vartype(
                     assignment_token_type
                 );
-                self.get_error_if_incorrect_type_assignment(
+                if let Some(error) = self.get_error_if_incorrect_type_assignment(
                     &var_type,
                     &assignment_var_type
-                );
+                ){
+                    self.errors.push(error);
+                }
 
                 self.insert_into_var_map(
                     identity.clone(),
