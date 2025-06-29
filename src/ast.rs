@@ -182,17 +182,28 @@ impl AstBuilder<> {
                 self.add_error_if_curr_not_expected(TokenType::LessThanEqualTo);
                 self.next_token();
 
-                let value = self.get_curr_token().text.clone();
+                let assignment_token_type = self.get_curr_token().token_type.clone();
+                let assignment_var_type = convert_tokentype_to_vartype(
+                    assignment_token_type
+                );
+                let assignment_value_text = self.get_curr_token().text.clone();
                 self.next_token();
 
                 statement = Statement::Assignment {
                     identity: identity,
-                    value: value
+                    value: assignment_value_text,
+                    assigned_value_type: assignment_var_type
                 };
             },
             TokenType::VarDeclaration => {
                 // var init
-                let var_type = self.get_curr_token().text.clone();
+
+                // FIXME: this should be using the token_type field on token
+                // to figure out the type.
+                //let var_type = self.get_curr_token().text.clone();
+                let var_type = convert_str_to_vartype(
+                    &self.get_curr_token().text
+                );
                 self.next_token();
 
                 let identity = self.get_curr_token().text.clone();
@@ -201,13 +212,18 @@ impl AstBuilder<> {
                 self.add_error_if_curr_not_expected(TokenType::Colon);
                 self.next_token();
 
-                let value = self.get_curr_token().text.clone();
+                let assignment_value_text = self.get_curr_token().text.clone();
+                let assignment_token_type = self.get_curr_token().token_type.clone();
+                let assignment_var_type = convert_tokentype_to_vartype(
+                    assignment_token_type
+                );
                 self.next_token();
 
                 statement = Statement::Instantiation {
                     identity: identity,
-                    value: value,
-                    var_type: convert_str_to_vartype(&var_type)
+                    value: assignment_value_text,
+                    var_type: var_type,
+                    assigned_value_type: assignment_var_type
                 };
                 
 
@@ -419,12 +435,14 @@ pub enum Statement {
     },
     Assignment {
         identity: String,
-        value: String
+        value: String,
+        assigned_value_type: VarType
     },
     Instantiation {
         identity: String,
         value: String,
-        var_type: VarType
+        var_type: VarType,
+        assigned_value_type: VarType
     },
     Newline,
     TestStub
@@ -445,6 +463,14 @@ fn convert_str_to_vartype(text: &str) -> VarType {
     }
 }
 
+fn convert_tokentype_to_vartype(token_type: TokenType) -> VarType {
+    match token_type {
+        TokenType::Number => VarType::Num,
+        TokenType::Str => VarType::Str,
+        _ => VarType::Unrecognized
+    }
+}
+
 impl FromStr for VarType {
     type Err = ();
 
@@ -456,6 +482,8 @@ impl FromStr for VarType {
         }
     }
 }
+
+
 
 
 #[derive(Debug)]
