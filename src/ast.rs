@@ -15,7 +15,7 @@ pub struct AstBuilder<> {
     tokens: Vec<Token>,
     curr_idx: usize,
     errors: Vec<ErrMsg>,
-    var_map: HashMap<String, VarType>
+    pub var_map: HashMap<String, Var>
 }
 
 impl AstBuilder<> {
@@ -27,6 +27,62 @@ impl AstBuilder<> {
             errors: Vec::new(),
             var_map: HashMap::new()
         }
+    }
+
+    pub fn insert_into_var_map(
+        &mut self,
+        identity: String,
+        var_type: VarType,
+        line: u8
+    ) {
+        if self.var_map.contains_key(&identity) {
+            // TODO: add error to vec
+            self.errors.push(ErrMsg::VariableAlreadyDeclared {identity: identity} );
+            return;
+        }
+
+        let var = Var {
+            var_type: var_type,
+            identity: identity,
+            line_declared_on: line
+        };
+
+        self.var_map.insert(
+            var.identity.clone(),
+            var
+        );
+    }
+
+    pub fn get_error_if_var_assignment_invalid(
+        &self,
+        identity: &String,
+        assignment_var_type: &VarType
+    ) -> Option<ErrMsg> {
+        // Check if the variable even has been decalred
+        if !self.var_map.contains_key(identity) {
+            // add error
+        }
+
+        let value: Option<&Var> = self.var_map.get(identity);
+        let mut error: Option<ErrMsg> = None;
+        match value {
+            Some(var) => {
+               // Check that the type being assigned is correct 
+               error = self.get_error_if_incorrect_type_assignment(
+                    assignment_var_type,
+                    &var.var_type
+               );
+            },
+            None => {
+                // add error that var has not been declared
+                error = Some(ErrMsg::VariableNotDeclared {
+                    identity: identity.clone(),
+                    attempted_assignment_line: self.get_curr_token().line_number
+                })
+            }
+        }
+
+        error
     }
 
     pub fn get_error_vec(&self) -> &Vec<ErrMsg> {
@@ -51,33 +107,31 @@ impl AstBuilder<> {
         return self.get_curr_token().token_type == *t_type;
     }
 
-    fn add_error_if_curr_not_expected(&mut self, token_type: TokenType) {
+    fn get_error_if_curr_not_expected(&mut self, token_type: TokenType) -> Option<ErrMsg> {
         if(self.get_curr_token().token_type != token_type){
-            self.errors.push( ErrMsg::UnexpectedToken {
+            return Some(ErrMsg::UnexpectedToken {
                 expected: token_type,
                 got: self.get_curr_token().token_type.clone(),
                 line_number: self.get_curr_token().line_number.clone()
                 //col_number: self.get_curr_token().col_number.clone()
             });
         }
+        None
     }
 
-    fn add_error_if_incorrect_type_assignment(
-        &mut self,
+    fn get_error_if_incorrect_type_assignment(
+        &self,
          var_type: &VarType,
          assignment_type: &VarType
-    ) -> bool {
+    ) -> Option<ErrMsg> {
         if var_type != assignment_type {
-            self.errors.push(
-                ErrMsg::new_incorrect_type_assignment(
+            return Some(ErrMsg::new_incorrect_type_assignment(
                     var_type.clone(),
                     assignment_type.clone(),
                     self.get_curr_token().line_number 
-                )
-            );
-            return true;
+            ));
         }
-        return false;
+        None
     }
 
     fn program(&mut self) -> Vec<Statement> {
@@ -157,7 +211,7 @@ impl AstBuilder<> {
                 //let comparison = self.comparison();
                 let conditional = self.logical();
 
-                self.add_error_if_curr_not_expected(TokenType::Then);
+                self.get_error_if_curr_not_expected(TokenType::Then);
                 self.next_token();
 
                 let mut statements: Vec<Statement> = Vec::new();
@@ -178,7 +232,7 @@ impl AstBuilder<> {
 
                 let comparison = self.comparison();
 
-                self.add_error_if_curr_not_expected(TokenType::Do);
+                self.get_error_if_curr_not_expected(TokenType::Do);
                 self.next_token();
 
                 let mut statements: Vec<Statement> = Vec::new();
@@ -202,7 +256,7 @@ impl AstBuilder<> {
                 let identity = self.get_curr_token().text.clone();
                 self.next_token(); 
 
-                self.add_error_if_curr_not_expected(TokenType::LessThanEqualTo);
+                self.get_error_if_curr_not_expected(TokenType::LessThanEqualTo);
                 self.next_token();
 
                 let assignment_token_type = self.get_curr_token().token_type.clone();
@@ -212,6 +266,11 @@ impl AstBuilder<> {
                 let assignment_value_text = self.get_curr_token().text.clone();
                 self.next_token();
 
+                // Ensure that the variable being assigned to has been declared.
+                self.get_error_if_var_assignment_invalid(
+                    &identity,
+                    &assignment_var_type
+                );
                 statement = Statement::Assignment {
                     identity: identity,
                     value: assignment_value_text,
@@ -232,7 +291,7 @@ impl AstBuilder<> {
                 let identity = self.get_curr_token().text.clone();
                 self.next_token(); 
 
-                self.add_error_if_curr_not_expected(TokenType::Colon);
+                self.get_error_if_curr_not_expected(TokenType::Colon);
                 self.next_token();
 
                 let assignment_value_text = self.get_curr_token().text.clone();
@@ -240,11 +299,16 @@ impl AstBuilder<> {
                 let assignment_var_type = convert_tokentype_to_vartype(
                     assignment_token_type
                 );
-                self.add_error_if_incorrect_type_assignment(
+                self.get_error_if_incorrect_type_assignment(
                     &var_type,
                     &assignment_var_type
                 );
 
+                self.insert_into_var_map(
+                    identity.clone(),
+                    var_type.clone(),
+                    self.get_curr_token().line_number
+                );
 
                 self.next_token();
 
@@ -501,6 +565,13 @@ pub enum VarType {
     Unrecognized
 }
 
+#[derive(Debug, Clone)]
+pub struct Var {
+    var_type: VarType,
+    identity: String,
+    line_declared_on: u8
+}
+
 impl FromStr for VarType {
     type Err = ();
 
@@ -528,6 +599,14 @@ pub enum ErrMsg {
         got_type: VarType,
         line_number: u8
         //col_number: usize
+    },
+    VariableAlreadyDeclared {
+        //line_number: u8
+        identity: String
+    },
+    VariableNotDeclared {
+        identity: String,
+        attempted_assignment_line: u8
     }
 }
 
