@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use std::io;
 use std::io::Write;
 use std::str::FromStr;
+use std::collections::HashMap;
 use colored::Colorize;
 
 // My stuff
@@ -11,10 +12,10 @@ use crate::tokenizer::TokenType;
 use crate::comparison::*;
 
 pub struct AstBuilder<> {
-    pub tokens: Vec<Token>,
+    tokens: Vec<Token>,
     curr_idx: usize,
-    //statements: Vec<Statement>,
-    errors: Vec<ErrMsg>
+    errors: Vec<ErrMsg>,
+    var_map: HashMap<String, VarType>
 }
 
 impl AstBuilder<> {
@@ -23,10 +24,14 @@ impl AstBuilder<> {
             tokens: token_vec,
             curr_idx: 0,
             //statements: Vec::new(),
-            errors: Vec::new()
+            errors: Vec::new(),
+            var_map: HashMap::new()
         }
     }
 
+    pub fn get_error_vec(&self) -> &Vec<ErrMsg> {
+        &self.errors
+    }
 
     pub fn generate_ast(&mut self) -> Vec<Statement>{
         self.program()
@@ -48,13 +53,31 @@ impl AstBuilder<> {
 
     fn add_error_if_curr_not_expected(&mut self, token_type: TokenType) {
         if(self.get_curr_token().token_type != token_type){
-            self.errors.push( ErrMsg {
+            self.errors.push( ErrMsg::UnexpectedToken {
                 expected: token_type,
                 got: self.get_curr_token().token_type.clone(),
-                line_number: self.get_curr_token().line_number.clone(),
-                col_number: self.get_curr_token().col_number.clone()
+                line_number: self.get_curr_token().line_number.clone()
+                //col_number: self.get_curr_token().col_number.clone()
             });
         }
+    }
+
+    fn add_error_if_incorrect_type_assignment(
+        &mut self,
+         var_type: &VarType,
+         assignment_type: &VarType
+    ) -> bool {
+        if var_type != assignment_type {
+            self.errors.push(
+                ErrMsg::new_incorrect_type_assignment(
+                    var_type.clone(),
+                    assignment_type.clone(),
+                    self.get_curr_token().line_number 
+                )
+            );
+            return true;
+        }
+        return false;
     }
 
     fn program(&mut self) -> Vec<Statement> {
@@ -217,6 +240,12 @@ impl AstBuilder<> {
                 let assignment_var_type = convert_tokentype_to_vartype(
                     assignment_token_type
                 );
+                self.add_error_if_incorrect_type_assignment(
+                    &var_type,
+                    &assignment_var_type
+                );
+
+
                 self.next_token();
 
                 statement = Statement::Instantiation {
@@ -448,12 +477,6 @@ pub enum Statement {
     TestStub
 }
 
-#[derive(Debug)]
-pub enum VarType {
-    Num,
-    Str,
-    Unrecognized
-}
 
 fn convert_str_to_vartype(text: &str) -> VarType {
     match text {
@@ -471,6 +494,13 @@ fn convert_tokentype_to_vartype(token_type: TokenType) -> VarType {
     }
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub enum VarType {
+    Num,
+    Str,
+    Unrecognized
+}
+
 impl FromStr for VarType {
     type Err = ();
 
@@ -485,11 +515,47 @@ impl FromStr for VarType {
 
 
 
-
 #[derive(Debug)]
-struct ErrMsg {
-    expected: TokenType,
-    got: TokenType,
-    line_number: u8,
-    col_number: usize
+pub enum ErrMsg {
+    UnexpectedToken {
+        expected: TokenType,
+        got: TokenType,
+        line_number: u8
+        //col_number: usize
+    },
+    IncorrectTypeAssignment {
+        expected_type: VarType,
+        got_type: VarType,
+        line_number: u8
+        //col_number: usize
+    }
+}
+
+impl ErrMsg {
+    pub fn new_incorrect_type_assignment(
+        expected: VarType,
+        got: VarType,
+        line_number: u8
+        //col_number: usize
+    ) -> ErrMsg {
+        ErrMsg::IncorrectTypeAssignment {
+            expected_type: expected,
+            got_type: got,
+            line_number: line_number
+            //col_number: col_number
+        }
+    }
+
+    pub fn new_unexpected_token(
+        expected: TokenType,
+        got: TokenType,
+        line_number: u8
+        //col_number: usize
+    ) -> ErrMsg {
+        ErrMsg::UnexpectedToken {
+            expected: expected,
+            got: got,
+            line_number: line_number
+        }
+    }
 }
