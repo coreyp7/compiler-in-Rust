@@ -3,20 +3,30 @@ use std::fs::File;
 use std::io::prelude::*;
 
 mod tokenizer;
-use tokenizer::tokenize_file;
 use tokenizer::Token;
-//use tokenizer::TokenType;
+use tokenizer::Tokenizer;
 
-mod parser;
-use parser::TokenList;
+mod ast;
+use ast::AstBuilder;
+use ast::Statement;
+
+mod comparison;
+
+//mod parser;
+//use parser::TokenList;
 
 use std::env;
 
+
 fn main() -> std::io::Result<()> {
 
+    /* When running from command line, not used when testing
     let args: Vec<String> = env::args().collect();
     let src_path: &String = &args[1];
     let output_path: &String = &args[2];
+    */
+
+    let src_path: String = String::from("./example.plank");
 
     // TODO: add error handler for reading the file
     let mut f = File::open(src_path)?;
