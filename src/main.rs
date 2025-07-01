@@ -21,8 +21,38 @@ fn main() -> std::io::Result<()> {
     // TODO: add error handler for reading the file
     let mut f = File::open(src_path)?;
 
-    let tokenized_file: Vec<Token> = tokenize_file(&mut f); 
-    
+    //let tokenized_file: Vec<Token> = tokenize_file(&mut f); 
+    let mut tokenizer = Tokenizer::new();
+    let tokens: Vec<Token> = tokenizer.tokenize_file(&mut f);
+
+        
+    println!("Tokenizer output: -----------------------------------");
+    for token in &tokens {
+        println!("{:?}", token);
+    } 
+    println!("Tokenizer output: -----------------------------------");
+
+    let mut ast_builder = AstBuilder::new(tokens);
+    let mut ast_vec = ast_builder.generate_ast();
+    let ast_errors = ast_builder.get_error_vec();    
+
+    println!("Ast output: -----------------------------------");
+    for node in &ast_vec {
+        println!("{:#?}", node);
+    } 
+    println!("Ast output: -----------------------------------");
+
+    println!("Ast ERRORS: -----------------------------------");
+    for err in ast_errors {
+        println!("{:#?}", err);
+    }
+    println!("Ast ERRORS: -----------------------------------");
+    println!("Ast map: -----------------------------------");
+    println!("{:#?}", ast_builder.var_map);
+    println!("Ast map: -----------------------------------");
+
+
+    /*
     let mut parser: TokenList = TokenList::new(tokenized_file);
     parser.parse_tokens();
 
@@ -31,7 +61,96 @@ fn main() -> std::io::Result<()> {
 
     //TODO: add error handling
     let _ = output_file.write_all(parser.code_str.as_bytes());
+    */
 
+
+
+    // Okay, some tests of things for the refactor.
+    /*
+    What do I want to test?
+    - can a global variable exist in a module? that the struct can just access?
+    - how do we resolve havinfg tokens in self? Would it be better to just
+    pass the vector's permission around? Would that even work?
+
+    I want to be able to give the ability for each function to be able to
+    take ownership of the dynamically allocated variables in each token,
+    since it won't be needed by the token going forward.
+
+    So, how do we do that?
+    */
+    //let mut text: String = String::from("here's the text");
+    /*
+    let mut text: String = String::from("here's the text");
+    layer_one(&mut text);
+    println!("{}", text);
+    */
+
+    /*
+    let mut tree: tree = tree::new();
+    tree.tokens.push(
+        node {
+            text: String::from("test")
+        }
+    );
+    tree.start_test();
+    */
     Ok(())
 }
 
+#[derive(Debug)]
+struct node {
+    pub text: String
+}
+
+struct tree {
+    pub tokens: Vec<node>,
+    index: usize
+}
+
+impl tree {
+    pub fn new() -> tree {
+        tree {
+            tokens: Vec::new(),
+            index: 0
+        }
+    }
+
+    pub fn start_test(&mut self) {
+        println!("start_test");
+        self.run();
+    }
+
+    fn get_curr(&mut self) -> &mut node {
+        &mut self.tokens[self.index]
+    }
+
+    fn run(&mut self) {
+        println!("run");
+        let mut token: &node = self.get_curr();
+        println!("{:?}", token);
+        //let taken_string: String = token.text;
+        /*
+        let mut string_borrow: String = self.get_curr();
+        string_borrow.push_str("test string changed");
+        println!("{}", string_borrow);
+        */
+    }
+}
+
+/*
+fn test(mut text: String) -> mut String{
+    text.push_str("in test");
+}
+*/
+
+
+fn layer_one(text: &mut String) {
+    layer_two(text);
+}
+fn layer_two(text: &mut String) {
+    layer_three(text);
+}
+fn layer_three(text: &mut String) {
+    text.clear();
+    text.push_str("text changed!");
+}

@@ -143,7 +143,7 @@ impl TokenList<> {
                 self.next_token();
 
 
-                // parse statement inside of body while curr isn't end if
+               // parse statement inside of body while curr isn't end if
                 while !self.is_curr_token_type(&TokenType::EndIf) {
                     self.statement(); 
                 }
