@@ -247,7 +247,8 @@ impl AstBuilder<> {
 
                 statement = Statement::If{
                         logical: conditional,
-                        statements: statements 
+                        statements: statements,
+                        line_number: self.get_curr_token().line_number
                 };
             },
             TokenType::While => {
@@ -270,7 +271,8 @@ impl AstBuilder<> {
 
                 statement = Statement::While{
                         comparison: comparison,
-                        statements: statements 
+                        statements: statements,
+                        line_number: self.get_curr_token().line_number
                 };
             },
             TokenType::Identity => {
@@ -303,7 +305,8 @@ impl AstBuilder<> {
                 statement = Statement::Assignment {
                     identity: identity,
                     value: assignment_value_text,
-                    assigned_value_type: assignment_var_type
+                    assigned_value_type: assignment_var_type,
+                    line_number: self.get_curr_token().line_number
                 };
             },
             TokenType::VarDeclaration => {
@@ -349,7 +352,8 @@ impl AstBuilder<> {
                     identity: identity,
                     value: assignment_value_text,
                     var_type: var_type,
-                    assigned_value_type: assignment_var_type
+                    assigned_value_type: assignment_var_type,
+                    line_number: self.get_curr_token().line_number
                 };
                 
 
@@ -549,27 +553,31 @@ impl AstBuilder<> {
 pub enum Statement {
     Print {
         content: String,
-        line_number: u8,
-        is_content_identity_name: bool
+        is_content_identity_name: bool,
+        line_number: u8
     },
     If {
         logical: Logical,
-        statements: Vec<Statement>
+        statements: Vec<Statement>,
+        line_number: u8
     },
     While {
         comparison: Comparison,
-        statements: Vec<Statement>
+        statements: Vec<Statement>,
+        line_number: u8
     },
     Assignment {
         identity: String,
         value: String,
-        assigned_value_type: VarType
+        assigned_value_type: VarType,
+        line_number: u8
     },
     Instantiation {
         identity: String,
         value: String,
         var_type: VarType,
-        assigned_value_type: VarType
+        assigned_value_type: VarType,
+        line_number: u8
     },
     Newline,
     TestStub
