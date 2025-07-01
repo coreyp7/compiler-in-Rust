@@ -189,20 +189,41 @@ impl AstBuilder<> {
         //let curr_token = self.get_curr_token();
         match self.get_curr_token().token_type {
             TokenType::Print => {
-                //println!("{:?}", curr_token);                
+                // Print can either be given a string inline
+                // or given an identity that is of type String.
                 self.next_token();
                 let string_content: String = self.get_curr_token().text.clone();
-                
-                if self.get_curr_token().token_type != TokenType::Str {
-                    println!("ERROR: expecting string, got {:#?}", 
-                        self.get_curr_token().token_type
-                    );
+
+                // TODO: have to do error handling shit in here bc I didn't
+                // write the function to allow you to specify multiple tokens
+                // that the curr token could be.
+                let mut is_identity: bool = false;
+                let mut possible_error: Option<ErrMsg> = None; 
+
+                match &self.get_curr_token().token_type {
+                    TokenType::Str => (),
+                    TokenType::Identity => {
+                        is_identity = true;
+                    },
+                    _ => {
+                        possible_error = Some(ErrMsg::UnexpectedToken {
+                            expected: self.get_curr_token().token_type.clone(),
+                            got: self.get_curr_token().token_type.clone(),
+                            line_number: self.get_curr_token().line_number.clone()
+                            //col_number: self.get_curr_token().col_number.clone()
+                        });
+                    }
+                }
+
+                if let Some(error) = possible_error {
+                   self.errors.push(error); 
                 }
 
                 statement = Statement::Print{
                         content: string_content,
-                        line_number: self.get_curr_token().line_number
-                    };
+                        line_number: self.get_curr_token().line_number,
+                        is_content_identity_name: is_identity
+                };
             },
             TokenType::If => {
                 self.next_token();
@@ -528,7 +549,8 @@ impl AstBuilder<> {
 pub enum Statement {
     Print {
         content: String,
-        line_number: u8
+        line_number: u8,
+        is_content_identity_name: bool
     },
     If {
         logical: Logical,
@@ -595,8 +617,6 @@ impl FromStr for VarType {
         }
     }
 }
-
-
 
 #[derive(Debug)]
 pub enum ErrMsg {
