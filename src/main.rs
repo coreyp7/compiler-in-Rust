@@ -10,6 +10,9 @@ mod ast;
 use ast::AstBuilder;
 use ast::Statement;
 
+mod code_generator;
+use code_generator::generate_code_str;
+
 mod comparison;
 
 //mod parser;
@@ -34,7 +37,6 @@ fn main() -> std::io::Result<()> {
     //let tokenized_file: Vec<Token> = tokenize_file(&mut f); 
     let mut tokenizer = Tokenizer::new();
     let tokens: Vec<Token> = tokenizer.tokenize_file(&mut f);
-
         
     println!("Tokenizer output: -----------------------------------");
     for token in &tokens {
@@ -43,7 +45,7 @@ fn main() -> std::io::Result<()> {
     println!("Tokenizer output: -----------------------------------");
 
     let mut ast_builder = AstBuilder::new(tokens);
-    let mut ast_vec = ast_builder.generate_ast();
+    let ast_vec = ast_builder.generate_ast();
     let ast_errors = ast_builder.get_error_vec();    
 
     println!("Ast output: -----------------------------------");
@@ -61,6 +63,10 @@ fn main() -> std::io::Result<()> {
     println!("{:#?}", ast_builder.var_map);
     println!("Ast map: -----------------------------------");
 
+    let code: String = generate_code_str(&ast_vec); 
+    println!("code generated: -----------------------------------");
+    println!("{}", code);
+    println!("code generated: -----------------------------------");
 
     /*
     let mut parser: TokenList = TokenList::new(tokenized_file);
