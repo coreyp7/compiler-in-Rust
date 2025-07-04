@@ -189,14 +189,8 @@ impl AstBuilder<> {
         //let curr_token = self.get_curr_token();
         match self.get_curr_token().token_type {
             TokenType::Print => {
-                // Print can either be given a string inline
-                // or given an identity that is of type String.
                 self.next_token();
                 let string_content: String = self.get_curr_token().text.clone();
-
-                // TODO: have to do error handling shit in here bc I didn't
-                // write the function to allow you to specify multiple tokens
-                // that the curr token could be.
                 let mut is_identity: bool = false;
                 let mut possible_error: Option<ErrMsg> = None; 
 
@@ -210,7 +204,6 @@ impl AstBuilder<> {
                             expected: self.get_curr_token().token_type.clone(),
                             got: self.get_curr_token().token_type.clone(),
                             line_number: self.get_curr_token().line_number.clone()
-                            //col_number: self.get_curr_token().col_number.clone()
                         });
                     }
                 }
@@ -219,17 +212,14 @@ impl AstBuilder<> {
                    self.errors.push(error); 
                 }
 
-                statement = Statement::Print{
+                statement = Statement::Print(PrintStatement {
                         content: string_content,
                         line_number: self.get_curr_token().line_number,
                         is_content_identity_name: is_identity
-                };
+                });
             },
             TokenType::If => {
                 self.next_token();
-
-                // parse comparison
-                //let comparison = self.comparison();
                 let conditional = self.logical();
 
                 if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Then) {
@@ -245,11 +235,11 @@ impl AstBuilder<> {
 
                 self.next_token();
 
-                statement = Statement::If{
+                statement = Statement::If(IfStatement {
                         logical: conditional,
                         statements: statements,
                         line_number: self.get_curr_token().line_number
-                };
+                });
             },
             TokenType::While => {
                 self.next_token();
@@ -269,17 +259,13 @@ impl AstBuilder<> {
 
                 self.next_token();
 
-                statement = Statement::While{
+                statement = Statement::While(WhileStatement {
                         comparison: comparison,
                         statements: statements,
                         line_number: self.get_curr_token().line_number
-                };
+                });
             },
             TokenType::Identity => {
-                // variable assignment (existing var)
-
-                // TODO: need to start refactoring for these lazy clones 
-                // bc my data isn't setup correctly.
                 let identity = self.get_curr_token().text.clone();
                 self.next_token(); 
 
@@ -295,26 +281,20 @@ impl AstBuilder<> {
                 let assignment_value_text = self.get_curr_token().text.clone();
                 self.next_token();
 
-                // Ensure that the variable being assigned to has been declared.
                 if let Some(error) = self.get_error_if_var_assignment_invalid(
                     &identity,
                     &assignment_var_type
                 ) {
                     self.errors.push(error);
                 }
-                statement = Statement::Assignment {
+                statement = Statement::Assignment(AssignmentStatement {
                     identity: identity,
                     value: assignment_value_text,
                     assigned_value_type: assignment_var_type,
                     line_number: self.get_curr_token().line_number
-                };
+                });
             },
             TokenType::VarDeclaration => {
-                // var init
-
-                // FIXME: this should be using the token_type field on token
-                // to figure out the type.
-                //let var_type = self.get_curr_token().text.clone();
                 let var_type = convert_str_to_vartype(
                     &self.get_curr_token().text
                 );
@@ -348,15 +328,13 @@ impl AstBuilder<> {
 
                 self.next_token();
 
-                statement = Statement::Instantiation {
+                statement = Statement::Instantiation(InstantiationStatement {
                     identity: identity,
                     value: assignment_value_text,
                     var_type: var_type,
                     assigned_value_type: assignment_var_type,
                     line_number: self.get_curr_token().line_number
-                };
-                
-
+                });
             },
             TokenType::Newline => {
                 statement = Statement::Newline;
@@ -364,14 +342,6 @@ impl AstBuilder<> {
             _ => {
             }
         };
-
-        let line_number = self.get_curr_token().line_number;
-        let col_number = self.get_curr_token().col_number;
-        let token_type = &self.get_curr_token().token_type;
-        /*println!("{:#?} at line number {}", 
-            statement,
-            line_number
-        );*/
 
         self.next_token();
         return statement;
@@ -436,9 +406,10 @@ impl AstBuilder<> {
         let expr1: Expression = self.expression(); // have this emulate an ouput
         comparison.expressions.push(expr1);
 
-        let op1: ComparisonOperator = convert_token_type_to_comparison_op(
-            self.get_curr_token().token_type.clone()
-        );
+        // let op1: ComparisonOperator = convert_token_type_to_comparison_op(
+        //     self.get_curr_token().token_type.clone()
+        // );
+        // (Unused, but may be useful for debugging or future logic)
 
         while self.is_curr_token_comparison_operator() {
             let op: ComparisonOperator = convert_token_type_to_comparison_op(
@@ -550,35 +521,50 @@ impl AstBuilder<> {
 
 
 #[derive(Debug)]
+pub struct PrintStatement {
+    pub content: String,
+    pub is_content_identity_name: bool,
+    pub line_number: u8
+}
+
+#[derive(Debug)]
+pub struct IfStatement {
+    pub logical: Logical,
+    pub statements: Vec<Statement>,
+    pub line_number: u8
+}
+
+#[derive(Debug)]
+pub struct WhileStatement {
+    pub comparison: Comparison,
+    pub statements: Vec<Statement>,
+    pub line_number: u8
+}
+
+#[derive(Debug)]
+pub struct AssignmentStatement {
+    pub identity: String,
+    pub value: String,
+    pub assigned_value_type: VarType,
+    pub line_number: u8
+}
+
+#[derive(Debug)]
+pub struct InstantiationStatement {
+    pub identity: String,
+    pub value: String,
+    pub var_type: VarType,
+    pub assigned_value_type: VarType,
+    pub line_number: u8
+}
+
+#[derive(Debug)]
 pub enum Statement {
-    Print {
-        content: String,
-        is_content_identity_name: bool,
-        line_number: u8
-    },
-    If {
-        logical: Logical,
-        statements: Vec<Statement>,
-        line_number: u8
-    },
-    While {
-        comparison: Comparison,
-        statements: Vec<Statement>,
-        line_number: u8
-    },
-    Assignment {
-        identity: String,
-        value: String,
-        assigned_value_type: VarType,
-        line_number: u8
-    },
-    Instantiation {
-        identity: String,
-        value: String,
-        var_type: VarType,
-        assigned_value_type: VarType,
-        line_number: u8
-    },
+    Print(PrintStatement),
+    If(IfStatement),
+    While(WhileStatement),
+    Assignment(AssignmentStatement),
+    Instantiation(InstantiationStatement),
     Newline,
     TestStub
 }

@@ -12,30 +12,9 @@ pub fn generate_code_str(ast: &Vec<Statement>) -> String {
 }
 
 fn convert_statement_to_code(statement: &Statement) -> String {
-    //let mut code: String = String::new();
-
-    // Okay this will be our switch statement again.
     let statement_code_str: String = match statement {
-        Statement::Print{
-            content, 
-            is_content_identity_name, 
-            line_number
-        } => {
-            let mut code = String::new(); 
-            code.push_str("print(");
-            
-            if(!is_content_identity_name){
-                code.push_str("\"");
-            }
-
-            code.push_str(&content.clone());
-
-            if(!is_content_identity_name){
-                code.push_str("\"");
-            }
-
-            code.push_str(");");
-            code
+        Statement::Print(statement_struct) => {
+            convert_print_statement_to_code(statement_struct)
         },
         _ => {
             String::from("")
@@ -62,24 +41,19 @@ fn convert_statement_to_code(statement: &Statement) -> String {
     statement_code_str
 }
 
-/*
-fn convert_print_to_code(print: Statement) -> String {
-    let code = String::new(); 
+fn convert_print_statement_to_code(statement_struct: &crate::ast::PrintStatement) -> String {
+    let mut code = String::new();
+    let content = &statement_struct.content;
+    let is_content_identity_name = statement_struct.is_content_identity_name;
     code.push_str("print(");
-    
-    if(!print.is_content_identity_name){
+    if !is_content_identity_name {
         code.push_str("\"");
     }
-
-    code.push_str(print.content.clone());
-
-    if(!print.is_content_identity_name){
+    code.push_str(&content.clone());
+    if !is_content_identity_name {
         code.push_str("\"");
     }
-
     code.push_str(");");
-
     code
 }
-*/
 
