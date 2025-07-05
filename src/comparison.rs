@@ -1,10 +1,10 @@
 use crate::tokenizer::TokenType;
 
-/** 
+/**
 * The way this works:
 * These are two lists of all of the expresisons and operators in between.
 * So, it is in the order specified in code.
-* that is: expressions[0], operators[0], expressions[1], 
+* that is: expressions[0], operators[0], expressions[1],
 *          operators[1], expressions[2], etc.....
 */
 
@@ -15,32 +15,30 @@ use crate::tokenizer::TokenType;
 #[derive(Debug)]
 pub struct Logical {
     pub comparisons: Vec<Comparison>,
-    pub operators: Vec<LogicalOperator>
+    pub operators: Vec<LogicalOperator>,
 }
 
 impl Logical {
     pub fn new() -> Logical {
         Logical {
             comparisons: Vec::new(),
-            operators: Vec::new()
+            operators: Vec::new(),
         }
     }
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum LogicalOperator {
     And,
     Or,
     Not,
-    invalidop
+    invalidop,
 }
-
 
 #[derive(Debug)]
 pub struct Comparison {
     pub expressions: Vec<Expression>,
-    pub operators: Vec<ComparisonOperator>
+    pub operators: Vec<ComparisonOperator>,
 }
 
 #[derive(Debug)]
@@ -48,56 +46,56 @@ pub enum ComparisonOperator {
     equalequal,
     notequal,
     lessthan,
-    lessthanequalto, 
+    lessthanequalto,
     greaterthan,
     greaterthanequalto,
-    invalidop
+    invalidop,
 }
 
 // Either + or -
 #[derive(Debug)]
 pub struct Expression {
     pub terms: Vec<Term>,
-    pub operators: Vec<ExpressionOperator>
+    pub operators: Vec<ExpressionOperator>,
 }
 
 #[derive(Debug)]
 pub enum ExpressionOperator {
     Plus,
     Minus,
-    invalidop
+    invalidop,
 }
 
 #[derive(Debug)]
 pub struct Term {
     pub unarys: Vec<Unary>,
-    pub operations: Vec<TermOperator>
+    pub operations: Vec<TermOperator>,
 }
 
 #[derive(Debug)]
 pub enum TermOperator {
     Multiply,
     Divide,
-    invalidop // TODO: these should be changed to no op
+    invalidop, // TODO: these should be changed to no op
 }
 
 #[derive(Debug)]
 pub struct Unary {
     pub operation: Option<ExpressionOperator>,
-    pub primary: Primary
+    pub primary: Primary,
 }
 
 #[derive(Debug)]
 pub enum Primary {
     Number {
-       value: String //TODO: change this to u8 and do conversions :(
+        value: String, //TODO: change this to u8 and do conversions :(
     },
     Identity {
-        name: String
+        name: String,
     },
     Error {
-        detail: String
-    }
+        detail: String,
+    },
 }
 
 // Conversion functions
@@ -109,24 +107,23 @@ pub fn convert_token_type_to_comparison_op(token_type: TokenType) -> ComparisonO
         TokenType::LessThanEqualTo => ComparisonOperator::lessthanequalto,
         TokenType::GreaterThan => ComparisonOperator::greaterthan,
         TokenType::GreaterThanEqualTo => ComparisonOperator::greaterthanequalto,
-        _ => ComparisonOperator::invalidop
-    }    
+        _ => ComparisonOperator::invalidop,
+    }
 }
 
 pub fn convert_token_type_to_expression_op(token_type: TokenType) -> ExpressionOperator {
     match token_type {
         TokenType::Plus => ExpressionOperator::Plus,
         TokenType::Minus => ExpressionOperator::Minus,
-        _ => ExpressionOperator::invalidop
+        _ => ExpressionOperator::invalidop,
     }
 }
-
 
 pub fn convert_token_type_to_term_op(token_type: TokenType) -> TermOperator {
     match token_type {
         TokenType::Asterisk => TermOperator::Multiply,
         TokenType::Slash => TermOperator::Divide,
-        _ => TermOperator::invalidop
+        _ => TermOperator::invalidop,
     }
 }
 
@@ -135,6 +132,6 @@ pub fn convert_token_type_to_logical_op(token_type: TokenType) -> LogicalOperato
         TokenType::DoubleAmpersand => LogicalOperator::And,
         TokenType::DoubleBar => LogicalOperator::Or,
         TokenType::Bang => LogicalOperator::Not,
-        _ => LogicalOperator::invalidop
+        _ => LogicalOperator::invalidop,
     }
 }
