@@ -31,7 +31,7 @@ impl AstBuilder {
 
     pub fn insert_into_var_map(&mut self, identity: String, var_type: VarType, line: u8) {
         if self.var_map.contains_key(&identity) {
-            // TODO: add error to vec
+            // TODO: Include original line instantiated for error display.
             self.errors
                 .push(ErrMsg::VariableAlreadyDeclared { identity: identity });
             return;
@@ -616,4 +616,82 @@ impl ErrMsg {
             line_number: line_number,
         }
     }
+
+    pub fn print_error(&self) {
+        let red_error_text = "ERROR:".red().bold();
+        let blue_arrow = "-->".blue().bold();
+        match self {
+            ErrMsg::UnexpectedToken {
+                expected,
+                got,
+                line_number,
+            } => {
+                println!("{} Unexpected token", red_error_text);
+                println!(
+                    "  {} Line {}",
+                    blue_arrow,
+                    line_number.to_string().yellow().bold()
+                );
+                println!("  Expected: '{}'", expected.to_string());
+                println!("  Got: '{}'", got.to_string());
+            }
+            ErrMsg::IncorrectTypeAssignment {
+                expected_type,
+                got_type,
+                line_number,
+            } => {
+                println!("{} Type mismatch", red_error_text);
+                println!(
+                    "  {} Line {}",
+                    blue_arrow,
+                    line_number.to_string().yellow().bold()
+                );
+                println!("  Expected type: {:?}", expected_type);
+                println!("  Got type: {:?}", got_type);
+            }
+            ErrMsg::VariableAlreadyDeclared { identity } => {
+                println!(
+                    "{} Variable '{}' is already declared",
+                    red_error_text, identity
+                );
+                println!("  Cannot redeclare variable '{}'", identity);
+            }
+            ErrMsg::VariableNotDeclared {
+                identity,
+                attempted_assignment_line,
+            } => {
+                println!("{} Variable '{}' not declared", red_error_text, identity);
+                println!(
+                    "  {} Line {}",
+                    blue_arrow,
+                    attempted_assignment_line.to_string().yellow().bold()
+                );
+                println!("  Variable '{}' must be declared before use", identity);
+            }
+        }
+    }
+}
+
+pub fn print_all_errors(errors: &Vec<ErrMsg>) {
+    if errors.is_empty() {
+        println!("{}No errors found!{}", "".green().bold(), "".clear());
+        return;
+    }
+
+    println!(
+        "{}Found {} error(s):{}",
+        "".red().bold(),
+        errors.len(),
+        "".clear()
+    );
+    println!("{}", "=".repeat(40));
+
+    for (i, error) in errors.iter().enumerate() {
+        println!("Error #{}: ", i + 1);
+        error.print_error();
+        if i < errors.len() - 1 {
+            println!(); // Add spacing between errors
+        }
+    }
+    println!("{}", "=".repeat(40));
 }

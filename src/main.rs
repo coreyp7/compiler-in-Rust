@@ -68,7 +68,7 @@ fn main() -> std::io::Result<()> {
     }
 
     if (ast_errors.len() > 0) {
-        print_ast_errors(&ast_errors);
+        crate::ast::print_all_errors(&ast_errors);
         return Ok(());
     }
 
@@ -121,16 +121,6 @@ fn main() -> std::io::Result<()> {
     tree.start_test();
     */
     Ok(())
-}
-
-fn print_ast_errors(errors: &Vec<ErrMsg>) {
-    println!(
-        "There are {} errors when compiling code. Resolve these problems.",
-        errors.len()
-    );
-    for err in errors {
-        println!("{:#?}", err);
-    }
 }
 
 #[derive(Debug)]
