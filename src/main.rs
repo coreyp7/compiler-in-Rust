@@ -8,6 +8,7 @@ use tokenizer::Tokenizer;
 
 mod ast;
 use ast::AstBuilder;
+use ast::ErrMsg;
 use ast::Statement;
 
 mod code_generator;
@@ -26,6 +27,7 @@ fn main() -> std::io::Result<()> {
     let src_path: &String = &args[1];
     let output_path: &String = &args[2];
     */
+    let debug = true; // TODO: add parsing of this shit in args
 
     let src_path: String = String::from("./example.plank");
 
@@ -35,36 +37,48 @@ fn main() -> std::io::Result<()> {
     //let tokenized_file: Vec<Token> = tokenize_file(&mut f);
     let mut tokenizer = Tokenizer::new();
     let tokens: Vec<Token> = tokenizer.tokenize_file(&mut f);
-
-    println!("Tokenizer output: -----------------------------------");
-    for token in &tokens {
-        println!("{:?}", token);
+    if debug {
+        println!("Tokenizer output: -----------------------------------");
+        for token in &tokens {
+            println!("{:?}", token);
+        }
+        println!("Tokenizer output: -----------------------------------");
     }
-    println!("Tokenizer output: -----------------------------------");
 
+    // build ast with tokens
     let mut ast_builder = AstBuilder::new(tokens);
     let ast_vec = ast_builder.generate_ast();
     let ast_errors = ast_builder.get_error_vec();
 
-    println!("Ast output: -----------------------------------");
-    for node in &ast_vec {
-        println!("{:#?}", node);
-    }
-    println!("Ast output: -----------------------------------");
+    if debug {
+        println!("Ast output: -----------------------------------");
+        for node in &ast_vec {
+            println!("{:#?}", node);
+        }
+        println!("Ast output: -----------------------------------");
 
-    println!("Ast ERRORS: -----------------------------------");
-    for err in ast_errors {
-        println!("{:#?}", err);
+        println!("Ast ERRORS: -----------------------------------");
+        for err in ast_errors {
+            println!("{:#?}", err);
+        }
+        println!("Ast ERRORS: -----------------------------------");
+        println!("Ast map: -----------------------------------");
+        println!("{:#?}", ast_builder.var_map);
+        println!("Ast map: -----------------------------------");
     }
-    println!("Ast ERRORS: -----------------------------------");
-    println!("Ast map: -----------------------------------");
-    println!("{:#?}", ast_builder.var_map);
-    println!("Ast map: -----------------------------------");
 
+    if (ast_errors.len() > 0) {
+        print_ast_errors(&ast_errors);
+        return Ok(());
+    }
+
+    // generate c code str with ast
     let code: String = generate_code_str(&ast_vec);
-    println!("code generated: -----------------------------------");
-    println!("{}", code);
-    println!("code generated: -----------------------------------");
+    if debug {
+        println!("code generated: -----------------------------------");
+        println!("{}", code);
+        println!("code generated: -----------------------------------");
+    }
 
     /*
     let mut parser: TokenList = TokenList::new(tokenized_file);
@@ -107,6 +121,16 @@ fn main() -> std::io::Result<()> {
     tree.start_test();
     */
     Ok(())
+}
+
+fn print_ast_errors(errors: &Vec<ErrMsg>) {
+    println!(
+        "There are {} errors when compiling code. Resolve these problems.",
+        errors.len()
+    );
+    for err in errors {
+        println!("{:#?}", err);
+    }
 }
 
 #[derive(Debug)]

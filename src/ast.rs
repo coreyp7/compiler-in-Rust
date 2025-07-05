@@ -569,6 +569,7 @@ impl FromStr for VarType {
     }
 }
 
+// TODO: move this into a different crate, why tf is this here
 #[derive(Debug)]
 pub enum ErrMsg {
     UnexpectedToken {
