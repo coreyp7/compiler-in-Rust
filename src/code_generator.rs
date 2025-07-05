@@ -141,57 +141,30 @@ fn convert_instantiation_statement_to_code(statement_struct: &InstantiationState
 fn convert_logical_to_code(logical: &Logical) -> String {
     let mut code = String::new();
     let mut operator_idx = 0;
-    // Used as our pointer to where we are in the comparisons vector.
-    let mut comparison_idx = 0;
 
     if !logical.operators.is_empty() && logical.operators[0] == LogicalOperator::Not {
         // If the first operator is a Not, we need to handle it specially
         code.push_str("!");
         operator_idx += 1; // Move past the Not operator we've already added to code str
     }
-    let first_comparison = &logical.comparisons[comparison_idx];
-    comparison_idx += 1; // Move past the first comparison we've already added to code str
+    let first_comparison = &logical.comparisons[0];
     code.push_str(&convert_comparison_to_code(first_comparison));
 
-    if logical.comparisons.len() < 2 {
+    if logical.comparisons.len() == 1 {
         return code; // No other comparisons
     }
 
-    for mut i in operator_idx..logical.operators.len() {
-        /*
-         * We have the current index in operator vec.
-         * Loop through each operator, and get its respective comparison.
-         */
-        let operator = &logical.operators[i];
-        //let is_next_op_bang = logical.operators.get(i + 1).is_some()
-        //&& logical.operators[i + 1] == LogicalOperator::Not;
+    for i in 1..logical.comparisons.len() {
+        let operator = &logical.operators[operator_idx];
+        operator_idx += 1;
 
-        // If there's a Not operator in front of the comparison,
-        // add it to the code string and increment our index in the operators
-        // 1 more than normal to skip it in the next iteration.
-        let is_next_op_bang = logical.operators.get(i + 1).is_some()
-            && logical.operators[i + 1] == LogicalOperator::Not;
-        if is_next_op_bang {
-            code.push_str("!");
-
-            // Skip the Not operator in the next iteration.
-            // I know this is weird.
-            i += 1;
-        }
-        let comparison = &logical.comparisons[comparison_idx];
-
+        // Add operator to code str
         match operator {
             LogicalOperator::And => code.push_str(" && "),
             LogicalOperator::Or => code.push_str(" || "),
             LogicalOperator::Not => {
-                // This should not happen in this loop since we already handled the first Not
-                // operator at the beginning of this function.
-                // But if it does, we can just add it to the code string.
-                code.push_str("BANG");
-
-                // A bang can be before a comparison. So we don't shift the comparison
-                // index since we still need to process the current comparison.
-                continue;
+                // This should never happen!!!!!!
+                code.push_str("BANG ");
             }
             _ => {
                 // Invalid operator, we should handle this case
@@ -199,9 +172,25 @@ fn convert_logical_to_code(logical: &Logical) -> String {
                 return String::from("// Invalid logical operator\n");
             }
         }
-        comparison_idx += 1;
 
-        // Add the comparison that follows this operator
+        let next_operator = logical.operators.get(operator_idx);
+        // If there's a Not operator in front of the comparison, add it here and
+        // increment the operator index again.
+        match next_operator {
+            Some(LogicalOperator::Not) => {
+                // If the next operator is a Not, we need to handle it specially
+                code.push_str("!");
+                operator_idx += 1; // Move past the Not operator
+            }
+            _ => {
+                // TODO: this may require further behavior implementation, but
+                // this should be caught in the AST construction and analysis
+                // phase before it ever gets here.
+            }
+        };
+
+        // Add comparison to code str
+        let comparison = &logical.comparisons[i];
         code.push_str(&convert_comparison_to_code(comparison));
     }
 
