@@ -20,9 +20,7 @@ mod comparison;
 
 use std::env;
 
-
 fn main() -> std::io::Result<()> {
-
     /* When running from command line, not used when testing
     let args: Vec<String> = env::args().collect();
     let src_path: &String = &args[1];
@@ -34,24 +32,24 @@ fn main() -> std::io::Result<()> {
     // TODO: add error handler for reading the file
     let mut f = File::open(src_path)?;
 
-    //let tokenized_file: Vec<Token> = tokenize_file(&mut f); 
+    //let tokenized_file: Vec<Token> = tokenize_file(&mut f);
     let mut tokenizer = Tokenizer::new();
     let tokens: Vec<Token> = tokenizer.tokenize_file(&mut f);
-        
+
     println!("Tokenizer output: -----------------------------------");
     for token in &tokens {
         println!("{:?}", token);
-    } 
+    }
     println!("Tokenizer output: -----------------------------------");
 
     let mut ast_builder = AstBuilder::new(tokens);
     let ast_vec = ast_builder.generate_ast();
-    let ast_errors = ast_builder.get_error_vec();    
+    let ast_errors = ast_builder.get_error_vec();
 
     println!("Ast output: -----------------------------------");
     for node in &ast_vec {
         println!("{:#?}", node);
-    } 
+    }
     println!("Ast output: -----------------------------------");
 
     println!("Ast ERRORS: -----------------------------------");
@@ -63,7 +61,7 @@ fn main() -> std::io::Result<()> {
     println!("{:#?}", ast_builder.var_map);
     println!("Ast map: -----------------------------------");
 
-    let code: String = generate_code_str(&ast_vec); 
+    let code: String = generate_code_str(&ast_vec);
     println!("code generated: -----------------------------------");
     println!("{}", code);
     println!("code generated: -----------------------------------");
@@ -78,8 +76,6 @@ fn main() -> std::io::Result<()> {
     //TODO: add error handling
     let _ = output_file.write_all(parser.code_str.as_bytes());
     */
-
-
 
     // Okay, some tests of things for the refactor.
     /*
@@ -115,19 +111,19 @@ fn main() -> std::io::Result<()> {
 
 #[derive(Debug)]
 struct node {
-    pub text: String
+    pub text: String,
 }
 
 struct tree {
     pub tokens: Vec<node>,
-    index: usize
+    index: usize,
 }
 
 impl tree {
     pub fn new() -> tree {
         tree {
             tokens: Vec::new(),
-            index: 0
+            index: 0,
         }
     }
 
@@ -158,7 +154,6 @@ fn test(mut text: String) -> mut String{
     text.push_str("in test");
 }
 */
-
 
 fn layer_one(text: &mut String) {
     layer_two(text);
