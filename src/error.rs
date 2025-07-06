@@ -52,7 +52,7 @@ impl ErrMsg {
     }
 
     pub fn print_error(&self) {
-        let red_error_text = "ERROR:".red().bold();
+        let red_error_text = "Error:".red().bold();
         let blue_arrow = "-->".blue().bold();
         match self {
             ErrMsg::UnexpectedToken {
@@ -107,24 +107,10 @@ impl ErrMsg {
 }
 
 pub fn print_all_errors(errors: &Vec<ErrMsg>) {
-    if errors.is_empty() {
-        println!("{}No errors found!{}", "".green().bold(), "".clear());
-        return;
-    }
-
-    println!(
-        "{}Found {} error(s):{}",
-        "".red().bold(),
-        errors.len(),
-        "".clear()
-    );
-    println!("{}", "=".repeat(40));
-
     for (i, error) in errors.iter().enumerate() {
         error.print_error();
         if i < errors.len() - 1 {
             println!(); // Add spacing between errors
         }
     }
-    println!("{}", "=".repeat(40));
 }

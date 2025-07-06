@@ -6,7 +6,7 @@ plankCompilerPath="./target/debug/compiler"
 exitEarly=0
 setup=0
 debug=0
-#helloplank="print \"hello, plank\""
+helloplanksimple="print \"hello, plank\""
 helloplank=$"
 /! Declaring a variable.
 Number num: 14
@@ -30,7 +30,6 @@ while num >= another do
 endWhile
 
 print \"world!\"
-
 "
 
 # Obtain args from user
@@ -66,7 +65,7 @@ if [ $setup -eq 1 ]; then
     else
         echo "SETUP: Have successfully built Plank compiler."
         touch ./hello_world.plank
-        echo "$helloplank" > hello_world.plank
+        echo "$helloplanksimple" > hello_world.plank
         echo "SETUP: Example file 'hello_world.plank' has been created in current directory."
         echo "SETUP: This file will be compiled into an executable in the current dir, named 'plank_program.exe'."
         src=hello_world.plank
@@ -125,7 +124,7 @@ fi
 gcc $cCodeFile -o $outputDir/plank_program.exe
 rm $cCodeFile
 
-echo "Plank compiled: '$outputDir/plank_program.exe'."
+echo -e "\033[32m✓ Compilation successful: Plank program compiled to '$outputDir/plank_program.exe'\033[0m"
 
 
 

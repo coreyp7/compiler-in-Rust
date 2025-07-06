@@ -1,3 +1,4 @@
+use colored::Colorize;
 use std::env;
 use std::fs::File;
 use std::io::Write;
@@ -10,9 +11,10 @@ mod ast;
 use ast::AstBuilder;
 
 mod error;
-use error::print_all_errors;
+use error::{ErrMsg, print_all_errors};
 
 mod statement;
+use statement::Statement;
 
 mod code_generator;
 use code_generator::generate_code_str;
@@ -29,15 +31,10 @@ fn main() -> std::io::Result<()> {
     // TODO: add error handler for reading the file
     let mut f = File::open(src_path)?;
 
-    //let tokenized_file: Vec<Token> = tokenize_file(&mut f);
     let mut tokenizer = Tokenizer::new();
     let tokens: Vec<Token> = tokenizer.tokenize_file(&mut f);
     if debug {
-        println!("Tokenizer output: -----------------------------------");
-        for token in &tokens {
-            println!("{:?}", token);
-        }
-        println!("Tokenizer output: -----------------------------------");
+        debug_print_tokens(&tokens);
     }
 
     // build ast with tokens
@@ -46,33 +43,32 @@ fn main() -> std::io::Result<()> {
     let ast_errors = ast_builder.get_error_vec();
 
     if debug {
-        println!("Ast output: -----------------------------------");
-        for node in &ast_vec {
-            println!("{:#?}", node);
-        }
-        println!("Ast output: -----------------------------------");
-
-        println!("Ast ERRORS: -----------------------------------");
-        for err in ast_errors {
-            println!("{:#?}", err);
-        }
-        println!("Ast ERRORS: -----------------------------------");
-        println!("Ast map: -----------------------------------");
-        println!("{:#?}", ast_builder.var_map);
-        println!("Ast map: -----------------------------------");
+        debug_print_ast(&ast_vec);
+        debug_print_errors_and_var_map(&ast_errors, &ast_builder);
     }
 
     if ast_errors.len() > 0 {
         print_all_errors(&ast_errors);
+        let error_str = "Failed:".red().bold();
+        if ast_errors.len() == 1 {
+            println!(
+                "{} Could not compile plank file due to {} previous error.",
+                error_str, 1
+            );
+        } else {
+            println!(
+                "{} Could not compile plank file due to {} previous errors.",
+                error_str,
+                ast_errors.len()
+            );
+        }
         return Ok(());
     }
 
     // generate c code str with ast
     let code: String = generate_code_str(&ast_vec);
     if debug {
-        println!("code generated: -----------------------------------");
-        println!("{}", code);
-        println!("code generated: -----------------------------------");
+        debug_print_generated_code(&code);
     }
 
     let path = format!("{output_path}/main.c");
@@ -82,4 +78,38 @@ fn main() -> std::io::Result<()> {
     let _ = output_file.write_all(code.as_bytes());
 
     Ok(())
+}
+
+// Debug helper functions
+fn debug_print_tokens(tokens: &Vec<Token>) {
+    println!("Tokenizer output: -----------------------------------");
+    for token in tokens {
+        println!("{:?}", token);
+    }
+    println!("Tokenizer output: -----------------------------------");
+}
+
+fn debug_print_ast(ast_vec: &Vec<Statement>) {
+    println!("Ast output: -----------------------------------");
+    for node in ast_vec {
+        println!("{:#?}", node);
+    }
+    println!("Ast output: -----------------------------------");
+}
+
+fn debug_print_errors_and_var_map(ast_errors: &Vec<ErrMsg>, ast_builder: &AstBuilder) {
+    println!("Ast ERRORS: -----------------------------------");
+    for err in ast_errors {
+        println!("{:#?}", err);
+    }
+    println!("Ast ERRORS: -----------------------------------");
+    println!("Ast map: -----------------------------------");
+    println!("{:#?}", ast_builder.var_map);
+    println!("Ast map: -----------------------------------");
+}
+
+fn debug_print_generated_code(code: &String) {
+    println!("code generated: -----------------------------------");
+    println!("{}", code);
+    println!("code generated: -----------------------------------");
 }
