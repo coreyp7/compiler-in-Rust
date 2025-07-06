@@ -64,7 +64,7 @@ fn main() -> std::io::Result<()> {
         println!("Ast map: -----------------------------------");
     }
 
-    if (ast_errors.len() > 0) {
+    if ast_errors.len() > 0 {
         print_all_errors(&ast_errors);
         return Ok(());
     }
@@ -77,11 +77,6 @@ fn main() -> std::io::Result<()> {
         println!("code generated: -----------------------------------");
     }
 
-    /*
-    let mut parser: TokenList = TokenList::new(tokenized_file);
-    parser.parse_tokens();
-    */
-
     let path = format!("{output_path}/main.c");
     let mut output_file = File::create(path)?;
 
@@ -89,61 +84,4 @@ fn main() -> std::io::Result<()> {
     let _ = output_file.write_all(code.as_bytes());
 
     Ok(())
-}
-
-#[derive(Debug)]
-struct node {
-    pub text: String,
-}
-
-struct tree {
-    pub tokens: Vec<node>,
-    index: usize,
-}
-
-impl tree {
-    pub fn new() -> tree {
-        tree {
-            tokens: Vec::new(),
-            index: 0,
-        }
-    }
-
-    pub fn start_test(&mut self) {
-        println!("start_test");
-        self.run();
-    }
-
-    fn get_curr(&mut self) -> &mut node {
-        &mut self.tokens[self.index]
-    }
-
-    fn run(&mut self) {
-        println!("run");
-        let mut token: &node = self.get_curr();
-        println!("{:?}", token);
-        //let taken_string: String = token.text;
-        /*
-        let mut string_borrow: String = self.get_curr();
-        string_borrow.push_str("test string changed");
-        println!("{}", string_borrow);
-        */
-    }
-}
-
-/*
-fn test(mut text: String) -> mut String{
-    text.push_str("in test");
-}
-*/
-
-fn layer_one(text: &mut String) {
-    layer_two(text);
-}
-fn layer_two(text: &mut String) {
-    layer_three(text);
-}
-fn layer_three(text: &mut String) {
-    text.clear();
-    text.push_str("text changed!");
 }

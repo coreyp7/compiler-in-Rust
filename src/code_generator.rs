@@ -309,5 +309,6 @@ fn convert_primary_to_code(primary: &crate::comparison::Primary) -> String {
 }
 
 fn convert_newline_to_code() -> String {
-    String::from("\n")
+    //String::from("\n")
+    String::from("")
 }
