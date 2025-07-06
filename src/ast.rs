@@ -23,7 +23,6 @@ impl AstBuilder {
         AstBuilder {
             tokens: token_vec,
             curr_idx: 0,
-            //statements: Vec::new(),
             errors: Vec::new(),
             var_map: HashMap::new(),
         }

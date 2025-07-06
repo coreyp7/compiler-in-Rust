@@ -8,11 +8,15 @@ use crate::statement::{
 
 pub fn generate_code_str(ast: &Vec<Statement>) -> String {
     let mut code_str: String = String::new();
+    code_str.push_str("#include <stdio.h>\n");
+    code_str.push_str("int main(){\n");
 
     for statement in ast {
         let statement_as_str = convert_statement_to_code(&statement);
         code_str.push_str(&statement_as_str);
     }
+    code_str.push_str("}");
+
     code_str
 }
 
@@ -38,13 +42,13 @@ fn convert_print_statement_to_code(statement_struct: &PrintStatement) -> String 
     let mut code = String::new();
     let content = &statement_struct.content;
     let is_content_identity_name = statement_struct.is_content_identity_name;
-    code.push_str("print(");
+    code.push_str("printf(");
     if !is_content_identity_name {
         code.push_str("\"");
     }
     code.push_str(&content.clone());
     if !is_content_identity_name {
-        code.push_str("\"");
+        code.push_str("\\n\"");
     }
     code.push_str(");");
     code
@@ -52,9 +56,10 @@ fn convert_print_statement_to_code(statement_struct: &PrintStatement) -> String 
 
 fn convert_if_statement_to_code(statement_struct: &IfStatement) -> String {
     let mut code = String::new();
-    code.push_str("if (");
+    code.push_str("if(");
     code.push_str(&convert_logical_to_code(&statement_struct.logical));
-    code.push_str(") {\n");
+    //code.push_str("){\n");
+    code.push_str("){");
 
     // Convert nested statements in this if block
     for stmt in &statement_struct.statements {

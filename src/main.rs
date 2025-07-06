@@ -1,6 +1,6 @@
+use std::env;
 use std::fs::File;
-//use std::io::BufReader;
-//use std::io::prelude::*;
+use std::io::Write;
 
 mod tokenizer;
 use tokenizer::Token;
@@ -20,14 +20,13 @@ use code_generator::generate_code_str;
 mod comparison;
 
 fn main() -> std::io::Result<()> {
-    /* When running from command line, not used when testing
+    /* When running from command line, not used when testing */
     let args: Vec<String> = env::args().collect();
     let src_path: &String = &args[1];
     let output_path: &String = &args[2];
-    */
     let debug = true; // TODO: add parsing of this shit in args
 
-    let src_path: String = String::from("./example.plank");
+    //let src_path: String = String::from("./example.plank");
 
     // TODO: add error handler for reading the file
     let mut f = File::open(src_path)?;
@@ -81,43 +80,14 @@ fn main() -> std::io::Result<()> {
     /*
     let mut parser: TokenList = TokenList::new(tokenized_file);
     parser.parse_tokens();
+    */
 
     let path = format!("{output_path}/main.c");
     let mut output_file = File::create(path)?;
 
     //TODO: add error handling
-    let _ = output_file.write_all(parser.code_str.as_bytes());
-    */
+    let _ = output_file.write_all(code.as_bytes());
 
-    // Okay, some tests of things for the refactor.
-    /*
-    What do I want to test?
-    - can a global variable exist in a module? that the struct can just access?
-    - how do we resolve havinfg tokens in self? Would it be better to just
-    pass the vector's permission around? Would that even work?
-
-    I want to be able to give the ability for each function to be able to
-    take ownership of the dynamically allocated variables in each token,
-    since it won't be needed by the token going forward.
-
-    So, how do we do that?
-    */
-    //let mut text: String = String::from("here's the text");
-    /*
-    let mut text: String = String::from("here's the text");
-    layer_one(&mut text);
-    println!("{}", text);
-    */
-
-    /*
-    let mut tree: tree = tree::new();
-    tree.tokens.push(
-        node {
-            text: String::from("test")
-        }
-    );
-    tree.start_test();
-    */
     Ok(())
 }
 

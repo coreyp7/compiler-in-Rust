@@ -1,7 +1,8 @@
 #!/bin/bash
 
 #plankCompilerPath="plank_compiler"
-plankCompilerPath="./target/release/compiler"
+#plankCompilerPath="./target/release/compiler"
+plankCompilerPath="./target/debug/compiler"
 exitEarly=0
 setup=0
 debug=0
@@ -105,15 +106,16 @@ $plankCompilerPath $src $outputDir
 # Ensure that the source code file was created
 cCodeFile="$outputDir/main.c"
 if [ ! -f $cCodeFile ]; then
-    echo "ERROR: Something went wrong when compiling your file: cannot create executable."
-    exitEarly=1
+    # This means there were errors when compiling.
+    # The info will be printed from the rust script.
+    exit
 fi
 
 #echo "Created C code :D"
 
 # Compile the C code into exe.
 gcc $cCodeFile -o $outputDir/plank_program.exe
-rm $cCodeFile
+#rm $cCodeFile
 
 echo "Plank compiled: '$outputDir/plank_program.exe'."
 
