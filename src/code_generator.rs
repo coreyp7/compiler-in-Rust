@@ -1,9 +1,9 @@
-use crate::ast::{
-    AssignmentStatement, IfStatement, InstantiationStatement, PrintStatement, Statement, VarType,
-    WhileStatement,
-};
 use crate::comparison::{
     Comparison, ComparisonOperator, Expression, ExpressionOperator, Logical, LogicalOperator, Term,
+};
+use crate::statement::{
+    AssignmentStatement, IfStatement, InstantiationStatement, PrintStatement, Statement, VarType,
+    WhileStatement,
 };
 
 pub fn generate_code_str(ast: &Vec<Statement>) -> String {

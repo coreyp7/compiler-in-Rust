@@ -1,6 +1,6 @@
 use std::fs::File;
 //use std::io::BufReader;
-use std::io::prelude::*;
+//use std::io::prelude::*;
 
 mod tokenizer;
 use tokenizer::Token;
@@ -8,18 +8,16 @@ use tokenizer::Tokenizer;
 
 mod ast;
 use ast::AstBuilder;
-use ast::ErrMsg;
-use ast::Statement;
+
+mod error;
+use error::print_all_errors;
+
+mod statement;
 
 mod code_generator;
 use code_generator::generate_code_str;
 
 mod comparison;
-
-//mod parser;
-//use parser::TokenList;
-
-use std::env;
 
 fn main() -> std::io::Result<()> {
     /* When running from command line, not used when testing
@@ -68,7 +66,7 @@ fn main() -> std::io::Result<()> {
     }
 
     if (ast_errors.len() > 0) {
-        crate::ast::print_all_errors(&ast_errors);
+        print_all_errors(&ast_errors);
         return Ok(());
     }
 

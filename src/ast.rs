@@ -1,13 +1,13 @@
-//use colored::Colorize;
-use colored::Colorize;
 use std::collections::HashMap;
-use std::collections::HashSet;
-use std::io;
-use std::io::Write;
 use std::str::FromStr;
 
 // My stuff
 use crate::comparison::*;
+use crate::error::ErrMsg;
+use crate::statement::{
+    AssignmentStatement, IfStatement, InstantiationStatement, PrintStatement, Statement,
+    WhileStatement,
+};
 use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
 
@@ -31,7 +31,7 @@ impl AstBuilder {
 
     pub fn insert_into_var_map(&mut self, identity: String, var_type: VarType, line: u8) {
         if self.var_map.contains_key(&identity) {
-            // TODO: Include original line instantiated for error display.
+            // TODO: Include line number for error display.
             self.errors
                 .push(ErrMsg::VariableAlreadyDeclared { identity: identity });
             return;
@@ -90,7 +90,6 @@ impl AstBuilder {
 
     fn next_token(&mut self) {
         self.curr_idx = self.curr_idx + 1;
-        //println!("New token: {:?}", self.get_curr_token());
     }
 
     fn is_curr_token_type(&mut self, t_type: &TokenType) -> bool {
@@ -478,69 +477,11 @@ impl AstBuilder {
     }
 }
 
-#[derive(Debug)]
-pub struct PrintStatement {
-    pub content: String,
-    pub is_content_identity_name: bool,
-    pub line_number: u8,
-}
-
-#[derive(Debug)]
-pub struct IfStatement {
-    pub logical: Logical,
-    pub statements: Vec<Statement>,
-    pub line_number: u8,
-}
-
-#[derive(Debug)]
-pub struct WhileStatement {
-    pub logical: Logical,
-    pub statements: Vec<Statement>,
-    pub line_number: u8,
-}
-
-#[derive(Debug)]
-pub struct AssignmentStatement {
-    pub identity: String,
-    pub value: String,
-    pub assigned_value_type: VarType,
-    pub line_number: u8,
-}
-
-#[derive(Debug)]
-pub struct InstantiationStatement {
-    pub identity: String,
-    pub value: String,
-    pub var_type: VarType,
-    pub assigned_value_type: VarType,
-    pub line_number: u8,
-}
-
-#[derive(Debug)]
-pub enum Statement {
-    Print(PrintStatement),
-    If(IfStatement),
-    While(WhileStatement),
-    Assignment(AssignmentStatement),
-    Instantiation(InstantiationStatement),
-    Newline,
-    TestStub,
-}
-
-fn convert_str_to_vartype(text: &str) -> VarType {
-    match text {
-        "Number" => VarType::Num,
-        "String" => VarType::Str,
-        _ => VarType::Unrecognized,
-    }
-}
-
-fn convert_tokentype_to_vartype(token_type: TokenType) -> VarType {
-    match token_type {
-        TokenType::Number => VarType::Num,
-        TokenType::Str => VarType::Str,
-        _ => VarType::Unrecognized,
-    }
+#[derive(Debug, Clone)]
+pub struct Var {
+    var_type: VarType,
+    identity: String,
+    line_declared_on: u8,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -548,13 +489,6 @@ pub enum VarType {
     Num,
     Str,
     Unrecognized,
-}
-
-#[derive(Debug, Clone)]
-pub struct Var {
-    var_type: VarType,
-    identity: String,
-    line_declared_on: u8,
 }
 
 impl FromStr for VarType {
@@ -569,129 +503,19 @@ impl FromStr for VarType {
     }
 }
 
-// TODO: move this into a different crate, why tf is this here
-#[derive(Debug)]
-pub enum ErrMsg {
-    UnexpectedToken {
-        expected: TokenType,
-        got: TokenType,
-        line_number: u8, //col_number: usize
-    },
-    IncorrectTypeAssignment {
-        expected_type: VarType,
-        got_type: VarType,
-        line_number: u8, //col_number: usize
-    },
-    VariableAlreadyDeclared {
-        //line_number: u8
-        identity: String,
-    },
-    VariableNotDeclared {
-        identity: String,
-        attempted_assignment_line: u8,
-    },
-}
-
-impl ErrMsg {
-    pub fn new_incorrect_type_assignment(
-        expected: VarType,
-        got: VarType,
-        line_number: u8, //col_number: usize
-    ) -> ErrMsg {
-        ErrMsg::IncorrectTypeAssignment {
-            expected_type: expected,
-            got_type: got,
-            line_number: line_number, //col_number: col_number
-        }
-    }
-
-    pub fn new_unexpected_token(
-        expected: TokenType,
-        got: TokenType,
-        line_number: u8, //col_number: usize
-    ) -> ErrMsg {
-        ErrMsg::UnexpectedToken {
-            expected: expected,
-            got: got,
-            line_number: line_number,
-        }
-    }
-
-    pub fn print_error(&self) {
-        let red_error_text = "ERROR:".red().bold();
-        let blue_arrow = "-->".blue().bold();
-        match self {
-            ErrMsg::UnexpectedToken {
-                expected,
-                got,
-                line_number,
-            } => {
-                println!("{} Unexpected token", red_error_text);
-                println!(
-                    "  {} Line {}",
-                    blue_arrow,
-                    line_number.to_string().yellow().bold()
-                );
-                println!("  Expected: '{}'", expected.to_string());
-                println!("  Got: '{}'", got.to_string());
-            }
-            ErrMsg::IncorrectTypeAssignment {
-                expected_type,
-                got_type,
-                line_number,
-            } => {
-                println!("{} Type mismatch", red_error_text);
-                println!(
-                    "  {} Line {}",
-                    blue_arrow,
-                    line_number.to_string().yellow().bold()
-                );
-                println!("  Expected type: {:?}", expected_type);
-                println!("  Got type: {:?}", got_type);
-            }
-            ErrMsg::VariableAlreadyDeclared { identity } => {
-                println!(
-                    "{} Variable '{}' is already declared",
-                    red_error_text, identity
-                );
-                println!("  Cannot redeclare variable '{}'", identity);
-            }
-            ErrMsg::VariableNotDeclared {
-                identity,
-                attempted_assignment_line,
-            } => {
-                println!("{} Variable '{}' not declared", red_error_text, identity);
-                println!(
-                    "  {} Line {}",
-                    blue_arrow,
-                    attempted_assignment_line.to_string().yellow().bold()
-                );
-                println!("  Variable '{}' must be declared before use", identity);
-            }
-        }
+// Helper functions for VarType conversion
+pub fn convert_str_to_vartype(text: &str) -> VarType {
+    match text {
+        "Number" => VarType::Num,
+        "String" => VarType::Str,
+        _ => VarType::Unrecognized,
     }
 }
 
-pub fn print_all_errors(errors: &Vec<ErrMsg>) {
-    if errors.is_empty() {
-        println!("{}No errors found!{}", "".green().bold(), "".clear());
-        return;
+pub fn convert_tokentype_to_vartype(token_type: TokenType) -> VarType {
+    match token_type {
+        TokenType::Number => VarType::Num,
+        TokenType::Str => VarType::Str,
+        _ => VarType::Unrecognized,
     }
-
-    println!(
-        "{}Found {} error(s):{}",
-        "".red().bold(),
-        errors.len(),
-        "".clear()
-    );
-    println!("{}", "=".repeat(40));
-
-    for (i, error) in errors.iter().enumerate() {
-        println!("Error #{}: ", i + 1);
-        error.print_error();
-        if i < errors.len() - 1 {
-            println!(); // Add spacing between errors
-        }
-    }
-    println!("{}", "=".repeat(40));
 }
