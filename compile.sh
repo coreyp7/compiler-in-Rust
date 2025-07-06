@@ -46,6 +46,10 @@ while [ "${1:-}" != '' ]; do
         ;;
         '-s' | '--setup')
         setup=1  
+        ;;
+        '-d' | '--debug')
+        debug=1
+        ;;
     esac
     shift
   done
@@ -100,8 +104,12 @@ if [ $exitEarly -eq 1 ]; then
 fi
 
 # Let rust do its thing
-# Pass it src and outputDir
-$plankCompilerPath $src $outputDir
+# Pass it src and outputDir, and optionally debug flag
+if [ $debug -eq 1 ]; then
+    $plankCompilerPath $src $outputDir --debug
+else
+    $plankCompilerPath $src $outputDir
+fi
 
 # Ensure that the source code file was created
 cCodeFile="$outputDir/main.c"
@@ -115,7 +123,7 @@ fi
 
 # Compile the C code into exe.
 gcc $cCodeFile -o $outputDir/plank_program.exe
-#rm $cCodeFile
+rm $cCodeFile
 
 echo "Plank compiled: '$outputDir/plank_program.exe'."
 

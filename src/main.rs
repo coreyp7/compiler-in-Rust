@@ -20,13 +20,11 @@ use code_generator::generate_code_str;
 mod comparison;
 
 fn main() -> std::io::Result<()> {
-    /* When running from command line, not used when testing */
     let args: Vec<String> = env::args().collect();
     let src_path: &String = &args[1];
     let output_path: &String = &args[2];
-    let debug = true; // TODO: add parsing of this shit in args
-
-    //let src_path: String = String::from("./example.plank");
+    let debug = args.len() > 3 && (args[3] == "--debug");
+    //let src_path: String = String::from("./example.plank"); // for testing without compiling
 
     // TODO: add error handler for reading the file
     let mut f = File::open(src_path)?;
