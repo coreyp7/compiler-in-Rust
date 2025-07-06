@@ -23,8 +23,8 @@ mod comparison;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
-    let src_path: &String = &args[1];
-    let output_path: &String = &args[2];
+    let src_path = &args[1];
+    let output_path = &args[2];
     let debug = args.len() > 3 && (args[3] == "--debug");
     //let src_path: String = String::from("./example.plank"); // for testing without compiling
 
@@ -47,7 +47,7 @@ fn main() -> std::io::Result<()> {
         debug_print_errors_and_var_map(&ast_errors, &ast_builder);
     }
 
-    if ast_errors.len() > 0 {
+    if !ast_errors.is_empty() {
         print_all_errors(&ast_errors);
         let error_str = "Failed:".red().bold();
         if ast_errors.len() == 1 {
@@ -74,14 +74,13 @@ fn main() -> std::io::Result<()> {
     let path = format!("{output_path}/main.c");
     let mut output_file = File::create(path)?;
 
-    //TODO: add error handling
-    let _ = output_file.write_all(code.as_bytes());
+    output_file.write_all(code.as_bytes())?;
 
     Ok(())
 }
 
 // Debug helper functions
-fn debug_print_tokens(tokens: &Vec<Token>) {
+fn debug_print_tokens(tokens: &[Token]) {
     println!("Tokenizer output: -----------------------------------");
     for token in tokens {
         println!("{:?}", token);
@@ -89,7 +88,7 @@ fn debug_print_tokens(tokens: &Vec<Token>) {
     println!("Tokenizer output: -----------------------------------");
 }
 
-fn debug_print_ast(ast_vec: &Vec<Statement>) {
+fn debug_print_ast(ast_vec: &[Statement]) {
     println!("Ast output: -----------------------------------");
     for node in ast_vec {
         println!("{:#?}", node);
@@ -97,7 +96,7 @@ fn debug_print_ast(ast_vec: &Vec<Statement>) {
     println!("Ast output: -----------------------------------");
 }
 
-fn debug_print_errors_and_var_map(ast_errors: &Vec<ErrMsg>, ast_builder: &AstBuilder) {
+fn debug_print_errors_and_var_map(ast_errors: &[ErrMsg], ast_builder: &AstBuilder) {
     println!("Ast ERRORS: -----------------------------------");
     for err in ast_errors {
         println!("{:#?}", err);
@@ -108,7 +107,7 @@ fn debug_print_errors_and_var_map(ast_errors: &Vec<ErrMsg>, ast_builder: &AstBui
     println!("Ast map: -----------------------------------");
 }
 
-fn debug_print_generated_code(code: &String) {
+fn debug_print_generated_code(code: &str) {
     println!("code generated: -----------------------------------");
     println!("{}", code);
     println!("code generated: -----------------------------------");

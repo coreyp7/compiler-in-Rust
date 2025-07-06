@@ -32,12 +32,12 @@ impl Tokenizer {
             if let Ok(line_str) = line_result {
                 let mut tokens = self.tokenize_line(line_str);
                 token_vec.append(&mut tokens);
-                self.line_number = self.line_number + 1
+                self.line_number += 1;
             }
         }
         token_vec.push(self.create_token(TokenType::EOF, String::new()));
 
-        return token_vec;
+        token_vec
     }
 
     fn create_token(&mut self, token_type_param: TokenType, text_param: String) -> Token {

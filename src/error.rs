@@ -28,14 +28,14 @@ pub enum ErrMsg {
 
 impl ErrMsg {
     pub fn new_incorrect_type_assignment(
-        expected: VarType,
-        got: VarType,
+        expected_type: VarType,
+        got_type: VarType,
         line_number: u8, //col_number: usize
     ) -> ErrMsg {
         ErrMsg::IncorrectTypeAssignment {
-            expected_type: expected,
-            got_type: got,
-            line_number: line_number, //col_number: col_number
+            expected_type,
+            got_type,
+            line_number, //col_number: col_number
         }
     }
 
@@ -45,9 +45,9 @@ impl ErrMsg {
         line_number: u8, //col_number: usize
     ) -> ErrMsg {
         ErrMsg::UnexpectedToken {
-            expected: expected,
-            got: got,
-            line_number: line_number,
+            expected,
+            got,
+            line_number,
         }
     }
 
@@ -106,7 +106,7 @@ impl ErrMsg {
     }
 }
 
-pub fn print_all_errors(errors: &Vec<ErrMsg>) {
+pub fn print_all_errors(errors: &[ErrMsg]) {
     for (i, error) in errors.iter().enumerate() {
         error.print_error();
         if i < errors.len() - 1 {

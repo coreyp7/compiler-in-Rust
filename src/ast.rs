@@ -32,17 +32,17 @@ impl AstBuilder {
         if self.var_map.contains_key(&identity) {
             // TODO: Include line number for error display.
             self.errors
-                .push(ErrMsg::VariableAlreadyDeclared { identity: identity });
+                .push(ErrMsg::VariableAlreadyDeclared { identity });
             return;
         }
 
         let var = Var {
-            var_type: var_type,
-            identity: identity,
+            var_type,
+            identity: identity.clone(),
             line_declared_on: line,
         };
 
-        self.var_map.insert(var.identity.clone(), var);
+        self.var_map.insert(identity, var);
     }
 
     pub fn get_error_if_var_assignment_invalid(

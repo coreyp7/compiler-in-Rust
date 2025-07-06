@@ -6,13 +6,13 @@ use crate::statement::{
     WhileStatement,
 };
 
-pub fn generate_code_str(ast: &Vec<Statement>) -> String {
-    let mut code_str: String = String::new();
+pub fn generate_code_str(ast: &[Statement]) -> String {
+    let mut code_str = String::new();
     code_str.push_str("#include <stdio.h>\n");
     code_str.push_str("int main(){\n");
 
     for statement in ast {
-        let statement_as_str = convert_statement_to_code(&statement);
+        let statement_as_str = convert_statement_to_code(statement);
         code_str.push_str(&statement_as_str);
     }
     code_str.push_str("}");
