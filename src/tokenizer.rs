@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
@@ -49,8 +50,6 @@ impl Tokenizer {
         }
     }
 
-    // TODO: return result indicating successor
-    // Here's our tokenizer. Function for now, can change later if necessary.
     fn tokenize_line(&mut self, line: String) -> Vec<Token> {
         let mut tokens: Vec<Token> = Vec::new();
         let line_bytes: &[u8] = line.as_bytes();
@@ -65,126 +64,7 @@ impl Tokenizer {
                 next = Some(line_bytes[self.curr_byte_index_in_line + 1] as char);
             }
 
-            //let mut token: Token = Token { token_type: TokenType::UnsupportedSymbolError, text: String::from(curr) };
-            let mut token: Token =
-                self.create_token(TokenType::UnsupportedSymbolError, String::from(curr));
-            let mut skip_rest_of_line = false;
-
-            match curr {
-                '+' => token = self.create_token(TokenType::Plus, String::from(curr)),
-                '*' => token = self.create_token(TokenType::Asterisk, String::from(curr)),
-                ':' => token = self.create_token(TokenType::Colon, String::from(curr)),
-                '(' => token = self.create_token(TokenType::LeftParen, String::from('(')),
-                ')' => token = self.create_token(TokenType::RightParen, String::from(')')),
-                ',' => token = self.create_token(TokenType::Comma, String::from(',')),
-                '-' => {
-                    if matches!(next, Some(x) if x == '>') {
-                        // This is an arrow, for indicating function return.
-                        self.curr_byte_index_in_line += 1;
-                        token = self.create_token(TokenType::Arrow, String::from("->"));
-                    } else {
-                        token = self.create_token(TokenType::Minus, String::from(curr));
-                    }
-                }
-                '/' => {
-                    if matches!(next, Some(x) if x == '!') {
-                        // skip rest of line, return early; rest of line is coment
-                        skip_rest_of_line = true;
-                    } else {
-                        token = self.create_token(TokenType::Slash, String::from(curr));
-                    }
-                }
-                '=' => {
-                    // if next isn't None and next char makes self a double equals
-                    if matches!(next, Some(x) if x == '=') {
-                        self.curr_byte_index_in_line += 1;
-                        token = self.create_token(TokenType::EqualEqual, String::from("=="));
-                    } else {
-                        token = self.create_token(TokenType::Equal, String::from("="));
-                    }
-                }
-                '<' => {
-                    if matches!(next, Some(x) if x == '=') {
-                        self.curr_byte_index_in_line += 1;
-                        token = self.create_token(TokenType::LessThanEqualTo, String::from("<="));
-                    } else {
-                        token = self.create_token(TokenType::LessThan, String::from("<"));
-                    }
-                }
-                '>' => {
-                    if matches!(next, Some(x) if x == '=') {
-                        self.curr_byte_index_in_line += 1;
-                        token =
-                            self.create_token(TokenType::GreaterThanEqualTo, String::from(">="));
-                    } else {
-                        token = self.create_token(TokenType::GreaterThan, String::from(">"));
-                    }
-                }
-                '!' => {
-                    if matches!(next, Some(x) if x == '=') {
-                        self.curr_byte_index_in_line += 1;
-                        token = self.create_token(TokenType::NotEqual, String::from("!="))
-                    //} else if matches!(next, Some(x) if x != ' ') {
-                    } else {
-                        token = self.create_token(TokenType::Bang, String::from("!"));
-                    }
-                }
-                '&' => {
-                    if matches!(next, Some(x) if x == '&') {
-                        self.curr_byte_index_in_line += 1;
-                        token = self.create_token(TokenType::DoubleAmpersand, String::from("&&"));
-                    } else {
-                        token =
-                            self.create_token(TokenType::UnsupportedSymbolError, String::from("&"));
-                    }
-                }
-                '|' => {
-                    if matches!(next, Some(x) if x == '|') {
-                        self.curr_byte_index_in_line += 1;
-                        token = self.create_token(TokenType::DoubleBar, String::from("||"));
-                    } else {
-                        token =
-                            self.create_token(TokenType::UnsupportedSymbolError, String::from("|"));
-                    }
-                }
-                '"' => {
-                    let result = self.create_token_from_text(
-                        &line_bytes,
-                        self.curr_byte_index_in_line + 1,
-                        TokenType::Str,
-                    );
-                    let str_token = result.0;
-                    let new_curr_byte_idx = result.1;
-
-                    token = str_token;
-                    self.curr_byte_index_in_line = new_curr_byte_idx;
-                }
-                x if x.is_numeric() => {
-                    let result = self.create_token_from_text(
-                        &line_bytes,
-                        self.curr_byte_index_in_line,
-                        TokenType::Number,
-                    );
-                    let num_token = result.0;
-                    let new_curr_byte_idx = result.1;
-
-                    token = num_token;
-                    self.curr_byte_index_in_line = new_curr_byte_idx;
-                }
-                x if x.is_alphabetic() => {
-                    let result = self.create_token_from_text(
-                        &line_bytes,
-                        self.curr_byte_index_in_line,
-                        TokenType::Identity,
-                    );
-                    let num_token = result.0;
-                    let new_curr_byte_idx = result.1;
-
-                    token = num_token;
-                    self.curr_byte_index_in_line = new_curr_byte_idx;
-                }
-                _ => (),
-            };
+            let (token, skip_rest_of_line) = self.match_character(&line_bytes, curr, next);
 
             self.curr_byte_index_in_line += 1;
 
@@ -316,7 +196,7 @@ pub struct Token {
     pub col_number: usize,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[allow(dead_code)]
 pub enum TokenType {
     EOF = 0,
@@ -446,6 +326,127 @@ impl TokenType {
             TokenType::Comma => ",",
             TokenType::Arrow => "->",
             TokenType::EndFunction => "endFunction",
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum TokenMatch {
+    Single(TokenType),
+    Double(char, TokenType), // (next_char, token_if_matched)
+    Comment,                 // Special case for comments
+}
+
+impl Tokenizer {
+    fn get_char_token_map() -> HashMap<char, TokenMatch> {
+        use TokenMatch::*;
+        use TokenType::*;
+
+        [
+            ('+', Single(Plus)),
+            ('*', Single(Asterisk)),
+            (':', Single(Colon)),
+            ('(', Single(LeftParen)),
+            (')', Single(RightParen)),
+            (',', Single(Comma)),
+            ('-', Double('>', Arrow)),
+            ('/', Comment),
+            ('=', Double('=', EqualEqual)),
+            ('<', Double('=', LessThanEqualTo)),
+            ('>', Double('=', GreaterThanEqualTo)),
+            ('!', Double('=', NotEqual)),
+            ('&', Double('&', DoubleAmpersand)),
+            ('|', Double('|', DoubleBar)),
+        ]
+        .into_iter()
+        .collect()
+    }
+
+    fn get_single_char_fallback(ch: char) -> TokenType {
+        match ch {
+            '-' => TokenType::Minus,
+            '=' => TokenType::Equal,
+            '<' => TokenType::LessThan,
+            '>' => TokenType::GreaterThan,
+            '!' => TokenType::Bang,
+            '/' => TokenType::Slash,
+            _ => TokenType::UnsupportedSymbolError,
+        }
+    }
+
+    fn match_character(
+        &mut self,
+        line_bytes: &[u8],
+        curr: char,
+        next: Option<char>,
+    ) -> (Token, bool) {
+        let token_map = Self::get_char_token_map();
+
+        if let Some(token_match) = token_map.get(&curr) {
+            match token_match {
+                TokenMatch::Single(token_type) => {
+                    (self.create_token(*token_type, String::from(curr)), false)
+                }
+                TokenMatch::Double(expected_next, double_token_type) => {
+                    if matches!(next, Some(x) if x == *expected_next) {
+                        self.curr_byte_index_in_line += 1;
+                        let double_char = format!("{}{}", curr, expected_next);
+                        (self.create_token(*double_token_type, double_char), false)
+                    } else {
+                        let fallback_type = Self::get_single_char_fallback(curr);
+                        (self.create_token(fallback_type, String::from(curr)), false)
+                    }
+                }
+                TokenMatch::Comment => {
+                    if matches!(next, Some(x) if x == '!') {
+                        // Return a dummy token and signal to skip rest of line
+                        (
+                            self.create_token(TokenType::UnsupportedSymbolError, String::new()),
+                            true,
+                        )
+                    } else {
+                        (
+                            self.create_token(TokenType::Slash, String::from(curr)),
+                            false,
+                        )
+                    }
+                }
+            }
+        } else {
+            // Handle strings, keywords, and numbers.
+            match curr {
+                '"' => {
+                    let result = self.create_token_from_text(
+                        line_bytes,
+                        self.curr_byte_index_in_line + 1,
+                        TokenType::Str,
+                    );
+                    self.curr_byte_index_in_line = result.1;
+                    (result.0, false)
+                }
+                x if x.is_numeric() => {
+                    let result = self.create_token_from_text(
+                        line_bytes,
+                        self.curr_byte_index_in_line,
+                        TokenType::Number,
+                    );
+                    self.curr_byte_index_in_line = result.1;
+                    (result.0, false)
+                }
+                x if x.is_alphabetic() => {
+                    let result = self.create_token_from_text(
+                        line_bytes,
+                        self.curr_byte_index_in_line,
+                        TokenType::Identity,
+                    );
+                    self.curr_byte_index_in_line = result.1;
+                    (result.0, false)
+                }
+                _ => (
+                    self.create_token(TokenType::UnsupportedSymbolError, String::from(curr)),
+                    false,
+                ),
+            }
         }
     }
 }
