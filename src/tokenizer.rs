@@ -414,38 +414,30 @@ impl Tokenizer {
             }
         } else {
             // Handle strings, keywords, and numbers.
-            match curr {
-                '"' => {
-                    let result = self.create_token_from_text(
-                        line_bytes,
-                        self.curr_byte_index_in_line + 1,
-                        TokenType::Str,
-                    );
-                    self.curr_byte_index_in_line = result.1;
-                    (result.0, false)
-                }
-                x if x.is_numeric() => {
-                    let result = self.create_token_from_text(
-                        line_bytes,
-                        self.curr_byte_index_in_line,
-                        TokenType::Number,
-                    );
-                    self.curr_byte_index_in_line = result.1;
-                    (result.0, false)
-                }
-                x if x.is_alphabetic() => {
-                    let result = self.create_token_from_text(
-                        line_bytes,
-                        self.curr_byte_index_in_line,
-                        TokenType::Identity,
-                    );
-                    self.curr_byte_index_in_line = result.1;
-                    (result.0, false)
-                }
-                _ => (
+            // They are handled slightly differently depending on which, so we
+            // condition the data we pass into create_token_from_text.
+            let token_type = match curr {
+                '"' => Some(TokenType::Str),
+                x if x.is_numeric() => Some(TokenType::Number),
+                x if x.is_alphabetic() => Some(TokenType::Identity),
+                _ => None,
+            };
+
+            if let Some(token_type) = token_type {
+                let start_index = if token_type == TokenType::Str {
+                    self.curr_byte_index_in_line + 1 // Skip opening quote
+                } else {
+                    self.curr_byte_index_in_line
+                };
+
+                let result = self.create_token_from_text(line_bytes, start_index, token_type);
+                self.curr_byte_index_in_line = result.1;
+                (result.0, false)
+            } else {
+                (
                     self.create_token(TokenType::UnsupportedSymbolError, String::from(curr)),
                     false,
-                ),
+                )
             }
         }
     }
