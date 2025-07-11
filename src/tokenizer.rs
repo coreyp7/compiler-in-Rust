@@ -137,7 +137,7 @@ impl Tokenizer {
                     }
                 }
                 '"' => {
-                    let result = self.get_end_of_token(
+                    let result = self.create_token_from_text(
                         &line_bytes,
                         self.curr_byte_index_in_line + 1,
                         TokenType::Str,
@@ -149,7 +149,7 @@ impl Tokenizer {
                     self.curr_byte_index_in_line = new_curr_byte_idx;
                 }
                 x if x.is_numeric() => {
-                    let result = self.get_end_of_token(
+                    let result = self.create_token_from_text(
                         &line_bytes,
                         self.curr_byte_index_in_line,
                         TokenType::Number,
@@ -161,7 +161,7 @@ impl Tokenizer {
                     self.curr_byte_index_in_line = new_curr_byte_idx;
                 }
                 x if x.is_alphabetic() => {
-                    let result = self.get_end_of_token(
+                    let result = self.create_token_from_text(
                         &line_bytes,
                         self.curr_byte_index_in_line,
                         TokenType::Identity,
@@ -207,7 +207,7 @@ impl Tokenizer {
 
     Will return -> (Token, new position in string buffer)
     */
-    fn get_end_of_token(
+    fn create_token_from_text(
         &mut self,
         line_bytes: &[u8],
         token_start: usize,
@@ -317,6 +317,7 @@ pub enum TokenType {
     Label = 100, //unused
     //NumberType, // for declaring variable 'Number'
     VarDeclaration,
+    FunctionDeclaration,
     UpdateKeyword, // assigning to variables
     Goto,
     Print,
@@ -370,6 +371,7 @@ impl FromStr for TokenType {
             "endWhile" => Ok(TokenType::EndWhile),
             "Number" | "String" => Ok(TokenType::VarDeclaration),
             "update" => Ok(TokenType::UpdateKeyword),
+            "function" => Ok(TokenType::FunctionDeclaration),
             _ => Err(()),
         }
     }
@@ -390,6 +392,7 @@ impl TokenType {
             TokenType::Label => "label",
             TokenType::VarDeclaration => "VarDeclaration",
             TokenType::UpdateKeyword => "update",
+            TokenType::FunctionDeclaration => "FunctionDeclaration",
             TokenType::Goto => "goto",
             TokenType::Print => "print",
             TokenType::Input => "input",
