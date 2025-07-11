@@ -18,3 +18,12 @@ while x < 6 do
     x <= x + 1
 endWhile
 
+/! functions
+function foo(Number bar, ...) -> Number:
+    print("here's the function body")
+   n d return 3
+
+function foo(Number bar, ...) -> Number:
+    Number test: 151
+    return test
+endFunction

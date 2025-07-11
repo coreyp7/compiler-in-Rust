@@ -72,9 +72,20 @@ impl Tokenizer {
 
             match curr {
                 '+' => token = self.create_token(TokenType::Plus, String::from(curr)),
-                '-' => token = self.create_token(TokenType::Minus, String::from(curr)),
                 '*' => token = self.create_token(TokenType::Asterisk, String::from(curr)),
                 ':' => token = self.create_token(TokenType::Colon, String::from(curr)),
+                '(' => token = self.create_token(TokenType::LeftParen, String::from('(')),
+                ')' => token = self.create_token(TokenType::RightParen, String::from(')')),
+                ',' => token = self.create_token(TokenType::Comma, String::from(',')),
+                '-' => {
+                    if matches!(next, Some(x) if x == '>') {
+                        // This is an arrow, for indicating function return.
+                        self.curr_byte_index_in_line += 1;
+                        token = self.create_token(TokenType::Arrow, String::from("->"));
+                    } else {
+                        token = self.create_token(TokenType::Minus, String::from(curr));
+                    }
+                }
                 '/' => {
                     if matches!(next, Some(x) if x == '!') {
                         // skip rest of line, return early; rest of line is coment
@@ -329,6 +340,12 @@ pub enum TokenType {
     While,
     Do,
     EndWhile,
+    Return,
+    LeftParen,
+    RightParen,
+    Comma,
+    Arrow,
+    EndFunction,
     // Operators
     Equal = 200,
     Plus,
@@ -372,6 +389,8 @@ impl FromStr for TokenType {
             "Number" | "String" => Ok(TokenType::VarDeclaration),
             "update" => Ok(TokenType::UpdateKeyword),
             "function" => Ok(TokenType::FunctionDeclaration),
+            "return" => Ok(TokenType::Return),
+            "endFunction" => Ok(TokenType::EndFunction),
             _ => Err(()),
         }
     }
@@ -421,6 +440,12 @@ impl TokenType {
             TokenType::Colon => ":",
             TokenType::UnsupportedSymbolError => "UnsupportedSymbol",
             TokenType::Space => " ",
+            TokenType::Return => "return",
+            TokenType::LeftParen => "(",
+            TokenType::RightParen => ")",
+            TokenType::Comma => ",",
+            TokenType::Arrow => "->",
+            TokenType::EndFunction => "endFunction",
         }
     }
 }
