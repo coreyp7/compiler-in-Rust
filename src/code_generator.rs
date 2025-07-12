@@ -2,8 +2,8 @@ use crate::comparison::{
     Comparison, ComparisonOperator, Expression, ExpressionOperator, Logical, LogicalOperator, Term,
 };
 use crate::statement::{
-    AssignmentStatement, IfStatement, PrintStatement, Statement, VarInstantiationStatement,
-    VarType, WhileStatement,
+    AssignmentStatement, FunctionInstantiationStatement, IfStatement, PrintStatement, Statement,
+    VarInstantiationStatement, VarType, WhileStatement,
 };
 
 pub fn generate_code_str(ast: &[Statement]) -> String {
@@ -31,8 +31,12 @@ fn convert_statement_to_code(statement: &Statement) -> String {
         Statement::VarInstantiation(statement_struct) => {
             convert_instantiation_statement_to_code(statement_struct)
         }
+        Statement::FunctionInstantiation(statement_struct) => {
+            convert_function_instantiation_statement_to_code(statement_struct)
+        }
         Statement::Newline => convert_newline_to_code(),
         Statement::TestStub => String::from("// TestStub\n"),
+        _ => String::from("NOT COVERED YET"),
     };
 
     statement_code_str
@@ -140,6 +144,44 @@ fn convert_instantiation_statement_to_code(statement_struct: &VarInstantiationSt
     }
 
     code.push_str(";\n");
+    code
+}
+
+// TODO: I'm just leaving this here for now, come back to this once ast is done.
+fn convert_function_instantiation_statement_to_code(
+    statement_struct: &FunctionInstantiationStatement,
+) -> String {
+    let mut code = String::new();
+
+    match statement_struct.return_type {
+        VarType::Str => code.push_str("char* "),
+        VarType::Num => code.push_str("int "),
+        VarType::Unrecognized => code.push_str("void "),
+    }
+
+    code.push_str(&statement_struct.function_name);
+    code.push_str("(");
+
+    // Add parameters (for now, assuming they're all strings - this might need refinement)
+    for (i, param) in statement_struct.parameters.iter().enumerate() {
+        if i > 0 {
+            code.push_str(", ");
+        }
+        // For now, assuming parameters are identifiers - type inference would be needed
+        code.push_str("/* parameter type needed */ ");
+        code.push_str(param);
+    }
+
+    code.push_str(") {\n");
+
+    // Convert nested statements in the function body
+    for stmt in &statement_struct.statements {
+        let stmt_code = convert_statement_to_code(stmt);
+        code.push_str("    "); // Add indentation
+        code.push_str(&stmt_code);
+    }
+
+    code.push_str("}\n");
     code
 }
 

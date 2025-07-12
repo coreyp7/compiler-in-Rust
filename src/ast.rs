@@ -5,8 +5,8 @@ use std::str::FromStr;
 use crate::comparison::*;
 use crate::error::ErrMsg;
 use crate::statement::{
-    AssignmentStatement, IfStatement, PrintStatement, Statement, VarInstantiationStatement,
-    WhileStatement,
+    AssignmentStatement, FunctionInstantiationStatement, IfStatement, PrintStatement,
+    ReturnStatement, Statement, VarInstantiationStatement, WhileStatement,
 };
 use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
@@ -312,6 +312,78 @@ impl AstBuilder {
                     value: assignment_value_text,
                     var_type: var_type,
                     assigned_value_type: assignment_var_type,
+                    line_number: self.get_curr_token().line_number,
+                });
+            }
+            TokenType::FunctionDeclaration => {
+                self.next_token();
+
+                let function_name = self.get_curr_token().text.clone();
+                self.next_token();
+
+                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::LeftParen) {
+                    self.errors.push(error);
+                }
+                self.next_token();
+
+                // Parameters
+                /*
+                let mut parameters = Vec::new();
+                while self.get_curr_token().token_type != TokenType::RightParen {
+                    if self.get_curr_token().token_type == TokenType::VarDeclaration {
+                        parameters.push(self.get_curr_token().text.clone());
+                        self.next_token();
+
+                        if self.get_curr_token().token_type == TokenType::Comma {
+                            self.next_token();
+                        }
+                    } else {
+                        // Error: expected parameter name
+                        self.errors.push(ErrMsg::UnexpectedToken {
+                            expected: TokenType::Identity,
+                            got: self.get_curr_token().token_type.clone(),
+                            line_number: self.get_curr_token().line_number,
+                        });
+                        self.next_token();
+                    }
+                }
+                */
+
+                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::RightParen) {
+                    self.errors.push(error);
+                }
+                self.next_token();
+
+                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Arrow) {
+                    self.errors.push(error);
+                }
+                self.next_token();
+
+                let return_type = convert_str_to_vartype(&self.get_curr_token().text);
+                self.next_token();
+
+                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Colon) {
+                    self.errors.push(error);
+                }
+                self.next_token();
+
+                // Parse function body statements
+                let mut function_statements = Vec::new();
+                while !self.is_curr_token_type(&TokenType::EndFunction) {
+                    let statement = self.statement();
+                    println!("parsed statement: {:?}", statement);
+                    function_statements.push(statement);
+                }
+                // TODO: need to add error handling if we hit EOF while looking
+                // for end function
+                self.next_token();
+
+                let parameters = Vec::new();
+                statement = Statement::FunctionInstantiation(FunctionInstantiationStatement {
+                    function_name,
+                    parameters,
+                    return_type,
+                    statements: function_statements,
                     line_number: self.get_curr_token().line_number,
                 });
             }

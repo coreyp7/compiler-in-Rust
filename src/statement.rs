@@ -1,6 +1,7 @@
 use crate::comparison::Logical;
 
 // Re-export VarType for convenience
+pub use crate::ast::Var;
 pub use crate::ast::VarType;
 
 #[derive(Debug)]
@@ -42,12 +43,36 @@ pub struct VarInstantiationStatement {
 }
 
 #[derive(Debug)]
+pub struct FunctionInstantiationStatement {
+    pub function_name: String,
+    pub parameters: Vec<String>,
+    pub return_type: VarType,
+    pub statements: Vec<Statement>,
+    pub line_number: u8,
+}
+
+#[derive(Debug)]
+pub struct ReturnStatement {
+    pub return_type: VarType,
+    pub return_value: Option<Var>,
+    pub line_number: u8,
+}
+
+// Leaving here for later.
+pub struct FunctionParameter<'a> {
+    pub var_name: &'a str,
+    pub var_type: VarType,
+}
+
+#[derive(Debug)]
 pub enum Statement {
     Print(PrintStatement),
     If(IfStatement),
     While(WhileStatement),
     Assignment(AssignmentStatement),
     VarInstantiation(VarInstantiationStatement),
+    FunctionInstantiation(FunctionInstantiationStatement),
+    Return(ReturnStatement),
     Newline,
     TestStub,
 }
