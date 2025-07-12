@@ -442,3 +442,643 @@ impl Tokenizer {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+    use std::io::Write;
+
+    // Helper function to create a test tokenizer with sample input
+    fn create_test_tokenizer() -> Tokenizer {
+        Tokenizer::new()
+    }
+
+    // Helper function to assert token matches expected type and text
+    fn assert_token(
+        token: &Token,
+        expected_type: TokenType,
+        expected_text: &str,
+        line: u8,
+        col: usize,
+    ) {
+        assert_eq!(token.token_type, expected_type);
+        assert_eq!(token.text, expected_text);
+        assert_eq!(token.line_number, line);
+        assert_eq!(token.col_number, col);
+    }
+
+    #[test]
+    fn test_tokenizer_new() {
+        let tokenizer = Tokenizer::new();
+        assert_eq!(tokenizer.line_number, 1);
+        assert_eq!(tokenizer.curr_byte_index_in_line, 0);
+    }
+
+    #[test]
+    fn test_create_token() {
+        let mut tokenizer = create_test_tokenizer();
+        tokenizer.curr_byte_index_in_line = 5;
+
+        let token = tokenizer.create_token(TokenType::Plus, "+".to_string());
+
+        assert_eq!(token.token_type, TokenType::Plus);
+        assert_eq!(token.text, "+");
+        assert_eq!(token.line_number, 1);
+        assert_eq!(token.col_number, 6); // curr_byte_index + 1
+    }
+
+    #[test]
+    fn test_get_char_token_map() {
+        let map = Tokenizer::get_char_token_map();
+
+        // Test single character tokens
+        assert!(matches!(
+            map.get(&'+'),
+            Some(TokenMatch::Single(TokenType::Plus))
+        ));
+        assert!(matches!(
+            map.get(&'*'),
+            Some(TokenMatch::Single(TokenType::Asterisk))
+        ));
+        assert!(matches!(
+            map.get(&':'),
+            Some(TokenMatch::Single(TokenType::Colon))
+        ));
+        assert!(matches!(
+            map.get(&'('),
+            Some(TokenMatch::Single(TokenType::LeftParen))
+        ));
+        assert!(matches!(
+            map.get(&')'),
+            Some(TokenMatch::Single(TokenType::RightParen))
+        ));
+        assert!(matches!(
+            map.get(&','),
+            Some(TokenMatch::Single(TokenType::Comma))
+        ));
+
+        // Test double character tokens
+        assert!(matches!(
+            map.get(&'='),
+            Some(TokenMatch::Double('=', TokenType::EqualEqual))
+        ));
+        assert!(matches!(
+            map.get(&'<'),
+            Some(TokenMatch::Double('=', TokenType::LessThanEqualTo))
+        ));
+        assert!(matches!(
+            map.get(&'>'),
+            Some(TokenMatch::Double('=', TokenType::GreaterThanEqualTo))
+        ));
+        assert!(matches!(
+            map.get(&'!'),
+            Some(TokenMatch::Double('=', TokenType::NotEqual))
+        ));
+        assert!(matches!(
+            map.get(&'&'),
+            Some(TokenMatch::Double('&', TokenType::DoubleAmpersand))
+        ));
+        assert!(matches!(
+            map.get(&'|'),
+            Some(TokenMatch::Double('|', TokenType::DoubleBar))
+        ));
+        assert!(matches!(
+            map.get(&'-'),
+            Some(TokenMatch::Double('>', TokenType::Arrow))
+        ));
+
+        // Test comment token
+        assert!(matches!(map.get(&'/'), Some(TokenMatch::Comment)));
+
+        // Test non-existent token
+        assert!(map.get(&'@').is_none());
+    }
+
+    #[test]
+    fn test_get_single_char_fallback() {
+        assert_eq!(Tokenizer::get_single_char_fallback('='), TokenType::Equal);
+        assert_eq!(
+            Tokenizer::get_single_char_fallback('<'),
+            TokenType::LessThan
+        );
+        assert_eq!(
+            Tokenizer::get_single_char_fallback('>'),
+            TokenType::GreaterThan
+        );
+        assert_eq!(Tokenizer::get_single_char_fallback('!'), TokenType::Bang);
+        assert_eq!(Tokenizer::get_single_char_fallback('-'), TokenType::Minus);
+        assert_eq!(Tokenizer::get_single_char_fallback('/'), TokenType::Slash);
+        assert_eq!(
+            Tokenizer::get_single_char_fallback('@'),
+            TokenType::UnsupportedSymbolError
+        );
+    }
+
+    #[test]
+    fn test_match_character_single_tokens() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"+*:(),";
+
+        let (token, skip) = tokenizer.match_character(line_bytes, '+', Some('*'));
+        assert_token(&token, TokenType::Plus, "+", 1, 1);
+        assert!(!skip);
+
+        tokenizer.curr_byte_index_in_line = 1;
+        let (token, skip) = tokenizer.match_character(line_bytes, '*', Some(':'));
+        assert_token(&token, TokenType::Asterisk, "*", 1, 2);
+        assert!(!skip);
+    }
+
+    #[test]
+    fn test_match_character_double_tokens() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"== != <= >=";
+
+        // Test successful double character match
+        let (token, skip) = tokenizer.match_character(line_bytes, '=', Some('='));
+        assert_token(&token, TokenType::EqualEqual, "==", 1, 1);
+        assert!(!skip);
+        assert_eq!(tokenizer.curr_byte_index_in_line, 1); // Should increment for double char
+
+        // Reset tokenizer
+        tokenizer.curr_byte_index_in_line = 0;
+
+        // Test failed double character match (falls back to single)
+        let (token, skip) = tokenizer.match_character(line_bytes, '=', Some('x'));
+        assert_token(&token, TokenType::Equal, "=", 1, 1);
+        assert!(!skip);
+        assert_eq!(tokenizer.curr_byte_index_in_line, 0); // Should not increment for single char fallback
+    }
+
+    #[test]
+    fn test_match_character_comments() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"/! comment";
+
+        // Test comment start
+        let (token, skip) = tokenizer.match_character(line_bytes, '/', Some('!'));
+        assert_eq!(token.token_type, TokenType::UnsupportedSymbolError);
+        assert!(skip);
+
+        // Test division (not comment)
+        let line_bytes2 = b"/ 2";
+        let (token, skip) = tokenizer.match_character(line_bytes2, '/', Some(' '));
+        assert_token(&token, TokenType::Slash, "/", 1, 1);
+        assert!(!skip);
+    }
+
+    #[test]
+    fn test_match_character_numbers() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"123";
+
+        let (token, skip) = tokenizer.match_character(line_bytes, '1', Some('2'));
+        assert_token(&token, TokenType::Number, "123", 1, 1);
+        assert!(!skip);
+        assert_eq!(tokenizer.curr_byte_index_in_line, 2); // Should be at end of number
+    }
+
+    #[test]
+    fn test_match_character_strings() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"\"hello\"";
+
+        let (token, skip) = tokenizer.match_character(line_bytes, '"', Some('h'));
+        assert_token(&token, TokenType::Str, "hello", 1, 1);
+        assert!(!skip);
+        assert_eq!(tokenizer.curr_byte_index_in_line, 6); // Should be at closing quote
+    }
+
+    #[test]
+    fn test_match_character_identifiers() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"variable";
+
+        let (token, skip) = tokenizer.match_character(line_bytes, 'v', Some('a'));
+        assert_token(&token, TokenType::Identity, "variable", 1, 1);
+        assert!(!skip);
+        assert_eq!(tokenizer.curr_byte_index_in_line, 7); // Should be at end of identifier
+    }
+
+    #[test]
+    fn test_match_character_keywords() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"let";
+
+        let (token, skip) = tokenizer.match_character(line_bytes, 'l', Some('e'));
+        assert_token(&token, TokenType::Let, "let", 1, 1);
+        assert!(!skip);
+        assert_eq!(tokenizer.curr_byte_index_in_line, 2); // Should be at end of keyword
+    }
+
+    #[test]
+    fn test_match_character_unsupported() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"@#$";
+
+        let (token, skip) = tokenizer.match_character(line_bytes, '@', Some('#'));
+        assert_token(&token, TokenType::UnsupportedSymbolError, "@", 1, 1);
+        assert!(!skip);
+    }
+
+    #[test]
+    fn test_create_token_from_text_number() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"12345abc";
+
+        let (token, end_idx) = tokenizer.create_token_from_text(line_bytes, 0, TokenType::Number);
+
+        assert_token(&token, TokenType::Number, "12345", 1, 1);
+        assert_eq!(end_idx, 4); // Should stop at 'a'
+    }
+
+    #[test]
+    fn test_create_token_from_text_number_end_of_line() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"123";
+
+        let (token, end_idx) = tokenizer.create_token_from_text(line_bytes, 0, TokenType::Number);
+
+        assert_token(&token, TokenType::Number, "123", 1, 1);
+        assert_eq!(end_idx, 2); // Should be at last character
+    }
+
+    #[test]
+    fn test_create_token_from_text_string() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"hello world\"";
+
+        let (token, end_idx) = tokenizer.create_token_from_text(line_bytes, 0, TokenType::Str);
+
+        assert_token(&token, TokenType::Str, "hello world", 1, 1);
+        assert_eq!(end_idx, 11); // Should stop at closing quote
+    }
+
+    #[test]
+    fn test_create_token_from_text_empty_string() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"\"";
+
+        let (token, end_idx) = tokenizer.create_token_from_text(line_bytes, 0, TokenType::Str);
+
+        assert_token(&token, TokenType::Str, "", 1, 1);
+        assert_eq!(end_idx, 0); // Should stop immediately at closing quote
+    }
+
+    #[test]
+    fn test_create_token_from_text_identifier() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"myVariable123";
+
+        let (token, end_idx) = tokenizer.create_token_from_text(line_bytes, 0, TokenType::Identity);
+
+        assert_token(&token, TokenType::Identity, "myVariable", 1, 1);
+        assert_eq!(end_idx, 9); // Should stop at first digit
+    }
+
+    #[test]
+    fn test_create_token_from_text_identifier_end_of_line() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"identifier";
+
+        let (token, end_idx) = tokenizer.create_token_from_text(line_bytes, 0, TokenType::Identity);
+
+        assert_token(&token, TokenType::Identity, "identifier", 1, 1);
+        assert_eq!(end_idx, 9); // Should be at last character
+    }
+
+    #[test]
+    fn test_create_token_from_text_keyword_detection() {
+        let mut tokenizer = create_test_tokenizer();
+        let line_bytes = b"function";
+
+        let (token, end_idx) = tokenizer.create_token_from_text(line_bytes, 0, TokenType::Identity);
+
+        // Should be converted from Identity to FunctionDeclaration
+        assert_token(&token, TokenType::FunctionDeclaration, "function", 1, 1);
+        assert_eq!(end_idx, 7);
+    }
+
+    #[test]
+    fn test_tokenize_line_simple() {
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("let x = 42".to_string());
+
+        assert_eq!(tokens.len(), 5); // let, x, =, 42, newline
+        assert_token(&tokens[0], TokenType::Let, "let", 1, 1);
+        assert_token(&tokens[1], TokenType::Identity, "x", 1, 5);
+        assert_token(&tokens[2], TokenType::Equal, "=", 1, 7);
+        assert_token(&tokens[3], TokenType::Number, "42", 1, 9);
+        assert_token(&tokens[4], TokenType::Newline, "", 1, 11);
+    }
+
+    #[test]
+    fn test_tokenize_line_with_string() {
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("print \"hello\"".to_string());
+
+        assert_eq!(tokens.len(), 3); // print, "hello", newline
+        assert_token(&tokens[0], TokenType::Print, "print", 1, 1);
+        assert_token(&tokens[1], TokenType::Str, "hello", 1, 7);
+        assert_token(&tokens[2], TokenType::Newline, "", 1, 14);
+    }
+
+    #[test]
+    fn test_tokenize_line_with_comment() {
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("let x /! comment here".to_string());
+
+        assert_eq!(tokens.len(), 3); // let, x, newline (comment ignored)
+        assert_token(&tokens[0], TokenType::Let, "let", 1, 1);
+        assert_token(&tokens[1], TokenType::Identity, "x", 1, 5);
+        assert_token(&tokens[2], TokenType::Newline, "", 1, 22);
+    }
+
+    #[test]
+    fn test_tokenize_line_complex_expression() {
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("if (x >= 10)".to_string());
+
+        assert_eq!(tokens.len(), 7); // if, (, x, >=, 10, ), newline
+        assert_token(&tokens[0], TokenType::If, "if", 1, 1);
+        assert_token(&tokens[1], TokenType::LeftParen, "(", 1, 4);
+        assert_token(&tokens[2], TokenType::Identity, "x", 1, 5);
+        assert_token(&tokens[3], TokenType::GreaterThanEqualTo, ">=", 1, 7);
+        assert_token(&tokens[4], TokenType::Number, "10", 1, 10);
+        assert_token(&tokens[5], TokenType::RightParen, ")", 1, 12);
+        assert_token(&tokens[6], TokenType::Newline, "", 1, 13);
+    }
+
+    #[test]
+    fn test_tokenize_line_empty() {
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("".to_string());
+
+        assert_eq!(tokens.len(), 1); // just newline
+        assert_token(&tokens[0], TokenType::Newline, "", 1, 1);
+    }
+
+    #[test]
+    fn test_tokenize_line_unsupported_characters_filtered() {
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("@ # $ %".to_string());
+
+        assert_eq!(tokens.len(), 1); // just newline (unsupported chars filtered)
+        assert_token(&tokens[0], TokenType::Newline, "", 1, 8);
+    }
+
+    #[test]
+    fn test_token_type_from_str_keywords() {
+        assert_eq!(TokenType::from_str("let"), Ok(TokenType::Let));
+        assert_eq!(TokenType::from_str("goto"), Ok(TokenType::Goto));
+        assert_eq!(TokenType::from_str("print"), Ok(TokenType::Print));
+        assert_eq!(TokenType::from_str("input"), Ok(TokenType::Input));
+        assert_eq!(TokenType::from_str("if"), Ok(TokenType::If));
+        assert_eq!(TokenType::from_str("then"), Ok(TokenType::Then));
+        assert_eq!(TokenType::from_str("endIf"), Ok(TokenType::EndIf));
+        assert_eq!(TokenType::from_str("while"), Ok(TokenType::While));
+        assert_eq!(TokenType::from_str("do"), Ok(TokenType::Do));
+        assert_eq!(TokenType::from_str("endWhile"), Ok(TokenType::EndWhile));
+        assert_eq!(
+            TokenType::from_str("function"),
+            Ok(TokenType::FunctionDeclaration)
+        );
+        assert_eq!(TokenType::from_str("return"), Ok(TokenType::Return));
+        assert_eq!(
+            TokenType::from_str("endFunction"),
+            Ok(TokenType::EndFunction)
+        );
+        assert_eq!(TokenType::from_str("update"), Ok(TokenType::UpdateKeyword));
+        assert_eq!(TokenType::from_str("label"), Ok(TokenType::Label));
+    }
+
+    #[test]
+    fn test_token_type_from_str_variable_types() {
+        assert_eq!(TokenType::from_str("Number"), Ok(TokenType::VarDeclaration));
+        assert_eq!(TokenType::from_str("String"), Ok(TokenType::VarDeclaration));
+    }
+
+    #[test]
+    fn test_token_type_from_str_unknown() {
+        assert_eq!(TokenType::from_str("unknown"), Err(()));
+        assert_eq!(TokenType::from_str("notakeyword"), Err(()));
+        assert_eq!(TokenType::from_str(""), Err(()));
+    }
+
+    #[test]
+    fn test_token_type_to_string() {
+        assert_eq!(TokenType::EOF.to_string(), "EOF");
+        assert_eq!(TokenType::Newline.to_string(), "\\n");
+        assert_eq!(TokenType::Number.to_string(), "Number");
+        assert_eq!(TokenType::Identity.to_string(), "Identity");
+        assert_eq!(TokenType::Str.to_string(), "String");
+        assert_eq!(TokenType::Let.to_string(), "let");
+        assert_eq!(TokenType::Print.to_string(), "print");
+        assert_eq!(TokenType::Plus.to_string(), "+");
+        assert_eq!(TokenType::EqualEqual.to_string(), "==");
+        assert_eq!(TokenType::Arrow.to_string(), "->");
+        assert_eq!(TokenType::LeftParen.to_string(), "(");
+        assert_eq!(TokenType::RightParen.to_string(), ")");
+    }
+
+    #[test]
+    fn test_function_syntax_tokenization() {
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("function add(x, y) -> Number".to_string());
+
+        assert_eq!(tokens.len(), 10); // function, add, (, x, ,, y, ), ->, Number, newline
+        assert_token(&tokens[0], TokenType::FunctionDeclaration, "function", 1, 1);
+        assert_token(&tokens[1], TokenType::Identity, "add", 1, 10);
+        assert_token(&tokens[2], TokenType::LeftParen, "(", 1, 13);
+        assert_token(&tokens[3], TokenType::Identity, "x", 1, 14);
+        assert_token(&tokens[4], TokenType::Comma, ",", 1, 15);
+        assert_token(&tokens[5], TokenType::Identity, "y", 1, 17);
+        assert_token(&tokens[6], TokenType::RightParen, ")", 1, 18);
+        assert_token(&tokens[7], TokenType::Arrow, "->", 1, 20);
+        assert_token(&tokens[8], TokenType::VarDeclaration, "Number", 1, 23);
+        assert_token(&tokens[9], TokenType::Newline, "", 1, 29);
+    }
+
+    #[test]
+    fn test_line_number_progression() {
+        // Create a temporary file with multiple lines
+        let temp_path = format!("/tmp/test_multiline_{}.plank", std::process::id());
+        let mut file = File::create(&temp_path).unwrap();
+        write!(file, "let x = 1\nlet y = 2\nprint x").unwrap();
+        drop(file);
+
+        let mut file = File::open(temp_path).unwrap();
+        let mut tokenizer = Tokenizer::new();
+        let tokens = tokenizer.tokenize_file(&mut file);
+
+        // Check that line numbers are correct
+        let line_1_tokens: Vec<_> = tokens.iter().filter(|t| t.line_number == 1).collect();
+        let line_2_tokens: Vec<_> = tokens.iter().filter(|t| t.line_number == 2).collect();
+        let line_3_tokens: Vec<_> = tokens.iter().filter(|t| t.line_number == 3).collect();
+
+        assert!(line_1_tokens.len() > 0);
+        assert!(line_2_tokens.len() > 0);
+        assert!(line_3_tokens.len() > 0);
+
+        // First token of each line should have the correct line number
+        assert_eq!(line_1_tokens[0].line_number, 1);
+        assert_eq!(line_2_tokens[0].line_number, 2);
+        assert_eq!(line_3_tokens[0].line_number, 3);
+    }
+
+    #[test]
+    fn test_operators_tokenization() {
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("x + y - z * w / v".to_string());
+
+        // Should tokenize: x, +, y, -, z, *, w, /, v, newline
+        assert_eq!(tokens.len(), 10);
+        assert_token(&tokens[0], TokenType::Identity, "x", 1, 1);
+        assert_token(&tokens[1], TokenType::Plus, "+", 1, 3);
+        assert_token(&tokens[2], TokenType::Identity, "y", 1, 5);
+        assert_token(&tokens[3], TokenType::Minus, "-", 1, 7);
+        assert_token(&tokens[4], TokenType::Identity, "z", 1, 9);
+        assert_token(&tokens[5], TokenType::Asterisk, "*", 1, 11);
+        assert_token(&tokens[6], TokenType::Identity, "w", 1, 13);
+        assert_token(&tokens[7], TokenType::Slash, "/", 1, 15);
+        assert_token(&tokens[8], TokenType::Identity, "v", 1, 17);
+        assert_token(&tokens[9], TokenType::Newline, "", 1, 18);
+    }
+
+    #[test]
+    fn test_comparison_operators() {
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("x == y != z < w <= a > b >= c".to_string());
+
+        // Should tokenize comparison operators correctly
+        let expected_types = vec![
+            TokenType::Identity,           // x
+            TokenType::EqualEqual,         // ==
+            TokenType::Identity,           // y
+            TokenType::NotEqual,           // !=
+            TokenType::Identity,           // z
+            TokenType::LessThan,           // <
+            TokenType::Identity,           // w
+            TokenType::LessThanEqualTo,    // <=
+            TokenType::Identity,           // a
+            TokenType::GreaterThan,        // >
+            TokenType::Identity,           // b
+            TokenType::GreaterThanEqualTo, // >=
+            TokenType::Identity,           // c
+            TokenType::Newline,            // newline
+        ];
+
+        assert_eq!(tokens.len(), expected_types.len());
+        for (i, expected_type) in expected_types.iter().enumerate() {
+            assert_eq!(tokens[i].token_type, *expected_type);
+        }
+    }
+
+    #[test]
+    fn test_logical_operators() {
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("x && y || !z".to_string());
+
+        assert_eq!(tokens.len(), 7); // x, &&, y, ||, !, z, newline
+        assert_token(&tokens[0], TokenType::Identity, "x", 1, 1);
+        assert_token(&tokens[1], TokenType::DoubleAmpersand, "&&", 1, 3);
+        assert_token(&tokens[2], TokenType::Identity, "y", 1, 6);
+        assert_token(&tokens[3], TokenType::DoubleBar, "||", 1, 8);
+        assert_token(&tokens[4], TokenType::Bang, "!", 1, 11);
+        assert_token(&tokens[5], TokenType::Identity, "z", 1, 12);
+        assert_token(&tokens[6], TokenType::Newline, "", 1, 13);
+    }
+
+    #[test]
+    fn test_edge_cases_numbers() {
+        let mut tokenizer = create_test_tokenizer();
+
+        // Single digit
+        let tokens = tokenizer.tokenize_line("5".to_string());
+        assert_eq!(tokens.len(), 2); // 5, newline
+        assert_token(&tokens[0], TokenType::Number, "5", 1, 1);
+
+        // Multiple digits
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("12345".to_string());
+        assert_eq!(tokens.len(), 2); // 12345, newline
+        assert_token(&tokens[0], TokenType::Number, "12345", 1, 1);
+
+        // Number followed by identifier
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("123abc".to_string());
+        assert_eq!(tokens.len(), 3); // 123, abc, newline
+        assert_token(&tokens[0], TokenType::Number, "123", 1, 1);
+        assert_token(&tokens[1], TokenType::Identity, "abc", 1, 4);
+    }
+
+    #[test]
+    fn test_edge_cases_strings() {
+        let mut tokenizer = create_test_tokenizer();
+
+        // Empty string
+        let tokens = tokenizer.tokenize_line("\"\"".to_string());
+        assert_eq!(tokens.len(), 2); // "", newline
+        assert_token(&tokens[0], TokenType::Str, "", 1, 1);
+
+        // String with spaces
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("\"hello world\"".to_string());
+        assert_eq!(tokens.len(), 2); // "hello world", newline
+        assert_token(&tokens[0], TokenType::Str, "hello world", 1, 1);
+
+        // String with special characters
+        let mut tokenizer = create_test_tokenizer();
+        let tokens = tokenizer.tokenize_line("\"123!@#$%\"".to_string());
+        assert_eq!(tokens.len(), 2); // "123!@#$%", newline
+        assert_token(&tokens[0], TokenType::Str, "123!@#$%", 1, 1);
+    }
+
+    #[test]
+    fn test_keyword_recognition() {
+        let keywords = vec![
+            ("let", TokenType::Let),
+            ("if", TokenType::If),
+            ("then", TokenType::Then),
+            ("endIf", TokenType::EndIf),
+            ("while", TokenType::While),
+            ("do", TokenType::Do),
+            ("endWhile", TokenType::EndWhile),
+            ("function", TokenType::FunctionDeclaration),
+            ("return", TokenType::Return),
+            ("endFunction", TokenType::EndFunction),
+            ("print", TokenType::Print),
+            ("input", TokenType::Input),
+            ("goto", TokenType::Goto),
+            ("update", TokenType::UpdateKeyword),
+            ("Number", TokenType::VarDeclaration),
+            ("String", TokenType::VarDeclaration),
+        ];
+
+        for (keyword, expected_type) in keywords {
+            let mut tokenizer = create_test_tokenizer();
+            let tokens = tokenizer.tokenize_line(keyword.to_string());
+            assert_eq!(tokens.len(), 2); // keyword, newline
+            assert_token(&tokens[0], expected_type, keyword, 1, 1);
+        }
+    }
+
+    #[test]
+    fn test_file_tokenization_with_eof() {
+        // Create a temporary file
+        let temp_path = format!("/tmp/test_eof_{}.plank", std::process::id());
+        let mut file = File::create(&temp_path).unwrap();
+        write!(file, "let x = 42").unwrap();
+        drop(file);
+
+        let mut file = File::open(temp_path).unwrap();
+        let mut tokenizer = Tokenizer::new();
+        let tokens = tokenizer.tokenize_file(&mut file);
+
+        // Should end with EOF token
+        assert!(!tokens.is_empty());
+        let last_token = &tokens[tokens.len() - 1];
+        assert_eq!(last_token.token_type, TokenType::EOF);
+    }
+}
