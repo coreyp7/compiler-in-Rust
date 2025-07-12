@@ -33,7 +33,7 @@ pub struct AssignmentStatement {
 }
 
 #[derive(Debug)]
-pub struct InstantiationStatement {
+pub struct VarInstantiationStatement {
     pub identity: String,
     pub value: String,
     pub var_type: VarType,
@@ -47,7 +47,7 @@ pub enum Statement {
     If(IfStatement),
     While(WhileStatement),
     Assignment(AssignmentStatement),
-    Instantiation(InstantiationStatement),
+    VarInstantiation(VarInstantiationStatement),
     Newline,
     TestStub,
 }

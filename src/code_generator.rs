@@ -2,8 +2,8 @@ use crate::comparison::{
     Comparison, ComparisonOperator, Expression, ExpressionOperator, Logical, LogicalOperator, Term,
 };
 use crate::statement::{
-    AssignmentStatement, IfStatement, InstantiationStatement, PrintStatement, Statement, VarType,
-    WhileStatement,
+    AssignmentStatement, IfStatement, PrintStatement, Statement, VarInstantiationStatement,
+    VarType, WhileStatement,
 };
 
 pub fn generate_code_str(ast: &[Statement]) -> String {
@@ -28,7 +28,7 @@ fn convert_statement_to_code(statement: &Statement) -> String {
         Statement::Assignment(statement_struct) => {
             convert_assignment_statement_to_code(statement_struct)
         }
-        Statement::Instantiation(statement_struct) => {
+        Statement::VarInstantiation(statement_struct) => {
             convert_instantiation_statement_to_code(statement_struct)
         }
         Statement::Newline => convert_newline_to_code(),
@@ -111,7 +111,7 @@ fn convert_assignment_statement_to_code(statement_struct: &AssignmentStatement) 
     code
 }
 
-fn convert_instantiation_statement_to_code(statement_struct: &InstantiationStatement) -> String {
+fn convert_instantiation_statement_to_code(statement_struct: &VarInstantiationStatement) -> String {
     let mut code = String::new();
 
     // Add C type declaration

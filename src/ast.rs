@@ -5,7 +5,7 @@ use std::str::FromStr;
 use crate::comparison::*;
 use crate::error::ErrMsg;
 use crate::statement::{
-    AssignmentStatement, IfStatement, InstantiationStatement, PrintStatement, Statement,
+    AssignmentStatement, IfStatement, PrintStatement, Statement, VarInstantiationStatement,
     WhileStatement,
 };
 use crate::tokenizer::Token;
@@ -307,7 +307,7 @@ impl AstBuilder {
 
                 self.next_token();
 
-                statement = Statement::Instantiation(InstantiationStatement {
+                statement = Statement::VarInstantiation(VarInstantiationStatement {
                     identity: identity,
                     value: assignment_value_text,
                     var_type: var_type,
