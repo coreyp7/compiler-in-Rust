@@ -389,9 +389,13 @@ impl Tokenizer {
                 }
                 TokenMatch::Double(expected_next, double_token_type) => {
                     if matches!(next, Some(x) if x == *expected_next) {
-                        self.curr_byte_index_in_line += 1;
                         let double_char = format!("{}{}", curr, expected_next);
-                        (self.create_token(*double_token_type, double_char), false)
+                        let token = self.create_token(*double_token_type, double_char);
+
+                        // We need to increment this after creating the token so
+                        // that the col assigned to token is correct.
+                        self.curr_byte_index_in_line += 1;
+                        return (token, false);
                     } else {
                         let fallback_type = Self::get_single_char_fallback(curr);
                         (self.create_token(fallback_type, String::from(curr)), false)
