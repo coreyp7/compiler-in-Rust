@@ -92,6 +92,7 @@ pub enum Primary {
     },
     Identity {
         name: String,
+        line_number: u8,
     },
     Error {
         detail: String,

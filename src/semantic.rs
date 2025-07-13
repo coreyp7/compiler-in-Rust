@@ -269,12 +269,12 @@ impl SemanticAnalyzer {
 
     pub fn analyze_primary(&mut self, primary: &Primary) -> Result<(), ErrMsg> {
         match primary {
-            Primary::Identity { name } => {
+            Primary::Identity { name, line_number } => {
                 // Check if the variable is declared in scope
                 self.lookup_variable(name)
                     .ok_or_else(|| ErrMsg::VariableNotDeclared {
                         identity: name.clone(),
-                        attempted_assignment_line: 0, // TODO: We'd need line info in Primary for proper error reporting
+                        attempted_assignment_line: *line_number,
                     })?;
             }
             Primary::Number { .. } => {

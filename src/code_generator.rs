@@ -385,7 +385,7 @@ fn convert_unary_to_code(unary: &crate::comparison::Unary) -> String {
 fn convert_primary_to_code(primary: &crate::comparison::Primary) -> String {
     match primary {
         crate::comparison::Primary::Number { value } => value.clone(),
-        crate::comparison::Primary::Identity { name } => name.clone(),
+        crate::comparison::Primary::Identity { name, line_number } => name.clone(),
         crate::comparison::Primary::Error { detail: _ } => String::from("/* error in primary */"),
     }
 }

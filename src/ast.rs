@@ -628,6 +628,7 @@ impl AstBuilder {
             },
             TokenType::Identity => Primary::Identity {
                 name: self.get_curr_token().text.clone(),
+                line_number: self.get_curr_token().line_number,
             },
             _ => Primary::Error {
                 detail: String::new(),
