@@ -70,17 +70,35 @@ fn convert_print_statement_to_code(statement_struct: &PrintStatement) -> String 
     let mut code = String::new();
     let content = &statement_struct.content;
     let is_content_identity_name = statement_struct.is_content_identity_name;
-    code.push_str("printf(");
-    if !is_content_identity_name {
-        code.push_str("\"");
-    }
-    code.push_str(&content.clone());
-    if !is_content_identity_name {
-        code.push_str("\"");
-    }
-    code.push_str(");");
 
-    code.push_str("printf(\"\\n\");");
+    if is_content_identity_name {
+        // This is a variable - use the appropriate format specifier based on type
+        match statement_struct.variable_type {
+            Some(VarType::Num) => {
+                code.push_str("printf(\"%d\", ");
+                code.push_str(content);
+                code.push_str(")");
+            }
+            Some(VarType::Str) => {
+                code.push_str("printf(\"%s\", ");
+                code.push_str(content);
+                code.push_str(")");
+            }
+            Some(VarType::Unrecognized) | None => {
+                // Fallback to string format for unknown types
+                code.push_str("printf(\"%s\", ");
+                code.push_str(content);
+                code.push_str(")");
+            }
+        }
+    } else {
+        // This is a string literal
+        code.push_str("printf(\"");
+        code.push_str(content);
+        code.push_str("\")");
+    }
+
+    code.push_str(";printf(\"\\n\");");
     code
 }
 

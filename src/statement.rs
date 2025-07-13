@@ -7,6 +7,7 @@ pub use crate::ast::{FunctionHeader, Var, VarType};
 pub struct PrintStatement {
     pub content: String,
     pub is_content_identity_name: bool,
+    pub variable_type: Option<VarType>, // Type of the variable being printed (if it's a variable)
     pub line_number: u8,
 }
 

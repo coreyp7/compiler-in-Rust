@@ -122,17 +122,23 @@ impl AstBuilder {
         statements
     }
 
-    /// Phase 1: Scan through tokens and collect all function declarations
-    /// This populates the function_map so forward declarations work
+    /// Phase 1: Scan through tokens and collect all function declarations and variable declarations
+    /// This populates the function_map and var_map so forward declarations work
     fn collect_function_declarations(&mut self) {
         let original_idx = self.curr_idx;
         self.curr_idx = 0;
 
         while self.get_curr_token().token_type != TokenType::EOF {
-            if self.get_curr_token().token_type == TokenType::FunctionDeclaration {
-                self.parse_function_header();
-            } else {
-                self.next_token();
+            match self.get_curr_token().token_type {
+                TokenType::FunctionDeclaration => {
+                    self.parse_function_header();
+                }
+                TokenType::VarDeclaration => {
+                    self.collect_variable_declaration();
+                }
+                _ => {
+                    self.next_token();
+                }
             }
         }
 
@@ -339,10 +345,20 @@ impl AstBuilder {
             self.errors.push(error);
         }
 
+        // Look up variable type if it's a variable reference
+        let variable_type = if is_identity {
+            self.var_map
+                .get(&string_content)
+                .map(|var| var.var_type.clone())
+        } else {
+            None
+        };
+
         Statement::Print(PrintStatement {
             content: string_content,
             line_number: self.get_curr_token().line_number,
             is_content_identity_name: is_identity,
+            variable_type,
         })
     }
 
@@ -419,6 +435,8 @@ impl AstBuilder {
             self.errors.push(error);
         }
 
+        // Variable is already in var_map from the first pass (collect_variable_declaration)
+        // Just create and return the statement
         Statement::VarInstantiation(VarInstantiationStatement {
             identity,
             value: assignment_value_text,
@@ -872,6 +890,51 @@ impl AstBuilder {
                 }
             }
             Primary::Error { detail: _ } => ("/* error */".to_string(), VarType::Unrecognized),
+        }
+    }
+
+    /// Collect variable declaration during Phase 1 to populate var_map
+    /// This allows print statements to resolve variable types during parsing
+    fn collect_variable_declaration(&mut self) {
+        let var_type = VarType::from(self.get_curr_token().text.as_str());
+        self.next_token();
+
+        if self.get_curr_token().token_type == TokenType::Identity {
+            let identity = self.get_curr_token().text.clone();
+            self.next_token();
+
+            // Create the variable and add it to var_map
+            let var = Var {
+                var_type,
+                identity: identity.clone(),
+                line_declared_on: self.get_curr_token().line_number,
+            };
+
+            if self.var_map.contains_key(&identity) {
+                self.errors.push(ErrMsg::VariableAlreadyDeclared {
+                    identity: identity.clone(),
+                    first_declared_line: self.var_map.get(&identity).unwrap().line_declared_on,
+                    redeclared_line: var.line_declared_on,
+                });
+            } else {
+                self.var_map.insert(identity, var);
+            }
+
+            // Skip past the rest of the variable declaration (: value)
+            if self.get_curr_token().token_type == TokenType::Colon {
+                self.next_token(); // Skip ':'
+
+                // Skip the assignment value (could be literal, variable, or function call)
+                // We'll use a simple approach and just skip until we hit a newline or EOF
+                while self.get_curr_token().token_type != TokenType::Newline
+                    && self.get_curr_token().token_type != TokenType::EOF
+                {
+                    self.next_token();
+                }
+            }
+        } else {
+            // Invalid variable declaration, just skip to next token
+            self.next_token();
         }
     }
 }

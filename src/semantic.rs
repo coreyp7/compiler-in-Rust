@@ -169,12 +169,16 @@ impl SemanticAnalyzer {
                 }
 
                 // Create and declare the variable in current scope
+                // NOTE: I don't think we need this anymore since this is
+                // populated in the first pass.
+                /*
                 let var = Var {
                     var_type: var_inst.var_type.clone(),
                     identity: var_inst.identity.clone(),
                     line_declared_on: var_inst.line_number,
                 };
-                self.declare_variable(var_inst.identity.clone(), var)?;
+                */
+                //self.declare_variable(var_inst.identity.clone(), var)?;
             }
             Statement::Assignment(assignment) => {
                 // Check if the variable being assigned to exists in scope
