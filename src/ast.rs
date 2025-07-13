@@ -35,13 +35,9 @@ impl AstBuilder {
         identity: &String,
         assignment_var_type: &VarType,
     ) -> Option<ErrMsg> {
-        // Check if the variable even has been decalred
-        if !self.var_map.contains_key(identity) {
-            // add error
-        }
+        let mut error: Option<ErrMsg> = None;
 
         let value: Option<&Var> = self.var_map.get(identity);
-        let mut error: Option<ErrMsg> = None;
         match value {
             Some(var) => {
                 // Check that the type being assigned is correct
@@ -349,15 +345,6 @@ impl AstBuilder {
         {
             self.errors.push(error);
         }
-
-        // TODO: move into semantic analyzer
-        /*
-        self.insert_into_var_map(
-            identity.clone(),
-            var_type.clone(),
-            self.get_curr_token().line_number,
-        );
-        */
 
         self.next_token();
 

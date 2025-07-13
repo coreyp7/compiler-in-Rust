@@ -41,15 +41,6 @@ impl Tokenizer {
         token_vec
     }
 
-    fn create_token(&mut self, token_type_param: TokenType, text_param: String) -> Token {
-        Token {
-            token_type: token_type_param,
-            text: text_param,
-            line_number: self.line_number,
-            col_number: self.curr_byte_index_in_line + 1,
-        }
-    }
-
     fn tokenize_line(&mut self, line: String) -> Vec<Token> {
         let mut tokens: Vec<Token> = Vec::new();
         let line_bytes: &[u8] = line.as_bytes();
@@ -82,6 +73,15 @@ impl Tokenizer {
         tokens.push(self.create_token(TokenType::Newline, String::new()));
 
         tokens
+    }
+
+    fn create_token(&mut self, token_type_param: TokenType, text_param: String) -> Token {
+        Token {
+            token_type: token_type_param,
+            text: text_param,
+            line_number: self.line_number,
+            col_number: self.curr_byte_index_in_line + 1,
+        }
     }
 
     /**
