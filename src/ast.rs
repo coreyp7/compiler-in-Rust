@@ -181,16 +181,6 @@ impl AstBuilder {
 
         let mut arguments = Vec::new();
         while self.get_curr_token().token_type != TokenType::RightParen {
-            // TODO: this is fine for now as a stub, but in the future we need
-            // to check that this symbol has been declared.
-            // However, that'd also require a second pass through the ast
-            // to confirm that functions exist.
-            // Additionally, the parameters types need to be type checked and
-            // we need to validate the variables being called from inside the
-            // function, which will require a scope context stack (stack of Maps).
-            // So, for each function call, we'd probably create a new Map specific
-            // for that function's context. It'd include the variables passed
-            // as parameters.
             if self.get_curr_token().token_type == TokenType::Identity {
                 arguments.push(self.get_curr_token().text.clone());
                 self.next_token();

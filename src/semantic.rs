@@ -124,17 +124,29 @@ impl SemanticAnalyzer {
             });
         }
 
-        // 3. Type check each argument (basic implementation for now)
-        for arg_name in &call.arguments {
-            let _arg_var =
-                self.lookup_variable(arg_name)
-                    .ok_or_else(|| ErrMsg::VariableNotDeclared {
-                        identity: arg_name.clone(),
-                        attempted_assignment_line: call.line_number,
-                    })?;
+        // 3. Check each argument: existence and type compatibility
+        for (i, arg_name) in call.arguments.iter().enumerate() {
+            // Check if the argument variable exists
+            let arg_var = self.lookup_variable(arg_name).ok_or_else(|| {
+                ErrMsg::VariableNotDeclared {
+                    identity: arg_name.clone(),
+                    attempted_assignment_line: call.line_number,
+                }
+            })?;
 
-            // TODO: Enhanced type checking when we implement FunctionParameter properly
-            // For now, just check that the variable exists
+            // Check if we have a corresponding parameter
+            if i < function_info.parameters.len() {
+                let expected_param = &function_info.parameters[i];
+                
+                // Type check: ensure argument type matches parameter type
+                if arg_var.var_type != expected_param.param_type {
+                    return Err(ErrMsg::new_incorrect_type_assignment(
+                        expected_param.param_type.clone(),
+                        arg_var.var_type.clone(),
+                        call.line_number,
+                    ));
+                }
+            }
         }
 
         // Return the function's return type for expression type checking
