@@ -11,6 +11,7 @@ mod ast;
 use ast::AstBuilder;
 
 mod semantic;
+use semantic::{ScopeType, SemanticAnalyzer};
 
 mod error;
 use error::{ErrMsg, print_all_errors};
@@ -39,16 +40,22 @@ fn main() -> std::io::Result<()> {
         debug_print_tokens(&tokens);
     }
 
-    // build ast with tokens
+    // AST building
     let mut ast_builder = AstBuilder::new(tokens);
-    //let ast_vec = ast_builder.generate_ast();
-    //let ast_errors = ast_builder.get_error_vec();
-    let (ast_vec, ast_errors) = ast_builder.generate_ast_with_semantic_analysis();
+    let ast_vec = ast_builder.generate_ast();
+    let mut ast_errors = ast_builder.get_error_vec().clone();
+
+    // Semantic analysis on the AST
+    let mut analyzer = SemanticAnalyzer::new(ast_builder.var_map, ast_builder.function_map);
+    analyzer.analyze_ast_vec(&ast_vec);
+
+    // Combine parsing and semantic analysis errors
+    ast_errors.extend(analyzer.errors);
 
     if debug {
         debug_print_ast(&ast_vec);
         // TODO: print out function global map
-        debug_print_errors_and_var_map(&ast_errors, &ast_builder);
+        //debug_print_errors_and_var_map(&ast_errors, &ast_builder);
     }
 
     if !ast_errors.is_empty() {

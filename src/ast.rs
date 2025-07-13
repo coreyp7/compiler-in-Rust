@@ -4,7 +4,6 @@ use std::str::FromStr;
 // My stuff
 use crate::comparison::*;
 use crate::error::ErrMsg;
-use crate::semantic::{ScopeType, SemanticAnalyzer};
 use crate::statement::{
     AssignmentStatement, FunctionCallStatement, FunctionInstantiationStatement, IfStatement,
     PrintStatement, Statement, VarInstantiationStatement, WhileStatement,
@@ -30,27 +29,6 @@ impl AstBuilder {
             function_map: HashMap::new(),
         }
     }
-
-    /*  moved into semantic analyzer
-    pub fn insert_into_var_map(&mut self, identity: String, var_type: VarType, line: u8) {
-        if let Some(existing_var) = self.var_map.get(&identity) {
-            self.errors.push(ErrMsg::VariableAlreadyDeclared {
-                identity: identity.clone(),
-                first_declared_line: existing_var.line_declared_on,
-                redeclared_line: line,
-            });
-            return;
-        }
-
-        let var = Var {
-            var_type,
-            identity: identity.clone(),
-            line_declared_on: line,
-        };
-
-        self.var_map.insert(identity, var);
-    }
-    */
 
     pub fn get_error_if_var_assignment_invalid(
         &self,
@@ -88,36 +66,6 @@ impl AstBuilder {
 
     pub fn generate_ast(&mut self) -> Vec<Statement> {
         self.program()
-    }
-
-    /// Two-pass compilation: first build AST and collect symbols, then perform semantic analysis
-    pub fn generate_ast_with_semantic_analysis(&mut self) -> (Vec<Statement>, Vec<ErrMsg>) {
-        // Pass 1: Build AST and collect symbols (variables, functions)
-        let statements = self.program();
-
-        // Pass 2: Semantic analysis (type checking, symbol declarations)
-        let mut analyzer = SemanticAnalyzer::new(self.function_map.clone());
-        analyzer.push_scope(ScopeType::Global);
-
-        // Add global variables to global scope
-        for (name, var) in &self.var_map {
-            if let Err(err) = analyzer.declare_variable(name.clone(), var.clone()) {
-                analyzer.errors.push(err);
-            }
-        }
-
-        for statement in &statements {
-            if let Err(err) = analyzer.analyze_statement(statement) {
-                analyzer.errors.push(err);
-            }
-        }
-
-        // TODO: determine if we should just bow out early if bad parsing errors.
-        // Not sure if semantic analysis is even needed then.
-        let mut all_errors = self.errors.clone();
-        all_errors.extend(analyzer.errors);
-
-        (statements, all_errors)
     }
 
     fn get_curr_token(&self) -> &Token {

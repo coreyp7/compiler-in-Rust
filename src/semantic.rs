@@ -31,11 +31,25 @@ pub struct SemanticAnalyzer {
 }
 
 impl SemanticAnalyzer {
-    pub fn new(function_map: HashMap<String, FunctionInfo>) -> Self {
-        SemanticAnalyzer {
+    pub fn new(var_map: HashMap<String, Var>, function_map: HashMap<String, FunctionInfo>) -> Self {
+        let mut analyzer = SemanticAnalyzer {
             function_map,
             scope_stack: Vec::new(),
             errors: Vec::new(),
+        };
+        // Setup scope to be global and include the variables passed in.
+        analyzer.push_scope(ScopeType::Global);
+        analyzer.scope_stack[0].variables = var_map;
+
+        analyzer
+    }
+
+    pub fn analyze_ast_vec(&mut self, ast_vec: &[Statement]) {
+        self.errors.clear();
+        for statement in ast_vec {
+            if let Err(err) = self.analyze_statement(statement) {
+                self.errors.push(err);
+            }
         }
     }
 
