@@ -75,9 +75,11 @@ fn convert_print_statement_to_code(statement_struct: &PrintStatement) -> String 
     }
     code.push_str(&content.clone());
     if !is_content_identity_name {
-        code.push_str("\\n\"");
+        code.push_str("\"");
     }
     code.push_str(");");
+
+    code.push_str("printf(\"\\n\");");
     code
 }
 

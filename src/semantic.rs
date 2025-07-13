@@ -127,17 +127,17 @@ impl SemanticAnalyzer {
         // 3. Check each argument: existence and type compatibility
         for (i, arg_name) in call.arguments.iter().enumerate() {
             // Check if the argument variable exists
-            let arg_var = self.lookup_variable(arg_name).ok_or_else(|| {
-                ErrMsg::VariableNotDeclared {
-                    identity: arg_name.clone(),
-                    attempted_assignment_line: call.line_number,
-                }
-            })?;
+            let arg_var =
+                self.lookup_variable(arg_name)
+                    .ok_or_else(|| ErrMsg::VariableNotDeclared {
+                        identity: arg_name.clone(),
+                        attempted_assignment_line: call.line_number,
+                    })?;
 
             // Check if we have a corresponding parameter
             if i < function_info.parameters.len() {
                 let expected_param = &function_info.parameters[i];
-                
+
                 // Type check: ensure argument type matches parameter type
                 if arg_var.var_type != expected_param.param_type {
                     return Err(ErrMsg::new_incorrect_type_assignment(
@@ -246,6 +246,17 @@ impl SemanticAnalyzer {
 
         // Add parameters to function scope (for now, empty since we don't parse them yet)
         // TODO: When we implement parameter parsing, add them here
+        for parameter in &func.header.parameters {
+            // TODO: this is bootlegged
+            let _ = self.declare_variable(
+                parameter.name.clone(),
+                Var {
+                    var_type: parameter.param_type.clone(),
+                    identity: parameter.name.clone(),
+                    line_declared_on: func.line_number,
+                },
+            );
+        }
 
         // Analyze function body
         for statement in &func.statements {
