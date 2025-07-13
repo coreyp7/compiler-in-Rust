@@ -142,11 +142,8 @@ fn convert_instantiation_statement_to_code(statement_struct: &VarInstantiationSt
     let mut code = String::new();
 
     // Add C type declaration
-    match statement_struct.var_type {
-        VarType::Str => code.push_str("char* "),
-        VarType::Num => code.push_str("int "),
-        VarType::Unrecognized => code.push_str("/* unknown type */ "),
-    }
+    code.push_str(statement_struct.var_type.to_string());
+    code.push(' ');
 
     code.push_str(&statement_struct.identity);
     code.push_str(" = ");
@@ -176,11 +173,8 @@ fn convert_function_instantiation_statement_to_code(
 ) -> String {
     let mut code = String::new();
 
-    match statement_struct.return_type {
-        VarType::Str => code.push_str("char* "),
-        VarType::Num => code.push_str("int "),
-        VarType::Unrecognized => code.push_str("void "), //TODO: this should be fixed to work normal
-    }
+    code.push_str(statement_struct.return_type.to_string());
+    code.push(' ');
 
     code.push_str(&statement_struct.function_name);
     code.push_str("(");
@@ -191,8 +185,8 @@ fn convert_function_instantiation_statement_to_code(
             code.push_str(", ");
         }
         // For now, assuming parameters are identifiers - type inference would be needed
-        code.push_str("/* parameter type needed */ ");
-        code.push_str(param);
+        //code.push_str("/* parameter type needed */ ");
+        code.push_str(&format!("{} {}", param.var_type, param.var_name));
     }
 
     code.push_str(") {\n");
@@ -214,11 +208,11 @@ fn convert_function_call_statement_to_code(statement_struct: &FunctionCallStatem
     code.push_str(&statement_struct.function_name);
     code.push_str("(");
 
-    for (i, arg) in statement_struct.arguments.iter().enumerate() {
+    for (i, param) in statement_struct.params.iter().enumerate() {
         if i > 0 {
             code.push_str(", ");
         }
-        code.push_str(arg);
+        code.push_str(&param.var_name);
     }
 
     code.push_str(");\n");
@@ -385,7 +379,10 @@ fn convert_unary_to_code(unary: &crate::comparison::Unary) -> String {
 fn convert_primary_to_code(primary: &crate::comparison::Primary) -> String {
     match primary {
         crate::comparison::Primary::Number { value } => value.clone(),
-        crate::comparison::Primary::Identity { name, line_number } => name.clone(),
+        crate::comparison::Primary::Identity {
+            name,
+            line_number: _,
+        } => name.clone(),
         crate::comparison::Primary::Error { detail: _ } => String::from("/* error in primary */"),
     }
 }

@@ -45,7 +45,7 @@ pub struct VarInstantiationStatement {
 #[derive(Debug)]
 pub struct FunctionInstantiationStatement {
     pub function_name: String,
-    pub parameters: Vec<String>,
+    pub parameters: Vec<FunctionParameter>,
     pub return_type: VarType,
     pub statements: Vec<Statement>,
     pub line_number: u8,
@@ -61,13 +61,13 @@ pub struct ReturnStatement {
 #[derive(Debug)]
 pub struct FunctionCallStatement {
     pub function_name: String,
-    pub arguments: Vec<String>,
+    pub params: Vec<FunctionParameter>,
     pub line_number: u8,
 }
 
-// Leaving here for later.
-pub struct FunctionParameter<'a> {
-    pub var_name: &'a str,
+#[derive(Debug, Clone)]
+pub struct FunctionParameter {
+    pub var_name: String,
     pub var_type: VarType,
 }
 

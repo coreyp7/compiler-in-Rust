@@ -9,7 +9,7 @@ use crate::statement::{
 };
 
 // Types that will remain in ast.rs but need to be imported
-use crate::ast::{FunctionInfo, FunctionParameter, Var, VarType};
+use crate::ast::{FunctionHeader, Var, VarType};
 
 #[derive(Debug, Clone)]
 pub struct ScopeContext {
@@ -25,13 +25,16 @@ pub enum ScopeType {
 }
 
 pub struct SemanticAnalyzer {
-    pub function_map: HashMap<String, FunctionInfo>,
+    pub function_map: HashMap<String, FunctionHeader>,
     pub scope_stack: Vec<ScopeContext>,
     pub errors: Vec<ErrMsg>,
 }
 
 impl SemanticAnalyzer {
-    pub fn new(var_map: HashMap<String, Var>, function_map: HashMap<String, FunctionInfo>) -> Self {
+    pub fn new(
+        var_map: HashMap<String, Var>,
+        function_map: HashMap<String, FunctionHeader>,
+    ) -> Self {
         let mut analyzer = SemanticAnalyzer {
             function_map,
             scope_stack: Vec::new(),
@@ -108,27 +111,47 @@ impl SemanticAnalyzer {
         })?;
 
         // 2. Check argument count
-        if call.arguments.len() != function_info.parameters.len() {
+        if call.params.len() != function_info.parameters.len() {
             // For now, use existing error types - we can enhance ErrMsg later
             return Err(ErrMsg::VariableNotDeclared {
                 identity: format!(
                     "Function {} expects {} arguments, got {}",
                     call.function_name,
                     function_info.parameters.len(),
-                    call.arguments.len()
+                    call.params.len()
                 ),
                 attempted_assignment_line: call.line_number,
             });
         }
 
         // 3. Type check each argument (basic implementation for now)
-        for arg_name in &call.arguments {
-            let _arg_var =
-                self.lookup_variable(arg_name)
-                    .ok_or_else(|| ErrMsg::VariableNotDeclared {
-                        identity: arg_name.clone(),
+        for param in &call.params {
+            match self.lookup_variable(&param.var_name) {
+                Some(param_def) => {
+                    // Type check the variable compared to the call
+                    // TODO: want to be able to return multiple of these,
+                    // not just one.
+                    if param.var_type != param_def.var_type {
+                        return Err(ErrMsg::IncorrectTypeAssignment {
+                            expected_type: param_def.var_type.clone(),
+                            got_type: param.var_type.clone(),
+                            line_number: function_info.line_declared_on,
+                        });
+                    }
+                }
+                None => {
+                    return Err(ErrMsg::VariableNotDeclared {
+                        identity: param.var_name.clone(),
                         attempted_assignment_line: call.line_number,
-                    })?;
+                    });
+                }
+            }
+            let _arg_var = self.lookup_variable(&param.var_name).ok_or_else(|| {
+                ErrMsg::VariableNotDeclared {
+                    identity: param.var_name.clone(),
+                    attempted_assignment_line: call.line_number,
+                }
+            })?;
 
             // TODO: Enhanced type checking when we implement FunctionParameter properly
             // For now, just check that the variable exists
