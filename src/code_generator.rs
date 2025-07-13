@@ -2,32 +2,40 @@ use crate::comparison::{
     Comparison, ComparisonOperator, Expression, ExpressionOperator, Logical, LogicalOperator, Term,
 };
 use crate::statement::{
-    AssignmentStatement, FunctionInstantiationStatement, IfStatement, PrintStatement, Statement,
-    VarInstantiationStatement, VarType, WhileStatement,
+    AssignmentStatement, FunctionCallStatement, FunctionInstantiationStatement, IfStatement,
+    PrintStatement, Statement, VarInstantiationStatement, VarType, WhileStatement,
 };
 
 pub fn generate_code_str(ast: &[Statement]) -> String {
     let mut code_str = String::new();
     code_str.push_str("#include <stdio.h>\n");
-    code_str.push_str("int main(){\n");
 
     let mut function_declarations: Vec<String> = Vec::new();
 
+    // First pass: collect function declarations
     for statement in ast {
-        let statement_as_str = convert_statement_to_code(statement);
-        if matches!(statement, Statement::FunctionInstantiation(_)) {
-            function_declarations.push(statement_as_str.clone());
-        } else {
-            code_str.push_str(&statement_as_str);
+        if let Statement::FunctionInstantiation(func_stmt) = statement {
+            let statement_as_str = convert_function_instantiation_statement_to_code(func_stmt);
+            function_declarations.push(statement_as_str);
         }
     }
-    code_str.push_str("}");
 
-    // Add all the functions the file declared
+    // Add function definitions before main
     for function_code in function_declarations {
         code_str.push_str(&function_code);
         code_str.push_str("\n");
     }
+
+    code_str.push_str("int main(){\n");
+
+    // Generate main body code
+    for statement in ast {
+        if !matches!(statement, Statement::FunctionInstantiation(_)) {
+            let statement_as_str = convert_statement_to_code(statement);
+            code_str.push_str(&statement_as_str);
+        }
+    }
+    code_str.push_str("}\n");
 
     code_str
 }
@@ -45,6 +53,9 @@ fn convert_statement_to_code(statement: &Statement) -> String {
         }
         Statement::FunctionInstantiation(statement_struct) => {
             convert_function_instantiation_statement_to_code(statement_struct)
+        }
+        Statement::FunctionCall(statement_struct) => {
+            convert_function_call_statement_to_code(statement_struct)
         }
         Statement::Newline => convert_newline_to_code(),
         Statement::TestStub => String::from("// TestStub\n"),
@@ -194,6 +205,23 @@ fn convert_function_instantiation_statement_to_code(
     }
 
     code.push_str("}\n");
+    code
+}
+
+fn convert_function_call_statement_to_code(statement_struct: &FunctionCallStatement) -> String {
+    let mut code = String::new();
+
+    code.push_str(&statement_struct.function_name);
+    code.push_str("(");
+
+    for (i, arg) in statement_struct.arguments.iter().enumerate() {
+        if i > 0 {
+            code.push_str(", ");
+        }
+        code.push_str(arg);
+    }
+
+    code.push_str(");\n");
     code
 }
 

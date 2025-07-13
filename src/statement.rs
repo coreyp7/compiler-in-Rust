@@ -58,6 +58,13 @@ pub struct ReturnStatement {
     pub line_number: u8,
 }
 
+#[derive(Debug)]
+pub struct FunctionCallStatement {
+    pub function_name: String,
+    pub arguments: Vec<String>,
+    pub line_number: u8,
+}
+
 // Leaving here for later.
 pub struct FunctionParameter<'a> {
     pub var_name: &'a str,
@@ -72,6 +79,7 @@ pub enum Statement {
     Assignment(AssignmentStatement),
     VarInstantiation(VarInstantiationStatement),
     FunctionInstantiation(FunctionInstantiationStatement),
+    FunctionCall(FunctionCallStatement),
     Return(ReturnStatement),
     Newline,
     TestStub,

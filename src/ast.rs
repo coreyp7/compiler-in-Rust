@@ -5,8 +5,8 @@ use std::str::FromStr;
 use crate::comparison::*;
 use crate::error::ErrMsg;
 use crate::statement::{
-    AssignmentStatement, FunctionInstantiationStatement, IfStatement, PrintStatement,
-    ReturnStatement, Statement, VarInstantiationStatement, WhileStatement,
+    AssignmentStatement, FunctionCallStatement, FunctionInstantiationStatement, IfStatement,
+    PrintStatement, ReturnStatement, Statement, VarInstantiationStatement, WhileStatement,
 };
 use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
@@ -16,6 +16,7 @@ pub struct AstBuilder {
     curr_idx: usize,
     errors: Vec<ErrMsg>,
     pub var_map: HashMap<String, Var>,
+    pub function_map: HashMap<String, FunctionInfo>,
 }
 
 impl AstBuilder {
@@ -25,6 +26,7 @@ impl AstBuilder {
             curr_idx: 0,
             errors: Vec::new(),
             var_map: HashMap::new(),
+            function_map: HashMap::new(),
         }
     }
 
@@ -255,28 +257,11 @@ impl AstBuilder {
                 let identity = self.get_curr_token().text.clone();
                 self.next_token();
 
-                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::LessThanEqualTo)
-                {
-                    self.errors.push(error);
+                if self.get_curr_token().token_type == TokenType::LeftParen {
+                    statement = self.parse_function_call(identity);
+                } else {
+                    statement = self.parse_variable_assignment(identity);
                 }
-                self.next_token();
-
-                let assignment_token_type = self.get_curr_token().token_type.clone();
-                let assignment_var_type = convert_tokentype_to_vartype(assignment_token_type);
-                let assignment_value_text = self.get_curr_token().text.clone();
-                self.next_token();
-
-                if let Some(error) =
-                    self.get_error_if_var_assignment_invalid(&identity, &assignment_var_type)
-                {
-                    self.errors.push(error);
-                }
-                statement = Statement::Assignment(AssignmentStatement {
-                    identity: identity,
-                    value: assignment_value_text,
-                    assigned_value_type: assignment_var_type,
-                    line_number: self.get_curr_token().line_number,
-                });
             }
             TokenType::VarDeclaration => {
                 let var_type = convert_str_to_vartype(&self.get_curr_token().text);
@@ -379,6 +364,16 @@ impl AstBuilder {
                 self.next_token();
 
                 let parameters = Vec::new();
+
+                // Add function to function map
+                let function_info = FunctionInfo {
+                    return_type: return_type.clone(),
+                    parameters: parameters.clone(),
+                    line_declared_on: self.get_curr_token().line_number,
+                };
+                self.function_map
+                    .insert(function_name.clone(), function_info);
+
                 statement = Statement::FunctionInstantiation(FunctionInstantiationStatement {
                     function_name,
                     parameters,
@@ -395,6 +390,74 @@ impl AstBuilder {
 
         self.next_token();
         return statement;
+    }
+
+    fn parse_function_call(&mut self, function_name: String) -> Statement {
+        self.next_token(); // Move past '('
+
+        let mut arguments = Vec::new();
+        while self.get_curr_token().token_type != TokenType::RightParen {
+            // TODO: this is fine for now as a stub, but in the future we need
+            // to check that this symbol has been declared.
+            // However, that'd also require a second pass through the ast
+            // to confirm that functions exist.
+            // Additionally, the parameters types need to be type checked and
+            // we need to validate the variables being called from inside the
+            // function, which will require a scope context stack (stack of Maps).
+            // So, for each function call, we'd probably create a new Map specific
+            // for that function's context. It'd include the variables passed
+            // as parameters.
+            if self.get_curr_token().token_type == TokenType::Identity {
+                arguments.push(self.get_curr_token().text.clone());
+                self.next_token();
+
+                if self.get_curr_token().token_type == TokenType::Comma {
+                    self.next_token();
+                }
+            } else {
+                self.errors.push(ErrMsg::UnexpectedToken {
+                    expected: TokenType::Identity,
+                    got: self.get_curr_token().token_type.clone(),
+                    line_number: self.get_curr_token().line_number,
+                });
+                self.next_token();
+            }
+        }
+
+        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::RightParen) {
+            self.errors.push(error);
+        }
+
+        Statement::FunctionCall(FunctionCallStatement {
+            function_name,
+            arguments,
+            line_number: self.get_curr_token().line_number,
+        })
+    }
+
+    fn parse_variable_assignment(&mut self, identity: String) -> Statement {
+        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::LessThanEqualTo) {
+            self.errors.push(error);
+        }
+        self.next_token();
+
+        let assignment_token_type = self.get_curr_token().token_type.clone();
+        let assignment_var_type = convert_tokentype_to_vartype(assignment_token_type);
+        let assignment_value_text = self.get_curr_token().text.clone();
+        self.next_token();
+
+        if let Some(error) =
+            self.get_error_if_var_assignment_invalid(&identity, &assignment_var_type)
+        {
+            self.errors.push(error);
+        }
+
+        Statement::Assignment(AssignmentStatement {
+            identity,
+            value: assignment_value_text,
+            assigned_value_type: assignment_var_type,
+            line_number: self.get_curr_token().line_number,
+        })
     }
 
     fn logical(&mut self) -> Logical {
@@ -552,6 +615,13 @@ impl AstBuilder {
 pub struct Var {
     var_type: VarType,
     identity: String,
+    line_declared_on: u8,
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionInfo {
+    return_type: VarType,
+    parameters: Vec<String>,
     line_declared_on: u8,
 }
 
