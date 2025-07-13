@@ -1,13 +1,12 @@
 use std::collections::HashMap;
-use std::fmt;
 use std::str::FromStr;
 
 // My stuff
 use crate::comparison::*;
 use crate::error::ErrMsg;
 use crate::statement::{
-    AssignmentStatement, FunctionCallStatement, FunctionInstantiationStatement, FunctionParameter,
-    IfStatement, PrintStatement, Statement, VarInstantiationStatement, WhileStatement,
+    AssignmentStatement, FunctionCallStatement, FunctionInstantiationStatement, IfStatement,
+    PrintStatement, Statement, VarInstantiationStatement, WhileStatement,
 };
 use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
@@ -17,7 +16,7 @@ pub struct AstBuilder {
     curr_idx: usize,
     errors: Vec<ErrMsg>,
     pub var_map: HashMap<String, Var>,
-    pub function_map: HashMap<String, FunctionHeader>,
+    pub function_map: HashMap<String, FunctionInfo>,
 }
 
 impl AstBuilder {
@@ -180,7 +179,7 @@ impl AstBuilder {
     fn parse_function_call(&mut self, function_name: String) -> Statement {
         self.next_token(); // Move past '('
 
-        let mut params: Vec<FunctionParameter> = Vec::new();
+        let mut arguments = Vec::new();
         while self.get_curr_token().token_type != TokenType::RightParen {
             // TODO: this is fine for now as a stub, but in the future we need
             // to check that this symbol has been declared.
@@ -192,32 +191,9 @@ impl AstBuilder {
             // So, for each function call, we'd probably create a new Map specific
             // for that function's context. It'd include the variables passed
             // as parameters.
-
-            // Ok, so all the logic in the top will be done in semantic analyzer.
-            // In this context, we just need to create FunctionParameters properly
-            // and include them in the FunctionCall struct.
-            // Leaving comment up there though because its helpful.
-
-            // Grammar:
-            // function name(Type nameone, Type nametwo) -> Type
-            // (Ignore return type for now, we'll do that last.)
-
-            // So parse type, then identity
-            // If there's a comma, we do it again
-            if self.get_curr_token().token_type == TokenType::VarDeclaration {
-                // Var type
-                let var_type = convert_tokentype_to_vartype(self.get_curr_token().token_type);
+            if self.get_curr_token().token_type == TokenType::Identity {
+                arguments.push(self.get_curr_token().text.clone());
                 self.next_token();
-
-                // Var identifier
-                let var_name = self.get_curr_token().text.clone();
-                self.next_token();
-
-                let param = crate::statement::FunctionParameter {
-                    var_name: var_name.clone(),
-                    var_type: var_type,
-                };
-                params.push(param);
 
                 if self.get_curr_token().token_type == TokenType::Comma {
                     self.next_token();
@@ -238,7 +214,7 @@ impl AstBuilder {
 
         Statement::FunctionCall(FunctionCallStatement {
             function_name,
-            params,
+            arguments,
             line_number: self.get_curr_token().line_number,
         })
     }
@@ -392,49 +368,21 @@ impl AstBuilder {
         }
         self.next_token();
 
-        // Parse any possible declared parameters, add to the functiondeclaration struct
-        // TODO: move into a function it very big
-        // TODO: add error handling if we never see an ending paren
-        let mut params: Vec<FunctionParameter> = Vec::new();
-        while self.get_curr_token().token_type != TokenType::RightParen {
-            if self.get_curr_token().token_type == TokenType::VarDeclaration {
-                // Var type
-                let var_type = convert_tokentype_to_vartype(self.get_curr_token().token_type);
-                self.next_token();
+        // TODO: add parameter parsing here
+        // right now it doesn't exist at all lol
 
-                // Var identifier
-                let var_name = self.get_curr_token().text.clone();
-                self.next_token();
-
-                let param = crate::statement::FunctionParameter {
-                    var_name: var_name.clone(),
-                    var_type: var_type,
-                };
-                params.push(param);
-
-                if self.get_curr_token().token_type == TokenType::Comma {
-                    self.next_token();
-                }
-            } else {
-                self.errors.push(ErrMsg::UnexpectedToken {
-                    expected: TokenType::Identity,
-                    got: self.get_curr_token().token_type.clone(),
-                    line_number: self.get_curr_token().line_number,
-                });
-                self.next_token();
-            }
+        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::RightParen) {
+            self.errors.push(error);
         }
-
         self.next_token();
 
-        /* TODO: return types
         if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Arrow) {
             self.errors.push(error);
         }
         self.next_token();
-        */
 
-        let return_type = convert_str_to_vartype("");
+        let return_type = convert_str_to_vartype(&self.get_curr_token().text);
+        self.next_token();
 
         if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Colon) {
             self.errors.push(error);
@@ -452,25 +400,24 @@ impl AstBuilder {
         // for end function
         self.next_token();
 
-        // Create the function instantiation statement
-        let function_statement = Statement::FunctionInstantiation(FunctionInstantiationStatement {
-            function_name: function_name.clone(),
-            parameters: params.clone(), // Use the parsed FunctionParameter vector directly
-            return_type: return_type.clone(),
-            statements: function_statements,
-            line_number: self.get_curr_token().line_number,
-        });
+        let parameters = Vec::new(); // TODO: Parse actual parameters
 
-        // Add function header to function map for semantic analysis
-        let function_header = FunctionHeader {
-            function_name: function_name.clone(),
-            parameters: params, // Use the parsed parameters
-            return_type,
+        // Add function to function map
+        let function_info = FunctionInfo {
+            return_type: return_type.clone(),
+            parameters: parameters.clone(),
             line_declared_on: self.get_curr_token().line_number,
         };
-        self.function_map.insert(function_name, function_header);
+        self.function_map
+            .insert(function_name.clone(), function_info);
 
-        function_statement
+        Statement::FunctionInstantiation(FunctionInstantiationStatement {
+            function_name,
+            parameters: parameters.iter().map(|p| p.name.clone()).collect(), // Convert to Vec<String> for now
+            return_type,
+            statements: function_statements,
+            line_number: self.get_curr_token().line_number,
+        })
     }
 
     fn parse_newline_statement(&mut self) -> Statement {
@@ -637,10 +584,9 @@ pub struct Var {
 }
 
 #[derive(Debug, Clone)]
-pub struct FunctionHeader {
-    pub function_name: String,
-    pub parameters: Vec<FunctionParameter>,
+pub struct FunctionInfo {
     pub return_type: VarType,
+    pub parameters: Vec<FunctionParameter>, // Enhanced with parameter info
     pub line_declared_on: u8,
 }
 
@@ -663,23 +609,6 @@ impl FromStr for VarType {
     }
 }
 
-impl VarType {
-    /// Converts a VarType to its string representation
-    pub fn to_string(&self) -> &'static str {
-        match self {
-            VarType::Num => "int",
-            VarType::Str => "char*",
-            VarType::Unrecognized => "void",
-        }
-    }
-}
-
-impl fmt::Display for VarType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
-    }
-}
-
 // Helper functions for VarType conversion
 pub fn convert_str_to_vartype(text: &str) -> VarType {
     match text {
@@ -695,4 +624,10 @@ pub fn convert_tokentype_to_vartype(token_type: TokenType) -> VarType {
         TokenType::Str => VarType::Str,
         _ => VarType::Unrecognized,
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionParameter {
+    pub name: String,
+    pub param_type: VarType,
 }
