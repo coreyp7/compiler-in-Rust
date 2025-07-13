@@ -11,11 +11,23 @@ pub fn generate_code_str(ast: &[Statement]) -> String {
     code_str.push_str("#include <stdio.h>\n");
     code_str.push_str("int main(){\n");
 
+    let mut function_declarations: Vec<String> = Vec::new();
+
     for statement in ast {
         let statement_as_str = convert_statement_to_code(statement);
-        code_str.push_str(&statement_as_str);
+        if matches!(statement, Statement::FunctionInstantiation(_)) {
+            function_declarations.push(statement_as_str.clone());
+        } else {
+            code_str.push_str(&statement_as_str);
+        }
     }
     code_str.push_str("}");
+
+    // Add all the functions the file declared
+    for function_code in function_declarations {
+        code_str.push_str(&function_code);
+        code_str.push_str("\n");
+    }
 
     code_str
 }
@@ -156,7 +168,7 @@ fn convert_function_instantiation_statement_to_code(
     match statement_struct.return_type {
         VarType::Str => code.push_str("char* "),
         VarType::Num => code.push_str("int "),
-        VarType::Unrecognized => code.push_str("void "),
+        VarType::Unrecognized => code.push_str("void "), //TODO: this should be fixed to work normal
     }
 
     code.push_str(&statement_struct.function_name);
