@@ -10,6 +10,8 @@ use tokenizer::Tokenizer;
 mod ast;
 use ast::AstBuilder;
 
+mod expression_parser;
+
 mod semantic;
 use semantic::{ScopeType, SemanticAnalyzer};
 
