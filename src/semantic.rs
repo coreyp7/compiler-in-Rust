@@ -320,6 +320,9 @@ impl SemanticAnalyzer {
             Primary::Number { .. } => {
                 // Numbers don't need scope validation
             }
+            Primary::String { .. } => {
+                // Strings have no validation
+            }
             Primary::Error { .. } => {
                 // Error primaries indicate parsing issues, skip validation
             }

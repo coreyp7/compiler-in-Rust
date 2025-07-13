@@ -144,6 +144,9 @@ pub enum Primary {
         arguments: Vec<String>,
         line_number: u8,
     },
+    String {
+        value: String,
+    },
     Error {
         detail: String,
     },

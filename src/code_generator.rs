@@ -441,6 +441,10 @@ fn convert_primary_to_code(primary: &crate::comparison::Primary) -> String {
             code.push_str(")");
             code
         }
+        crate::comparison::Primary::String { value } => {
+            let formatted = format!("\"{}\"", value);
+            formatted
+        }
         crate::comparison::Primary::Error { detail: _ } => String::from("/* error in primary */"),
     }
 }

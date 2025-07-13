@@ -61,6 +61,13 @@ impl AstBuilder {
     }
 
     pub fn generate_ast(&mut self) -> Vec<Statement> {
+        // Phase 1: Collect all function declarations first
+        self.collect_function_declarations();
+
+        // Reset to beginning for full parsing
+        self.curr_idx = 0;
+
+        // Phase 2: Full AST generation with all functions known
         self.program()
     }
 
@@ -113,6 +120,74 @@ impl AstBuilder {
         }
 
         statements
+    }
+
+    /// Phase 1: Scan through tokens and collect all function declarations
+    /// This populates the function_map so forward declarations work
+    fn collect_function_declarations(&mut self) {
+        let original_idx = self.curr_idx;
+        self.curr_idx = 0;
+
+        while self.get_curr_token().token_type != TokenType::EOF {
+            if self.get_curr_token().token_type == TokenType::FunctionDeclaration {
+                self.parse_function_header();
+            } else {
+                self.next_token();
+            }
+        }
+
+        // Restore original position
+        self.curr_idx = original_idx;
+    }
+
+    /// Parse only the function header (name, parameters, return type) without the body
+    /// Used in Phase 1 to collect function signatures
+    fn parse_function_header(&mut self) {
+        self.next_token(); // Skip 'function'
+
+        let function_name = self.get_curr_token().text.clone();
+        self.next_token();
+
+        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::LeftParen) {
+            self.errors.push(error);
+        }
+        self.next_token();
+
+        // Parse function parameters
+        let parameters = self.parse_function_parameters();
+
+        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::RightParen) {
+            self.errors.push(error);
+        }
+        self.next_token();
+
+        let return_type = self.parse_function_return_type();
+
+        // Create function header and add to function map
+        let function_header = FunctionHeader {
+            function_name: function_name.clone(),
+            parameters,
+            return_type,
+        };
+
+        self.function_map.insert(function_name, function_header);
+
+        // Skip the function body - just advance until we find endFunction
+        let mut brace_depth = 1; // We're inside the function
+
+        // Skip past the colon
+        if self.get_curr_token().token_type == TokenType::Colon {
+            self.next_token();
+        }
+
+        while self.get_curr_token().token_type != TokenType::EOF && brace_depth > 0 {
+            match self.get_curr_token().token_type {
+                //TokenType::FunctionDeclaration => brace_depth += 1, leaving in case my freak ass wants inner function inits
+                TokenType::EndFunction => brace_depth -= 1,
+                _ => {}
+            }
+            self.next_token();
+        }
     }
 
     // TODO: these really shouldn't be here this sucks
@@ -354,54 +429,62 @@ impl AstBuilder {
     }
 
     fn parse_function_declaration_statement(&mut self) -> Statement {
-        self.next_token();
+        self.next_token(); // Skip 'function'
 
         let function_name = self.get_curr_token().text.clone();
+
+        // Look up the function header that was already parsed in Phase 1
+        let function_header = if let Some(header) = self.function_map.get(&function_name).cloned() {
+            header
+        } else {
+            // This shouldn't happen if Phase 1 worked correctly, but handle gracefully
+            self.errors.push(ErrMsg::UnexpectedToken {
+                expected: TokenType::FunctionDeclaration,
+                got: self.get_curr_token().token_type.clone(),
+                line_number: self.get_curr_token().line_number,
+            });
+            return Statement::TestStub;
+        };
+
+        // Skip past the function signature since we already have it
+        // Skip function name
         self.next_token();
 
-        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::LeftParen) {
-            self.errors.push(error);
+        // Skip '(parameters)'
+        if self.get_curr_token().token_type == TokenType::LeftParen {
+            let mut paren_depth = 1;
+            self.next_token();
+            while paren_depth > 0 && self.get_curr_token().token_type != TokenType::EOF {
+                match self.get_curr_token().token_type {
+                    TokenType::LeftParen => paren_depth += 1,
+                    TokenType::RightParen => paren_depth -= 1,
+                    _ => {}
+                }
+                self.next_token();
+            }
         }
-        self.next_token();
 
-        // Parse function parameters
-        let parameters = self.parse_function_parameters();
-
-        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::RightParen) {
-            self.errors.push(error);
+        // Skip return type if present (-> Type)
+        if self.get_curr_token().token_type == TokenType::Arrow {
+            self.next_token(); // Skip '->'
+            self.next_token(); // Skip type
         }
-        self.next_token();
 
-        let return_type = self.parse_function_return_type();
-
-        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Colon) {
-            self.errors.push(error);
+        // Skip ':'
+        if self.get_curr_token().token_type == TokenType::Colon {
+            self.next_token();
         }
-        self.next_token();
 
-        // Parse function body statements
+        // Now parse the function body statements
         let mut function_statements = Vec::new();
         while !self.is_curr_token_type(&TokenType::EndFunction) {
             let statement = self.statement();
-            println!("parsed statement: {:?}", statement);
             if !matches!(statement, Statement::Newline) {
                 function_statements.push(statement);
             }
         }
-        // TODO: need to add error handling if we hit EOF while looking
-        // for end function
-        self.next_token();
 
-        // Create function header
-        let function_header = FunctionHeader {
-            function_name: function_name.clone(),
-            parameters: parameters.clone(),
-            return_type: return_type.clone(),
-        };
-
-        // Add function to function map
-        self.function_map
-            .insert(function_name.clone(), function_header.clone());
+        self.next_token(); // Skip 'endFunction'
 
         Statement::FunctionInstantiation(FunctionInstantiationStatement {
             header: function_header,
@@ -607,6 +690,9 @@ impl AstBuilder {
             TokenType::Number => Primary::Number {
                 value: self.get_curr_token().text.clone(),
             },
+            TokenType::Str => Primary::String {
+                value: self.get_curr_token().text.clone(),
+            },
             TokenType::Identity => {
                 let identity_name = self.get_curr_token().text.clone();
                 let line_number = self.get_curr_token().line_number;
@@ -748,6 +834,7 @@ impl AstBuilder {
     fn extract_value_and_type_from_primary(&self, primary: &Primary) -> (String, VarType) {
         match primary {
             Primary::Number { value } => (value.clone(), VarType::Num),
+            Primary::String { value } => (value.clone(), VarType::Str),
             Primary::Identity {
                 name,
                 line_number: _,
