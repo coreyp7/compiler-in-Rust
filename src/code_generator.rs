@@ -302,12 +302,12 @@ fn convert_comparison_to_code(comparison: &Comparison) -> String {
     for (i, operator) in comparison.operators.iter().enumerate() {
         // Add the comparison operator
         match operator {
-            ComparisonOperator::equalequal => code.push_str(" == "),
-            ComparisonOperator::notequal => code.push_str(" != "),
-            ComparisonOperator::lessthan => code.push_str(" < "),
-            ComparisonOperator::lessthanequalto => code.push_str(" <= "),
-            ComparisonOperator::greaterthan => code.push_str(" > "),
-            ComparisonOperator::greaterthanequalto => code.push_str(" >= "),
+            ComparisonOperator::EqualEqual => code.push_str(" == "),
+            ComparisonOperator::NotEqual => code.push_str(" != "),
+            ComparisonOperator::LessThan => code.push_str(" < "),
+            ComparisonOperator::LessThanEqualTo => code.push_str(" <= "),
+            ComparisonOperator::GreaterThan => code.push_str(" > "),
+            ComparisonOperator::GreaterThanEqualTo => code.push_str(" >= "),
             _ => code.push_str(" /* unknown comparison */ "),
         }
 

@@ -216,7 +216,7 @@ impl AstBuilder {
         self.next_token();
 
         let assignment_token_type = self.get_curr_token().token_type.clone();
-        let assignment_var_type = convert_tokentype_to_vartype(assignment_token_type);
+        let assignment_var_type = VarType::from(assignment_token_type);
         let assignment_value_text = self.get_curr_token().text.clone();
         self.next_token();
 
@@ -315,7 +315,7 @@ impl AstBuilder {
     }
 
     fn parse_var_declaration_statement(&mut self) -> Statement {
-        let var_type = convert_str_to_vartype(&self.get_curr_token().text);
+        let var_type = VarType::from(self.get_curr_token().text.as_str());
         self.next_token();
 
         let identity = self.get_curr_token().text.clone();
@@ -328,7 +328,7 @@ impl AstBuilder {
 
         let assignment_value_text = self.get_curr_token().text.clone();
         let assignment_token_type = self.get_curr_token().token_type.clone();
-        let assignment_var_type = convert_tokentype_to_vartype(assignment_token_type);
+        let assignment_var_type = VarType::from(assignment_token_type);
         if let Some(error) =
             // TODO: move into semantic analyzer
             self.get_error_if_incorrect_type_assignment(&var_type, &assignment_var_type)
@@ -411,7 +411,7 @@ impl AstBuilder {
 
         // check for optional bang
         if self.get_curr_token().token_type == TokenType::Bang {
-            let op: LogicalOperator = convert_token_type_to_logical_op(TokenType::Bang);
+            let op = LogicalOperator::from(TokenType::Bang);
             logical.operators.push(op);
             self.next_token();
         }
@@ -419,10 +419,9 @@ impl AstBuilder {
         let comp1 = self.comparison();
         logical.comparisons.push(comp1);
 
-        let op1: LogicalOperator =
-            convert_token_type_to_logical_op(self.get_curr_token().token_type.clone());
+        let op1 = LogicalOperator::from(self.get_curr_token().token_type.clone());
 
-        if op1 == LogicalOperator::invalidop {
+        if op1 == LogicalOperator::Invalid {
             // No logical operators, there's just 1 comparison to process.
             // return the struct as is, with no operations
             println!("skipping this because its not logical op");
@@ -431,14 +430,13 @@ impl AstBuilder {
         }
 
         while self.is_curr_token_logical_operator() {
-            let op: LogicalOperator =
-                convert_token_type_to_logical_op(self.get_curr_token().token_type.clone());
+            let op = LogicalOperator::from(self.get_curr_token().token_type.clone());
             logical.operators.push(op);
             self.next_token();
 
             // check for optional bang
             if self.get_curr_token().token_type == TokenType::Bang {
-                let bang: LogicalOperator = convert_token_type_to_logical_op(TokenType::Bang);
+                let bang = LogicalOperator::from(TokenType::Bang);
                 logical.operators.push(bang);
                 self.next_token();
             }
@@ -464,8 +462,7 @@ impl AstBuilder {
         // (Unused, but may be useful for debugging or future logic)
 
         while self.is_curr_token_comparison_operator() {
-            let op: ComparisonOperator =
-                convert_token_type_to_comparison_op(self.get_curr_token().token_type.clone());
+            let op = ComparisonOperator::from(self.get_curr_token().token_type.clone());
             comparison.operators.push(op);
             self.next_token();
 
@@ -486,7 +483,7 @@ impl AstBuilder {
         expr.terms.push(term1);
 
         while self.is_curr_token_expression_operator() {
-            let op = convert_token_type_to_expression_op(self.get_curr_token().token_type.clone());
+            let op = ExpressionOperator::from(self.get_curr_token().token_type.clone());
             expr.operators.push(op);
             self.next_token();
 
@@ -507,7 +504,7 @@ impl AstBuilder {
         term.unarys.push(unary1);
 
         while self.is_curr_token_term_operator() {
-            let op = convert_token_type_to_term_op(self.get_curr_token().token_type.clone());
+            let op = TermOperator::from(self.get_curr_token().token_type.clone());
             term.operations.push(op);
             self.next_token();
 
@@ -527,7 +524,7 @@ impl AstBuilder {
         };
 
         if self.is_curr_token_expression_operator() {
-            unary.operation = Some(convert_token_type_to_expression_op(
+            unary.operation = Some(ExpressionOperator::from(
                 self.get_curr_token().token_type.clone(),
             ));
             self.next_token();
@@ -572,7 +569,7 @@ impl AstBuilder {
                 continue;
             }
 
-            let param_type = convert_str_to_vartype(&self.get_curr_token().text);
+            let param_type = VarType::from(self.get_curr_token().text.as_str());
             self.next_token();
 
             // Parse parameter name
@@ -616,12 +613,12 @@ impl AstBuilder {
 
             // Expect a type after the arrow
             if self.get_curr_token().token_type == TokenType::VarDeclaration {
-                let ret_type = convert_str_to_vartype(&self.get_curr_token().text);
+                let ret_type = VarType::from(self.get_curr_token().text.as_str());
                 self.next_token();
                 ret_type
             } else if self.get_curr_token().token_type == TokenType::Identity {
                 // Handle cases like "Void" which might not be VarDeclaration tokens
-                let ret_type = convert_str_to_vartype(&self.get_curr_token().text);
+                let ret_type = VarType::from(self.get_curr_token().text.as_str());
                 self.next_token();
                 ret_type
             } else {
@@ -666,21 +663,24 @@ impl FromStr for VarType {
     }
 }
 
-// Helper functions for VarType conversion
-pub fn convert_str_to_vartype(text: &str) -> VarType {
-    match text {
-        "Number" => VarType::Num,
-        "String" => VarType::Str,
-        "Void" => VarType::Unrecognized, // Treat Void as Unrecognized for now
-        _ => VarType::Unrecognized,
+impl From<TokenType> for VarType {
+    fn from(token_type: TokenType) -> Self {
+        match token_type {
+            TokenType::Number => VarType::Num,
+            TokenType::Str => VarType::Str,
+            _ => VarType::Unrecognized,
+        }
     }
 }
 
-pub fn convert_tokentype_to_vartype(token_type: TokenType) -> VarType {
-    match token_type {
-        TokenType::Number => VarType::Num,
-        TokenType::Str => VarType::Str,
-        _ => VarType::Unrecognized,
+impl From<&str> for VarType {
+    fn from(text: &str) -> Self {
+        match text {
+            "Number" => VarType::Num,
+            "String" => VarType::Str,
+            "Void" => VarType::Unrecognized, // Treat Void as Unrecognized for now
+            _ => VarType::Unrecognized,
+        }
     }
 }
 

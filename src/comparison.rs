@@ -32,7 +32,18 @@ pub enum LogicalOperator {
     And,
     Or,
     Not,
-    invalidop,
+    Invalid,
+}
+
+impl From<TokenType> for LogicalOperator {
+    fn from(token_type: TokenType) -> Self {
+        match token_type {
+            TokenType::DoubleAmpersand => LogicalOperator::And,
+            TokenType::DoubleBar => LogicalOperator::Or,
+            TokenType::Bang => LogicalOperator::Not,
+            _ => LogicalOperator::Invalid,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -43,13 +54,27 @@ pub struct Comparison {
 
 #[derive(Debug)]
 pub enum ComparisonOperator {
-    equalequal,
-    notequal,
-    lessthan,
-    lessthanequalto,
-    greaterthan,
-    greaterthanequalto,
-    invalidop,
+    EqualEqual,
+    NotEqual,
+    LessThan,
+    LessThanEqualTo,
+    GreaterThan,
+    GreaterThanEqualTo,
+    Invalid,
+}
+
+impl From<TokenType> for ComparisonOperator {
+    fn from(token_type: TokenType) -> Self {
+        match token_type {
+            TokenType::EqualEqual => ComparisonOperator::EqualEqual,
+            TokenType::NotEqual => ComparisonOperator::NotEqual,
+            TokenType::LessThan => ComparisonOperator::LessThan,
+            TokenType::LessThanEqualTo => ComparisonOperator::LessThanEqualTo,
+            TokenType::GreaterThan => ComparisonOperator::GreaterThan,
+            TokenType::GreaterThanEqualTo => ComparisonOperator::GreaterThanEqualTo,
+            _ => ComparisonOperator::Invalid,
+        }
+    }
 }
 
 // Either + or -
@@ -63,7 +88,17 @@ pub struct Expression {
 pub enum ExpressionOperator {
     Plus,
     Minus,
-    invalidop,
+    Invalid,
+}
+
+impl From<TokenType> for ExpressionOperator {
+    fn from(token_type: TokenType) -> Self {
+        match token_type {
+            TokenType::Plus => ExpressionOperator::Plus,
+            TokenType::Minus => ExpressionOperator::Minus,
+            _ => ExpressionOperator::Invalid,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -76,7 +111,17 @@ pub struct Term {
 pub enum TermOperator {
     Multiply,
     Divide,
-    invalidop, // TODO: these should be changed to no op
+    Invalid, // TODO: these should be changed to no op
+}
+
+impl From<TokenType> for TermOperator {
+    fn from(token_type: TokenType) -> Self {
+        match token_type {
+            TokenType::Asterisk => TermOperator::Multiply,
+            TokenType::Slash => TermOperator::Divide,
+            _ => TermOperator::Invalid,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -97,42 +142,4 @@ pub enum Primary {
     Error {
         detail: String,
     },
-}
-
-// Conversion functions
-pub fn convert_token_type_to_comparison_op(token_type: TokenType) -> ComparisonOperator {
-    match token_type {
-        TokenType::EqualEqual => ComparisonOperator::equalequal,
-        TokenType::NotEqual => ComparisonOperator::notequal,
-        TokenType::LessThan => ComparisonOperator::lessthan,
-        TokenType::LessThanEqualTo => ComparisonOperator::lessthanequalto,
-        TokenType::GreaterThan => ComparisonOperator::greaterthan,
-        TokenType::GreaterThanEqualTo => ComparisonOperator::greaterthanequalto,
-        _ => ComparisonOperator::invalidop,
-    }
-}
-
-pub fn convert_token_type_to_expression_op(token_type: TokenType) -> ExpressionOperator {
-    match token_type {
-        TokenType::Plus => ExpressionOperator::Plus,
-        TokenType::Minus => ExpressionOperator::Minus,
-        _ => ExpressionOperator::invalidop,
-    }
-}
-
-pub fn convert_token_type_to_term_op(token_type: TokenType) -> TermOperator {
-    match token_type {
-        TokenType::Asterisk => TermOperator::Multiply,
-        TokenType::Slash => TermOperator::Divide,
-        _ => TermOperator::invalidop,
-    }
-}
-
-pub fn convert_token_type_to_logical_op(token_type: TokenType) -> LogicalOperator {
-    match token_type {
-        TokenType::DoubleAmpersand => LogicalOperator::And,
-        TokenType::DoubleBar => LogicalOperator::Or,
-        TokenType::Bang => LogicalOperator::Not,
-        _ => LogicalOperator::invalidop,
-    }
 }
