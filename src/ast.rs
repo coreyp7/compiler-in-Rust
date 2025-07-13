@@ -332,17 +332,17 @@ impl AstBuilder {
         }
         self.next_token();
 
-        let assignment_value_text = self.get_curr_token().text.clone();
-        let assignment_token_type = self.get_curr_token().token_type.clone();
-        let assignment_var_type = VarType::from(assignment_token_type);
+        // Use primary() to parse the assignment value, which can handle literals, variables, or function calls
+        let assignment_primary = self.primary();
+        let (assignment_value_text, assignment_var_type) =
+            self.extract_value_and_type_from_primary(&assignment_primary);
+
         if let Some(error) =
             // TODO: move into semantic analyzer
             self.get_error_if_incorrect_type_assignment(&var_type, &assignment_var_type)
         {
             self.errors.push(error);
         }
-
-        self.next_token();
 
         Statement::VarInstantiation(VarInstantiationStatement {
             identity,
@@ -742,6 +742,49 @@ impl AstBuilder {
         } else {
             // No return type specified, default to void/unrecognized
             VarType::Unrecognized
+        }
+    }
+
+    fn extract_value_and_type_from_primary(&self, primary: &Primary) -> (String, VarType) {
+        match primary {
+            Primary::Number { value } => (value.clone(), VarType::Num),
+            Primary::Identity {
+                name,
+                line_number: _,
+            } => {
+                // Look up the variable type in the symbol table
+                if let Some(var_info) = self.var_map.get(name) {
+                    (name.clone(), var_info.var_type.clone())
+                } else {
+                    // Variable not found, return as unrecognized
+                    // Error handling should be done elsewhere
+                    (name.clone(), VarType::Unrecognized)
+                }
+            }
+            Primary::FunctionCall {
+                name,
+                arguments,
+                line_number: _,
+            } => {
+                // Look up the function return type in the function map
+                if let Some(function_info) = self.function_map.get(name) {
+                    // For code generation, we need to represent this as a function call
+                    let mut call_text = name.clone();
+                    call_text.push_str("(");
+                    for (i, arg) in arguments.iter().enumerate() {
+                        if i > 0 {
+                            call_text.push_str(", ");
+                        }
+                        call_text.push_str(arg);
+                    }
+                    call_text.push_str(")");
+                    (call_text, function_info.return_type.clone())
+                } else {
+                    // Function not found, return as unrecognized
+                    (name.clone(), VarType::Unrecognized)
+                }
+            }
+            Primary::Error { detail: _ } => ("/* error */".to_string(), VarType::Unrecognized),
         }
     }
 }
