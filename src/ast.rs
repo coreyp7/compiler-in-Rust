@@ -6,7 +6,7 @@ use crate::comparison::*;
 use crate::error::ErrMsg;
 use crate::statement::{
     AssignmentStatement, FunctionCallStatement, FunctionInstantiationStatement, IfStatement,
-    PrintStatement, ReturnStatement, Statement, VarInstantiationStatement, WhileStatement,
+    PrintStatement, Statement, VarInstantiationStatement, WhileStatement,
 };
 use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
@@ -173,223 +173,28 @@ impl AstBuilder {
     }
 
     fn statement(&mut self) -> Statement {
-        let mut statement = Statement::TestStub;
-        //let curr_token = self.get_curr_token();
-        match self.get_curr_token().token_type {
-            TokenType::Print => {
-                self.next_token();
-                let string_content: String = self.get_curr_token().text.clone();
-                let mut is_identity: bool = false;
-                let mut possible_error: Option<ErrMsg> = None;
-
-                match &self.get_curr_token().token_type {
-                    TokenType::Str => (),
-                    TokenType::Identity => {
-                        is_identity = true;
-                    }
-                    _ => {
-                        possible_error = Some(ErrMsg::UnexpectedToken {
-                            expected: self.get_curr_token().token_type.clone(),
-                            got: self.get_curr_token().token_type.clone(),
-                            line_number: self.get_curr_token().line_number.clone(),
-                        });
-                    }
-                }
-
-                if let Some(error) = possible_error {
-                    self.errors.push(error);
-                }
-
-                statement = Statement::Print(PrintStatement {
-                    content: string_content,
-                    line_number: self.get_curr_token().line_number,
-                    is_content_identity_name: is_identity,
-                });
-            }
-            TokenType::If => {
-                self.next_token();
-                let conditional = self.logical();
-
-                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Then) {
-                    self.errors.push(error);
-                }
-                self.next_token();
-
-                let mut statements: Vec<Statement> = Vec::new();
-
-                while !self.is_curr_token_type(&TokenType::EndIf) {
-                    statements.push(self.statement());
-                }
-
-                self.next_token();
-
-                statement = Statement::If(IfStatement {
-                    logical: conditional,
-                    statements: statements,
-                    line_number: self.get_curr_token().line_number,
-                });
-            }
-            TokenType::While => {
-                self.next_token();
-
-                let conditional = self.logical();
-
-                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Do) {
-                    self.errors.push(error);
-                }
-                self.next_token();
-
-                let mut statements: Vec<Statement> = Vec::new();
-
-                while !self.is_curr_token_type(&TokenType::EndWhile) {
-                    statements.push(self.statement());
-                }
-
-                self.next_token();
-
-                statement = Statement::While(WhileStatement {
-                    logical: conditional,
-                    statements: statements,
-                    line_number: self.get_curr_token().line_number,
-                });
-            }
+        let statement = match self.get_curr_token().token_type {
+            TokenType::Print => self.parse_print_statement(),
+            TokenType::If => self.parse_if_statement(),
+            TokenType::While => self.parse_while_statement(),
             TokenType::Identity => {
                 let identity = self.get_curr_token().text.clone();
                 self.next_token();
 
                 if self.get_curr_token().token_type == TokenType::LeftParen {
-                    statement = self.parse_function_call(identity);
+                    self.parse_function_call(identity)
                 } else {
-                    statement = self.parse_variable_assignment(identity);
+                    self.parse_variable_assignment(identity)
                 }
             }
-            TokenType::VarDeclaration => {
-                let var_type = convert_str_to_vartype(&self.get_curr_token().text);
-                self.next_token();
-
-                let identity = self.get_curr_token().text.clone();
-                self.next_token();
-
-                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Colon) {
-                    self.errors.push(error);
-                }
-                self.next_token();
-
-                let assignment_value_text = self.get_curr_token().text.clone();
-                let assignment_token_type = self.get_curr_token().token_type.clone();
-                let assignment_var_type = convert_tokentype_to_vartype(assignment_token_type);
-                if let Some(error) =
-                    self.get_error_if_incorrect_type_assignment(&var_type, &assignment_var_type)
-                {
-                    self.errors.push(error);
-                }
-
-                self.insert_into_var_map(
-                    identity.clone(),
-                    var_type.clone(),
-                    self.get_curr_token().line_number,
-                );
-
-                self.next_token();
-
-                statement = Statement::VarInstantiation(VarInstantiationStatement {
-                    identity: identity,
-                    value: assignment_value_text,
-                    var_type: var_type,
-                    assigned_value_type: assignment_var_type,
-                    line_number: self.get_curr_token().line_number,
-                });
-            }
-            TokenType::FunctionDeclaration => {
-                self.next_token();
-
-                let function_name = self.get_curr_token().text.clone();
-                self.next_token();
-
-                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::LeftParen) {
-                    self.errors.push(error);
-                }
-                self.next_token();
-
-                // Parameters
-                /*
-                let mut parameters = Vec::new();
-                while self.get_curr_token().token_type != TokenType::RightParen {
-                    if self.get_curr_token().token_type == TokenType::VarDeclaration {
-                        parameters.push(self.get_curr_token().text.clone());
-                        self.next_token();
-
-                        if self.get_curr_token().token_type == TokenType::Comma {
-                            self.next_token();
-                        }
-                    } else {
-                        // Error: expected parameter name
-                        self.errors.push(ErrMsg::UnexpectedToken {
-                            expected: TokenType::Identity,
-                            got: self.get_curr_token().token_type.clone(),
-                            line_number: self.get_curr_token().line_number,
-                        });
-                        self.next_token();
-                    }
-                }
-                */
-
-                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::RightParen) {
-                    self.errors.push(error);
-                }
-                self.next_token();
-
-                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Arrow) {
-                    self.errors.push(error);
-                }
-                self.next_token();
-
-                let return_type = convert_str_to_vartype(&self.get_curr_token().text);
-                self.next_token();
-
-                if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Colon) {
-                    self.errors.push(error);
-                }
-                self.next_token();
-
-                // Parse function body statements
-                let mut function_statements = Vec::new();
-                while !self.is_curr_token_type(&TokenType::EndFunction) {
-                    let statement = self.statement();
-                    println!("parsed statement: {:?}", statement);
-                    function_statements.push(statement);
-                }
-                // TODO: need to add error handling if we hit EOF while looking
-                // for end function
-                self.next_token();
-
-                let parameters = Vec::new();
-
-                // Add function to function map
-                let function_info = FunctionInfo {
-                    return_type: return_type.clone(),
-                    parameters: parameters.clone(),
-                    line_declared_on: self.get_curr_token().line_number,
-                };
-                self.function_map
-                    .insert(function_name.clone(), function_info);
-
-                statement = Statement::FunctionInstantiation(FunctionInstantiationStatement {
-                    function_name,
-                    parameters,
-                    return_type,
-                    statements: function_statements,
-                    line_number: self.get_curr_token().line_number,
-                });
-            }
-            TokenType::Newline => {
-                statement = Statement::Newline;
-            }
-            _ => {}
+            TokenType::VarDeclaration => self.parse_var_declaration_statement(),
+            TokenType::FunctionDeclaration => self.parse_function_declaration_statement(),
+            TokenType::Newline => self.parse_newline_statement(),
+            _ => Statement::TestStub,
         };
 
         self.next_token();
-        return statement;
+        statement
     }
 
     fn parse_function_call(&mut self, function_name: String) -> Statement {
@@ -458,6 +263,211 @@ impl AstBuilder {
             assigned_value_type: assignment_var_type,
             line_number: self.get_curr_token().line_number,
         })
+    }
+
+    fn parse_print_statement(&mut self) -> Statement {
+        self.next_token();
+        let string_content = self.get_curr_token().text.clone();
+        let mut is_identity = false;
+        let mut possible_error = None;
+
+        match &self.get_curr_token().token_type {
+            TokenType::Str => (),
+            TokenType::Identity => {
+                is_identity = true;
+            }
+            _ => {
+                possible_error = Some(ErrMsg::UnexpectedToken {
+                    expected: self.get_curr_token().token_type.clone(),
+                    got: self.get_curr_token().token_type.clone(),
+                    line_number: self.get_curr_token().line_number.clone(),
+                });
+            }
+        }
+
+        if let Some(error) = possible_error {
+            self.errors.push(error);
+        }
+
+        Statement::Print(PrintStatement {
+            content: string_content,
+            line_number: self.get_curr_token().line_number,
+            is_content_identity_name: is_identity,
+        })
+    }
+
+    fn parse_if_statement(&mut self) -> Statement {
+        self.next_token();
+        let conditional = self.logical();
+
+        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Then) {
+            self.errors.push(error);
+        }
+        self.next_token();
+
+        let mut statements = Vec::new();
+
+        while !self.is_curr_token_type(&TokenType::EndIf) {
+            statements.push(self.statement());
+        }
+
+        self.next_token();
+
+        Statement::If(IfStatement {
+            logical: conditional,
+            statements,
+            line_number: self.get_curr_token().line_number,
+        })
+    }
+
+    fn parse_while_statement(&mut self) -> Statement {
+        self.next_token();
+
+        let conditional = self.logical();
+
+        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Do) {
+            self.errors.push(error);
+        }
+        self.next_token();
+
+        let mut statements = Vec::new();
+
+        while !self.is_curr_token_type(&TokenType::EndWhile) {
+            statements.push(self.statement());
+        }
+
+        self.next_token();
+
+        Statement::While(WhileStatement {
+            logical: conditional,
+            statements,
+            line_number: self.get_curr_token().line_number,
+        })
+    }
+
+    fn parse_var_declaration_statement(&mut self) -> Statement {
+        let var_type = convert_str_to_vartype(&self.get_curr_token().text);
+        self.next_token();
+
+        let identity = self.get_curr_token().text.clone();
+        self.next_token();
+
+        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Colon) {
+            self.errors.push(error);
+        }
+        self.next_token();
+
+        let assignment_value_text = self.get_curr_token().text.clone();
+        let assignment_token_type = self.get_curr_token().token_type.clone();
+        let assignment_var_type = convert_tokentype_to_vartype(assignment_token_type);
+        if let Some(error) =
+            self.get_error_if_incorrect_type_assignment(&var_type, &assignment_var_type)
+        {
+            self.errors.push(error);
+        }
+
+        self.insert_into_var_map(
+            identity.clone(),
+            var_type.clone(),
+            self.get_curr_token().line_number,
+        );
+
+        self.next_token();
+
+        Statement::VarInstantiation(VarInstantiationStatement {
+            identity,
+            value: assignment_value_text,
+            var_type,
+            assigned_value_type: assignment_var_type,
+            line_number: self.get_curr_token().line_number,
+        })
+    }
+
+    fn parse_function_declaration_statement(&mut self) -> Statement {
+        self.next_token();
+
+        let function_name = self.get_curr_token().text.clone();
+        self.next_token();
+
+        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::LeftParen) {
+            self.errors.push(error);
+        }
+        self.next_token();
+
+        // Parameters
+        /*
+        let mut parameters = Vec::new();
+        while self.get_curr_token().token_type != TokenType::RightParen {
+            if self.get_curr_token().token_type == TokenType::VarDeclaration {
+                parameters.push(self.get_curr_token().text.clone());
+                self.next_token();
+
+                if self.get_curr_token().token_type == TokenType::Comma {
+                    self.next_token();
+                }
+            } else {
+                // Error: expected parameter name
+                self.errors.push(ErrMsg::UnexpectedToken {
+                    expected: TokenType::Identity,
+                    got: self.get_curr_token().token_type.clone(),
+                    line_number: self.get_curr_token().line_number,
+                });
+                self.next_token();
+            }
+        }
+        */
+
+        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::RightParen) {
+            self.errors.push(error);
+        }
+        self.next_token();
+
+        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Arrow) {
+            self.errors.push(error);
+        }
+        self.next_token();
+
+        let return_type = convert_str_to_vartype(&self.get_curr_token().text);
+        self.next_token();
+
+        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Colon) {
+            self.errors.push(error);
+        }
+        self.next_token();
+
+        // Parse function body statements
+        let mut function_statements = Vec::new();
+        while !self.is_curr_token_type(&TokenType::EndFunction) {
+            let statement = self.statement();
+            println!("parsed statement: {:?}", statement);
+            function_statements.push(statement);
+        }
+        // TODO: need to add error handling if we hit EOF while looking
+        // for end function
+        self.next_token();
+
+        let parameters = Vec::new();
+
+        // Add function to function map
+        let function_info = FunctionInfo {
+            return_type: return_type.clone(),
+            parameters: parameters.clone(),
+            line_declared_on: self.get_curr_token().line_number,
+        };
+        self.function_map
+            .insert(function_name.clone(), function_info);
+
+        Statement::FunctionInstantiation(FunctionInstantiationStatement {
+            function_name,
+            parameters,
+            return_type,
+            statements: function_statements,
+            line_number: self.get_curr_token().line_number,
+        })
+    }
+
+    fn parse_newline_statement(&mut self) -> Statement {
+        Statement::Newline
     }
 
     fn logical(&mut self) -> Logical {
