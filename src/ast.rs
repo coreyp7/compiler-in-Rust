@@ -4,6 +4,7 @@ use std::str::FromStr;
 // My stuff
 use crate::comparison::*;
 use crate::error::ErrMsg;
+use crate::semantic::{ScopeType, SemanticAnalyzer};
 use crate::statement::{
     AssignmentStatement, FunctionCallStatement, FunctionInstantiationStatement, IfStatement,
     PrintStatement, Statement, VarInstantiationStatement, WhileStatement,
@@ -30,6 +31,7 @@ impl AstBuilder {
         }
     }
 
+    /*  moved into semantic analyzer
     pub fn insert_into_var_map(&mut self, identity: String, var_type: VarType, line: u8) {
         if let Some(existing_var) = self.var_map.get(&identity) {
             self.errors.push(ErrMsg::VariableAlreadyDeclared {
@@ -48,6 +50,7 @@ impl AstBuilder {
 
         self.var_map.insert(identity, var);
     }
+    */
 
     pub fn get_error_if_var_assignment_invalid(
         &self,
@@ -430,28 +433,8 @@ impl AstBuilder {
         }
         self.next_token();
 
-        // Parameters
-        /*
-        let mut parameters = Vec::new();
-        while self.get_curr_token().token_type != TokenType::RightParen {
-            if self.get_curr_token().token_type == TokenType::VarDeclaration {
-                parameters.push(self.get_curr_token().text.clone());
-                self.next_token();
-
-                if self.get_curr_token().token_type == TokenType::Comma {
-                    self.next_token();
-                }
-            } else {
-                // Error: expected parameter name
-                self.errors.push(ErrMsg::UnexpectedToken {
-                    expected: TokenType::Identity,
-                    got: self.get_curr_token().token_type.clone(),
-                    line_number: self.get_curr_token().line_number,
-                });
-                self.next_token();
-            }
-        }
-        */
+        // TODO: add parameter parsing here
+        // right now it doesn't exist at all lol
 
         if let Some(error) = self.get_error_if_curr_not_expected(TokenType::RightParen) {
             self.errors.push(error);
@@ -659,9 +642,9 @@ impl AstBuilder {
 
 #[derive(Debug, Clone)]
 pub struct Var {
-    var_type: VarType,
-    identity: String,
-    line_declared_on: u8,
+    pub var_type: VarType,
+    pub identity: String,
+    pub line_declared_on: u8,
 }
 
 #[derive(Debug, Clone)]
@@ -711,281 +694,4 @@ pub fn convert_tokentype_to_vartype(token_type: TokenType) -> VarType {
 pub struct FunctionParameter {
     pub name: String,
     pub param_type: VarType,
-}
-
-#[derive(Debug, Clone)]
-pub struct ScopeContext {
-    pub variables: HashMap<String, Var>,
-    pub scope_type: ScopeType,
-}
-
-#[derive(Debug, Clone)]
-pub enum ScopeType {
-    Global,
-    Function(String), // Function name
-    Block,            // For future if/while block scoping
-}
-
-pub struct SemanticAnalyzer {
-    pub function_map: HashMap<String, FunctionInfo>,
-    pub scope_stack: Vec<ScopeContext>,
-    pub errors: Vec<ErrMsg>,
-}
-
-impl SemanticAnalyzer {
-    pub fn new(function_map: HashMap<String, FunctionInfo>) -> Self {
-        SemanticAnalyzer {
-            function_map,
-            scope_stack: Vec::new(),
-            errors: Vec::new(),
-        }
-    }
-
-    pub fn push_scope(&mut self, scope_type: ScopeType) {
-        self.scope_stack.push(ScopeContext {
-            variables: HashMap::new(),
-            scope_type,
-        });
-    }
-
-    pub fn pop_scope(&mut self) {
-        self.scope_stack.pop();
-    }
-
-    pub fn lookup_variable(&self, name: &str) -> Option<&Var> {
-        // Search from innermost scope outward
-        for scope in self.scope_stack.iter().rev() {
-            if let Some(var) = scope.variables.get(name) {
-                return Some(var);
-            }
-        }
-        None
-    }
-
-    pub fn declare_variable(&mut self, name: String, var: Var) -> Result<(), ErrMsg> {
-        if let Some(current_scope) = self.scope_stack.last_mut() {
-            if let Some(existing_var) = current_scope.variables.get(&name) {
-                return Err(ErrMsg::VariableAlreadyDeclared {
-                    identity: name,
-                    first_declared_line: existing_var.line_declared_on,
-                    redeclared_line: var.line_declared_on,
-                });
-            }
-            current_scope.variables.insert(name, var);
-            Ok(())
-        } else {
-            // For now, return a generic error - we might need to add this to ErrMsg enum
-            Err(ErrMsg::VariableAlreadyDeclared {
-                identity: "No active scope".to_string(),
-                first_declared_line: 0,
-                redeclared_line: var.line_declared_on,
-            })
-        }
-    }
-
-    pub fn validate_function_call(
-        &mut self,
-        call: &FunctionCallStatement,
-    ) -> Result<VarType, ErrMsg> {
-        // 1. Check if function exists
-        let function_info = self.function_map.get(&call.function_name).ok_or_else(|| {
-            ErrMsg::VariableNotDeclared {
-                identity: call.function_name.clone(),
-                attempted_assignment_line: call.line_number,
-            }
-        })?;
-
-        // 2. Check argument count
-        if call.arguments.len() != function_info.parameters.len() {
-            // For now, use existing error types - we can enhance ErrMsg later
-            return Err(ErrMsg::VariableNotDeclared {
-                identity: format!(
-                    "Function {} expects {} arguments, got {}",
-                    call.function_name,
-                    function_info.parameters.len(),
-                    call.arguments.len()
-                ),
-                attempted_assignment_line: call.line_number,
-            });
-        }
-
-        // 3. Type check each argument (basic implementation for now)
-        for arg_name in &call.arguments {
-            let _arg_var =
-                self.lookup_variable(arg_name)
-                    .ok_or_else(|| ErrMsg::VariableNotDeclared {
-                        identity: arg_name.clone(),
-                        attempted_assignment_line: call.line_number,
-                    })?;
-
-            // TODO: Enhanced type checking when we implement FunctionParameter properly
-            // For now, just check that the variable exists
-        }
-
-        // Return the function's return type for expression type checking
-        Ok(function_info.return_type.clone())
-    }
-
-    pub fn analyze_statement(&mut self, statement: &Statement) -> Result<(), ErrMsg> {
-        match statement {
-            Statement::FunctionCall(call) => {
-                self.validate_function_call(call)?;
-            }
-            Statement::VarInstantiation(var_inst) => {
-                // Type checking - ensure the declared type matches the assigned value type
-                if var_inst.var_type != var_inst.assigned_value_type {
-                    return Err(ErrMsg::IncorrectTypeAssignment {
-                        expected_type: var_inst.var_type.clone(),
-                        got_type: var_inst.assigned_value_type.clone(),
-                        line_number: var_inst.line_number,
-                    });
-                }
-
-                // Create and declare the variable in current scope
-                let var = Var {
-                    var_type: var_inst.var_type.clone(),
-                    identity: var_inst.identity.clone(),
-                    line_declared_on: var_inst.line_number,
-                };
-                self.declare_variable(var_inst.identity.clone(), var)?;
-            }
-            Statement::Assignment(assignment) => {
-                // Check if the variable being assigned to exists in scope
-                let target_var = self.lookup_variable(&assignment.identity).ok_or_else(|| {
-                    ErrMsg::VariableNotDeclared {
-                        identity: assignment.identity.clone(),
-                        attempted_assignment_line: assignment.line_number,
-                    }
-                })?;
-
-                // TODO: If the assignment value is a variable reference, validate it exists
-                // TODO: Add type checking - ensure assigned value type matches variable type
-                // For now, we'd need to parse the assignment.value to determine if it's a variable reference
-
-                // Basic type checking
-                if target_var.var_type != assignment.assigned_value_type {
-                    return Err(ErrMsg::IncorrectTypeAssignment {
-                        expected_type: target_var.var_type.clone(),
-                        got_type: assignment.assigned_value_type.clone(),
-                        line_number: assignment.line_number,
-                    });
-                }
-            }
-            Statement::If(if_stmt) => {
-                // Analyze the conditional expression
-                self.analyze_logical(&if_stmt.logical)?;
-
-                // Analyze statements in if block
-                for stmt in &if_stmt.statements {
-                    self.analyze_statement(stmt)?;
-                }
-            }
-            Statement::While(while_stmt) => {
-                // Analyze the conditional expression
-                self.analyze_logical(&while_stmt.logical)?;
-
-                // Analyze statements in while block
-                for stmt in &while_stmt.statements {
-                    self.analyze_statement(stmt)?;
-                }
-            }
-            Statement::FunctionInstantiation(func) => {
-                self.analyze_function(func)?;
-            }
-            Statement::Print(print_stmt) => {
-                // If the print statement references a variable, validate it's in scope
-                if print_stmt.is_content_identity_name {
-                    self.lookup_variable(&print_stmt.content).ok_or_else(|| {
-                        ErrMsg::VariableNotDeclared {
-                            identity: print_stmt.content.clone(),
-                            attempted_assignment_line: print_stmt.line_number,
-                        }
-                    })?;
-                }
-            }
-            Statement::Newline | Statement::TestStub | Statement::Return(_) => {
-                // These don't need semantic analysis for now
-            }
-        }
-        Ok(())
-    }
-
-    pub fn analyze_function(
-        &mut self,
-        func: &FunctionInstantiationStatement,
-    ) -> Result<(), ErrMsg> {
-        // Push function scope
-        self.push_scope(ScopeType::Function(func.function_name.clone()));
-
-        // Add parameters to function scope (for now, empty since we don't parse them yet)
-        // TODO: When we implement parameter parsing, add them here
-
-        // Analyze function body
-        for statement in &func.statements {
-            if let Err(err) = self.analyze_statement(statement) {
-                self.errors.push(err);
-            }
-        }
-
-        // Pop function scope
-        self.pop_scope();
-        Ok(())
-    }
-
-    pub fn analyze_logical(&mut self, logical: &Logical) -> Result<(), ErrMsg> {
-        // Analyze all comparisons in the logical expression
-        for comparison in &logical.comparisons {
-            self.analyze_comparison(comparison)?;
-        }
-        Ok(())
-    }
-
-    pub fn analyze_comparison(&mut self, comparison: &Comparison) -> Result<(), ErrMsg> {
-        // Analyze all expressions in the comparison
-        for expression in &comparison.expressions {
-            self.analyze_expression(expression)?;
-        }
-        Ok(())
-    }
-
-    pub fn analyze_expression(&mut self, expression: &Expression) -> Result<(), ErrMsg> {
-        // Analyze all terms in the expression
-        for term in &expression.terms {
-            self.analyze_term(term)?;
-        }
-        Ok(())
-    }
-
-    pub fn analyze_term(&mut self, term: &Term) -> Result<(), ErrMsg> {
-        // Analyze all unary expressions in the term
-        for unary in &term.unarys {
-            self.analyze_unary(unary)?;
-        }
-        Ok(())
-    }
-
-    pub fn analyze_unary(&mut self, unary: &Unary) -> Result<(), ErrMsg> {
-        // Analyze the primary expression
-        self.analyze_primary(&unary.primary)
-    }
-
-    pub fn analyze_primary(&mut self, primary: &Primary) -> Result<(), ErrMsg> {
-        match primary {
-            Primary::Identity { name } => {
-                // Check if the variable is declared in scope
-                self.lookup_variable(name)
-                    .ok_or_else(|| ErrMsg::VariableNotDeclared {
-                        identity: name.clone(),
-                        attempted_assignment_line: 0, // TODO: We'd need line info in Primary for proper error reporting
-                    })?;
-            }
-            Primary::Number { .. } => {
-                // Numbers don't need scope validation
-            }
-            Primary::Error { .. } => {
-                // Error primaries indicate parsing issues, skip validation
-            }
-        }
-        Ok(())
-    }
 }

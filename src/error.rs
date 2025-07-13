@@ -84,10 +84,10 @@ impl ErrMsg {
                 println!("  Expected type: {:?}", expected_type);
                 println!("  Got type: {:?}", got_type);
             }
-            ErrMsg::VariableAlreadyDeclared { 
-                identity, 
-                first_declared_line, 
-                redeclared_line 
+            ErrMsg::VariableAlreadyDeclared {
+                identity,
+                first_declared_line,
+                redeclared_line,
             } => {
                 println!(
                     "{} Variable '{}' is already declared",

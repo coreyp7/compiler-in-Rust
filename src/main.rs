@@ -10,6 +10,8 @@ use tokenizer::Tokenizer;
 mod ast;
 use ast::AstBuilder;
 
+mod semantic;
+
 mod error;
 use error::{ErrMsg, print_all_errors};
 
