@@ -9,6 +9,7 @@ use crate::statement::{
     AssignmentStatement, FunctionCallStatement, FunctionInstantiationStatement, IfStatement,
     PrintStatement, ReturnStatement, Statement, VarInstantiationStatement, WhileStatement,
 };
+use crate::symbol_table::SymbolTable;
 use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
 
@@ -16,8 +17,7 @@ pub struct AstBuilder {
     tokens: Vec<Token>,
     curr_idx: usize,
     errors: Vec<ErrMsg>,
-    pub var_map: HashMap<String, Var>,
-    pub function_map: HashMap<String, FunctionHeader>,
+    pub symbol_table: SymbolTable,
 }
 
 impl AstBuilder {
@@ -26,8 +26,7 @@ impl AstBuilder {
             tokens: token_vec,
             curr_idx: 0,
             errors: Vec::new(),
-            var_map: HashMap::new(),
-            function_map: HashMap::new(),
+            symbol_table: SymbolTable::new(),
         }
     }
 
@@ -38,7 +37,7 @@ impl AstBuilder {
     ) -> Option<ErrMsg> {
         let mut error: Option<ErrMsg> = None;
 
-        let value: Option<&Var> = self.var_map.get(identity);
+        let value: Option<&Var> = self.symbol_table.lookup_variable(identity);
         match value {
             Some(var) => {
                 // Check that the type being assigned is correct
@@ -177,7 +176,9 @@ impl AstBuilder {
             return_type,
         };
 
-        self.function_map.insert(function_name, function_header);
+        self.symbol_table
+            .declare_function(function_name, function_header)
+            .unwrap_or_else(|err| self.errors.push(err));
 
         // Skip the function body - just advance until we find endFunction
         let mut brace_depth = 1; // We're inside the function
@@ -310,9 +311,7 @@ impl AstBuilder {
 
         // Look up variable type if it's a variable reference
         let variable_type = if is_identity {
-            self.var_map
-                .get(&string_content)
-                .map(|var| var.var_type.clone())
+            self.symbol_table.get_variable_type(&string_content)
         } else {
             None
         };
@@ -415,17 +414,18 @@ impl AstBuilder {
         let function_name = self.get_curr_token().text.clone();
 
         // Look up the function header that was already parsed in Phase 1
-        let function_header = if let Some(header) = self.function_map.get(&function_name).cloned() {
-            header
-        } else {
-            // This shouldn't happen if Phase 1 worked correctly, but handle gracefully
-            self.errors.push(ErrMsg::UnexpectedToken {
-                expected: TokenType::FunctionDeclaration,
-                got: self.get_curr_token().token_type.clone(),
-                line_number: self.get_curr_token().line_number,
-            });
-            return Statement::TestStub;
-        };
+        let function_header =
+            if let Some(header) = self.symbol_table.lookup_function(&function_name).cloned() {
+                header
+            } else {
+                // This shouldn't happen if Phase 1 worked correctly, but handle gracefully
+                self.errors.push(ErrMsg::UnexpectedToken {
+                    expected: TokenType::FunctionDeclaration,
+                    got: self.get_curr_token().token_type.clone(),
+                    line_number: self.get_curr_token().line_number,
+                });
+                return Statement::TestStub;
+            };
 
         // Skip past the function signature since we already have it
         // Skip function name
@@ -502,7 +502,7 @@ impl AstBuilder {
                 TokenType::Identity => {
                     // Look up the variable in the symbol table
                     let var_name = self.get_curr_token().text.clone();
-                    if let Some(var_info) = self.var_map.get(&var_name) {
+                    if let Some(var_info) = self.symbol_table.lookup_variable(&var_name) {
                         return_value = Some(Var {
                             identity: var_name.clone(),
                             var_type: var_info.var_type.clone(),
@@ -659,7 +659,7 @@ impl AstBuilder {
                 line_number: _,
             } => {
                 // Look up the variable type in the symbol table
-                if let Some(var_info) = self.var_map.get(name) {
+                if let Some(var_info) = self.symbol_table.lookup_variable(name) {
                     (name.clone(), var_info.var_type.clone())
                 } else {
                     // Variable not found, return as unrecognized
@@ -673,7 +673,7 @@ impl AstBuilder {
                 line_number: _,
             } => {
                 // Look up the function return type in the function map
-                if let Some(function_info) = self.function_map.get(name) {
+                if let Some(function_info) = self.symbol_table.lookup_function(name) {
                     // For code generation, we need to represent this as a function call
                     let mut call_text = name.clone();
                     call_text.push_str("(");
@@ -711,14 +711,9 @@ impl AstBuilder {
                 line_declared_on: self.get_curr_token().line_number,
             };
 
-            if self.var_map.contains_key(&identity) {
-                self.errors.push(ErrMsg::VariableAlreadyDeclared {
-                    identity: identity.clone(),
-                    first_declared_line: self.var_map.get(&identity).unwrap().line_declared_on,
-                    redeclared_line: var.line_declared_on,
-                });
-            } else {
-                self.var_map.insert(identity, var);
+            // Try to declare the variable in the symbol table
+            if let Err(err) = self.symbol_table.declare_variable(identity, var) {
+                self.errors.push(err);
             }
 
             // Skip past the rest of the variable declaration (: value)

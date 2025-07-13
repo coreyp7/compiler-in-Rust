@@ -12,6 +12,8 @@ use ast::AstBuilder;
 
 mod expression_parser;
 
+mod symbol_table;
+
 mod semantic;
 use semantic::{ScopeType, SemanticAnalyzer};
 
@@ -53,7 +55,10 @@ fn main() -> std::io::Result<()> {
     }
 
     // Semantic analysis on the AST
-    let mut analyzer = SemanticAnalyzer::new(ast_builder.var_map, ast_builder.function_map);
+    let mut analyzer = SemanticAnalyzer::new(
+        ast_builder.symbol_table.get_variables().clone(),
+        ast_builder.symbol_table.get_functions().clone(),
+    );
     analyzer.analyze_ast_vec(&ast_vec);
     ast_errors.extend(analyzer.errors);
 
@@ -113,7 +118,7 @@ fn debug_print_errors_and_var_map(ast_errors: &[ErrMsg], ast_builder: &AstBuilde
     }
     println!("Ast ERRORS: -----------------------------------");
     println!("Ast map: -----------------------------------");
-    println!("{:#?}", ast_builder.var_map);
+    ast_builder.symbol_table.debug_print();
     println!("Ast map: -----------------------------------");
 }
 
