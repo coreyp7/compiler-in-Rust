@@ -1,8 +1,7 @@
 use crate::comparison::Logical;
 
-// Re-export VarType for convenience
-pub use crate::ast::Var;
-pub use crate::ast::VarType;
+// Re-export types for convenience
+pub use crate::ast::{FunctionHeader, Var, VarType};
 
 #[derive(Debug)]
 pub struct PrintStatement {
@@ -44,9 +43,7 @@ pub struct VarInstantiationStatement {
 
 #[derive(Debug)]
 pub struct FunctionInstantiationStatement {
-    pub function_name: String,
-    pub parameters: Vec<String>,
-    pub return_type: VarType,
+    pub header: FunctionHeader,
     pub statements: Vec<Statement>,
     pub line_number: u8,
 }
@@ -63,12 +60,6 @@ pub struct FunctionCallStatement {
     pub function_name: String,
     pub arguments: Vec<String>,
     pub line_number: u8,
-}
-
-// Leaving here for later.
-pub struct FunctionParameter<'a> {
-    pub var_name: &'a str,
-    pub var_type: VarType,
 }
 
 #[derive(Debug)]

@@ -9,7 +9,7 @@ use crate::statement::{
 };
 
 // Types that will remain in ast.rs but need to be imported
-use crate::ast::{FunctionInfo, FunctionParameter, Var, VarType};
+use crate::ast::{FunctionHeader, Var, VarType};
 
 #[derive(Debug, Clone)]
 pub struct ScopeContext {
@@ -25,13 +25,16 @@ pub enum ScopeType {
 }
 
 pub struct SemanticAnalyzer {
-    pub function_map: HashMap<String, FunctionInfo>,
+    pub function_map: HashMap<String, FunctionHeader>,
     pub scope_stack: Vec<ScopeContext>,
     pub errors: Vec<ErrMsg>,
 }
 
 impl SemanticAnalyzer {
-    pub fn new(var_map: HashMap<String, Var>, function_map: HashMap<String, FunctionInfo>) -> Self {
+    pub fn new(
+        var_map: HashMap<String, Var>,
+        function_map: HashMap<String, FunctionHeader>,
+    ) -> Self {
         let mut analyzer = SemanticAnalyzer {
             function_map,
             scope_stack: Vec::new(),
@@ -227,7 +230,7 @@ impl SemanticAnalyzer {
         func: &FunctionInstantiationStatement,
     ) -> Result<(), ErrMsg> {
         // Push function scope
-        self.push_scope(ScopeType::Function(func.function_name.clone()));
+        self.push_scope(ScopeType::Function(func.header.function_name.clone()));
 
         // Add parameters to function scope (for now, empty since we don't parse them yet)
         // TODO: When we implement parameter parsing, add them here

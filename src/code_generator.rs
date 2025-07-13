@@ -176,23 +176,27 @@ fn convert_function_instantiation_statement_to_code(
 ) -> String {
     let mut code = String::new();
 
-    match statement_struct.return_type {
+    match statement_struct.header.return_type {
         VarType::Str => code.push_str("char* "),
         VarType::Num => code.push_str("int "),
         VarType::Unrecognized => code.push_str("void "), //TODO: this should be fixed to work normal
     }
 
-    code.push_str(&statement_struct.function_name);
+    code.push_str(&statement_struct.header.function_name);
     code.push_str("(");
 
     // Add parameters (for now, assuming they're all strings - this might need refinement)
-    for (i, param) in statement_struct.parameters.iter().enumerate() {
+    for (i, param) in statement_struct.header.parameters.iter().enumerate() {
         if i > 0 {
             code.push_str(", ");
         }
-        // For now, assuming parameters are identifiers - type inference would be needed
-        code.push_str("/* parameter type needed */ ");
-        code.push_str(param);
+        // Use the parameter type from FunctionParameter
+        match param.param_type {
+            VarType::Str => code.push_str("char* "),
+            VarType::Num => code.push_str("int "),
+            VarType::Unrecognized => code.push_str("void "),
+        }
+        code.push_str(&param.name);
     }
 
     code.push_str(") {\n");

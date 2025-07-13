@@ -16,7 +16,7 @@ pub struct AstBuilder {
     curr_idx: usize,
     errors: Vec<ErrMsg>,
     pub var_map: HashMap<String, Var>,
-    pub function_map: HashMap<String, FunctionInfo>,
+    pub function_map: HashMap<String, FunctionHeader>,
 }
 
 impl AstBuilder {
@@ -368,21 +368,16 @@ impl AstBuilder {
         }
         self.next_token();
 
-        // TODO: add parameter parsing here
-        // right now it doesn't exist at all lol
+        // Parse function parameters
+        let parameters = self.parse_function_parameters();
 
         if let Some(error) = self.get_error_if_curr_not_expected(TokenType::RightParen) {
             self.errors.push(error);
         }
         self.next_token();
 
-        if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Arrow) {
-            self.errors.push(error);
-        }
-        self.next_token();
-
-        let return_type = convert_str_to_vartype(&self.get_curr_token().text);
-        self.next_token();
+        // For now, default to Void/Unrecognized return type since return type parsing is disabled
+        let return_type = VarType::Unrecognized; // TODO: implement return type parsing
 
         if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Colon) {
             self.errors.push(error);
@@ -400,21 +395,19 @@ impl AstBuilder {
         // for end function
         self.next_token();
 
-        let parameters = Vec::new(); // TODO: Parse actual parameters
+        // Create function header
+        let function_header = FunctionHeader {
+            function_name: function_name.clone(),
+            parameters: parameters.clone(),
+            return_type: return_type.clone(),
+        };
 
         // Add function to function map
-        let function_info = FunctionInfo {
-            return_type: return_type.clone(),
-            parameters: parameters.clone(),
-            line_declared_on: self.get_curr_token().line_number,
-        };
         self.function_map
-            .insert(function_name.clone(), function_info);
+            .insert(function_name.clone(), function_header.clone());
 
         Statement::FunctionInstantiation(FunctionInstantiationStatement {
-            function_name,
-            parameters: parameters.iter().map(|p| p.name.clone()).collect(), // Convert to Vec<String> for now
-            return_type,
+            header: function_header,
             statements: function_statements,
             line_number: self.get_curr_token().line_number,
         })
@@ -574,19 +567,64 @@ impl AstBuilder {
         //println!("Created a primary: {:?}", primary);
         primary
     }
+
+    fn parse_function_parameters(&mut self) -> Vec<FunctionParameter> {
+        let mut parameters = Vec::new();
+
+        while self.get_curr_token().token_type != TokenType::RightParen {
+            // Parse parameter type (e.g., "Number", "String")
+            if self.get_curr_token().token_type != TokenType::VarDeclaration {
+                self.errors.push(ErrMsg::UnexpectedToken {
+                    expected: TokenType::VarDeclaration,
+                    got: self.get_curr_token().token_type.clone(),
+                    line_number: self.get_curr_token().line_number,
+                });
+                self.next_token();
+                continue;
+            }
+
+            let param_type = convert_str_to_vartype(&self.get_curr_token().text);
+            self.next_token();
+
+            // Parse parameter name
+            if self.get_curr_token().token_type != TokenType::Identity {
+                self.errors.push(ErrMsg::UnexpectedToken {
+                    expected: TokenType::Identity,
+                    got: self.get_curr_token().token_type.clone(),
+                    line_number: self.get_curr_token().line_number,
+                });
+                self.next_token();
+                continue;
+            }
+
+            let param_name = self.get_curr_token().text.clone();
+            self.next_token();
+
+            parameters.push(FunctionParameter {
+                name: param_name,
+                param_type,
+            });
+
+            // Check for comma (more parameters) or right paren (end of parameters)
+            if self.get_curr_token().token_type == TokenType::Comma {
+                self.next_token(); // Move past comma
+            } else if self.get_curr_token().token_type != TokenType::RightParen {
+                self.errors.push(ErrMsg::UnexpectedToken {
+                    expected: TokenType::RightParen,
+                    got: self.get_curr_token().token_type.clone(),
+                    line_number: self.get_curr_token().line_number,
+                });
+            }
+        }
+
+        parameters
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct Var {
     pub var_type: VarType,
     pub identity: String,
-    pub line_declared_on: u8,
-}
-
-#[derive(Debug, Clone)]
-pub struct FunctionInfo {
-    pub return_type: VarType,
-    pub parameters: Vec<FunctionParameter>, // Enhanced with parameter info
     pub line_declared_on: u8,
 }
 
@@ -630,4 +668,11 @@ pub fn convert_tokentype_to_vartype(token_type: TokenType) -> VarType {
 pub struct FunctionParameter {
     pub name: String,
     pub param_type: VarType,
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionHeader {
+    pub function_name: String,
+    pub parameters: Vec<FunctionParameter>,
+    pub return_type: VarType,
 }
