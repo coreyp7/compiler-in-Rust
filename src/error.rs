@@ -4,7 +4,7 @@ use colored::Colorize;
 use std::str::FromStr;
 
 // TODO: move this into a different crate, why tf is this here
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ErrMsg {
     UnexpectedToken {
         expected: TokenType,
@@ -17,8 +17,9 @@ pub enum ErrMsg {
         line_number: u8, //col_number: usize
     },
     VariableAlreadyDeclared {
-        //line_number: u8
         identity: String,
+        first_declared_line: u8,
+        redeclared_line: u8,
     },
     VariableNotDeclared {
         identity: String,
@@ -83,12 +84,17 @@ impl ErrMsg {
                 println!("  Expected type: {:?}", expected_type);
                 println!("  Got type: {:?}", got_type);
             }
-            ErrMsg::VariableAlreadyDeclared { identity } => {
+            ErrMsg::VariableAlreadyDeclared { 
+                identity, 
+                first_declared_line, 
+                redeclared_line 
+            } => {
                 println!(
                     "{} Variable '{}' is already declared",
                     red_error_text, identity
                 );
-                println!("  Cannot redeclare variable '{}'", identity);
+                println!("  First declared on line {}", first_declared_line);
+                println!("  Redeclaration attempted on line {}", redeclared_line);
             }
             ErrMsg::VariableNotDeclared {
                 identity,

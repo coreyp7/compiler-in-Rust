@@ -39,11 +39,13 @@ fn main() -> std::io::Result<()> {
 
     // build ast with tokens
     let mut ast_builder = AstBuilder::new(tokens);
-    let ast_vec = ast_builder.generate_ast();
-    let ast_errors = ast_builder.get_error_vec();
+    //let ast_vec = ast_builder.generate_ast();
+    //let ast_errors = ast_builder.get_error_vec();
+    let (ast_vec, ast_errors) = ast_builder.generate_ast_with_semantic_analysis();
 
     if debug {
         debug_print_ast(&ast_vec);
+        // TODO: print out function global map
         debug_print_errors_and_var_map(&ast_errors, &ast_builder);
     }
 
