@@ -20,6 +20,10 @@ impl<'a> ExpressionParser<'a> {
         }
     }
 
+    pub fn get_current(&self) -> usize {
+        *self.current
+    }
+
     fn get_curr_token(&self) -> &Token {
         &self.tokens[*self.current]
     }

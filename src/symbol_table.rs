@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 /// Centralized symbol table for managing variables and functions
 /// This replaces the scattered variable and function maps in AST builder and semantic analyzer
+#[derive(Clone)]
 pub struct SymbolTable {
     /// Global variables (and function-local variables in current scope)
     variables: HashMap<String, Var>,

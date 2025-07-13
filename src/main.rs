@@ -12,6 +12,8 @@ use ast::AstBuilder;
 
 mod expression_parser;
 
+mod parser;
+
 mod symbol_table;
 
 mod semantic;

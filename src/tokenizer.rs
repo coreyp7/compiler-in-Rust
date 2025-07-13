@@ -188,7 +188,7 @@ impl Tokenizer {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub text: String, // used for identifiers, strings, numbers
     pub token_type: TokenType,
