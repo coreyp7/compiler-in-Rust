@@ -121,7 +121,11 @@ fi
 #echo "Created C code :D"
 
 # Compile the C code into exe.
-gcc $cCodeFile -o $outputDir/plank_program.exe
+if [ $debug -eq 1 ]; then
+    gcc $cCodeFile -o $outputDir/plank_program.exe
+else
+    gcc $cCodeFile -o $outputDir/plank_program.exe -w
+fi
 rm $cCodeFile
 
 echo -e "\033[32m✓ Compilation successful: Plank program compiled to '$outputDir/plank_program.exe'\033[0m"

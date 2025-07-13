@@ -6,7 +6,7 @@ use crate::comparison::*;
 use crate::error::ErrMsg;
 use crate::statement::{
     AssignmentStatement, FunctionCallStatement, FunctionInstantiationStatement, IfStatement,
-    PrintStatement, Statement, VarInstantiationStatement, WhileStatement,
+    PrintStatement, ReturnStatement, Statement, VarInstantiationStatement, WhileStatement,
 };
 use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
@@ -107,7 +107,9 @@ impl AstBuilder {
 
         while self.get_curr_token().token_type != TokenType::EOF {
             let statement = self.statement();
-            statements.push(statement);
+            if !matches!(statement, Statement::Newline) {
+                statements.push(statement);
+            }
         }
 
         statements
@@ -156,6 +158,7 @@ impl AstBuilder {
             TokenType::Print => self.parse_print_statement(),
             TokenType::If => self.parse_if_statement(),
             TokenType::While => self.parse_while_statement(),
+            TokenType::Return => self.parse_return_statement(),
             TokenType::Identity => {
                 let identity = self.get_curr_token().text.clone();
                 self.next_token();
@@ -209,6 +212,9 @@ impl AstBuilder {
         })
     }
 
+    // TODO: need to alter to allow assignment of a function return.
+    // will require updating this function and type checking validation in the
+    // semantic analyzer.
     fn parse_variable_assignment(&mut self, identity: String) -> Statement {
         if let Some(error) = self.get_error_if_curr_not_expected(TokenType::LessThanEqualTo) {
             self.errors.push(error);
@@ -378,7 +384,9 @@ impl AstBuilder {
         while !self.is_curr_token_type(&TokenType::EndFunction) {
             let statement = self.statement();
             println!("parsed statement: {:?}", statement);
-            function_statements.push(statement);
+            if !matches!(statement, Statement::Newline) {
+                function_statements.push(statement);
+            }
         }
         // TODO: need to add error handling if we hit EOF while looking
         // for end function
@@ -398,6 +406,65 @@ impl AstBuilder {
         Statement::FunctionInstantiation(FunctionInstantiationStatement {
             header: function_header,
             statements: function_statements,
+            line_number: self.get_curr_token().line_number,
+        })
+    }
+
+    fn parse_return_statement(&mut self) -> Statement {
+        self.next_token(); // Move past 'return'
+
+        let mut return_value = None;
+        let mut return_type = VarType::Unrecognized;
+
+        // Check if there's a return value (not just a bare return)
+        if self.get_curr_token().token_type != TokenType::Newline {
+            match self.get_curr_token().token_type {
+                TokenType::Number => {
+                    return_value = Some(Var {
+                        identity: self.get_curr_token().text.clone(),
+                        var_type: VarType::Num,
+                        line_declared_on: self.get_curr_token().line_number,
+                    });
+                    return_type = VarType::Num;
+                }
+                TokenType::Str => {
+                    return_value = Some(Var {
+                        identity: self.get_curr_token().text.clone(),
+                        var_type: VarType::Str,
+                        line_declared_on: self.get_curr_token().line_number,
+                    });
+                    return_type = VarType::Str;
+                }
+                TokenType::Identity => {
+                    // Look up the variable in the symbol table
+                    let var_name = self.get_curr_token().text.clone();
+                    if let Some(var_info) = self.var_map.get(&var_name) {
+                        return_value = Some(Var {
+                            identity: var_name.clone(),
+                            var_type: var_info.var_type.clone(),
+                            line_declared_on: self.get_curr_token().line_number,
+                        });
+                        return_type = var_info.var_type.clone();
+                    } else {
+                        self.errors.push(ErrMsg::VariableNotDeclared {
+                            identity: var_name,
+                            attempted_assignment_line: self.get_curr_token().line_number,
+                        });
+                    }
+                }
+                _ => {
+                    self.errors.push(ErrMsg::UnexpectedToken {
+                        expected: TokenType::Identity,
+                        got: self.get_curr_token().token_type.clone(),
+                        line_number: self.get_curr_token().line_number,
+                    });
+                }
+            }
+        }
+
+        Statement::Return(ReturnStatement {
+            return_type,
+            return_value,
             line_number: self.get_curr_token().line_number,
         })
     }
@@ -540,10 +607,52 @@ impl AstBuilder {
             TokenType::Number => Primary::Number {
                 value: self.get_curr_token().text.clone(),
             },
-            TokenType::Identity => Primary::Identity {
-                name: self.get_curr_token().text.clone(),
-                line_number: self.get_curr_token().line_number,
-            },
+            TokenType::Identity => {
+                let identity_name = self.get_curr_token().text.clone();
+                let line_number = self.get_curr_token().line_number;
+
+                // Check if next token is '(' which indicates a function call
+                let next_idx = self.curr_idx + 1;
+                if next_idx < self.tokens.len()
+                    && self.tokens[next_idx].token_type == TokenType::LeftParen
+                {
+                    // This is a function call expression
+                    self.next_token(); // Move to '('
+                    self.next_token(); // Move past '('
+
+                    let mut arguments = Vec::new();
+                    while self.get_curr_token().token_type != TokenType::RightParen {
+                        if self.get_curr_token().token_type == TokenType::Identity {
+                            arguments.push(self.get_curr_token().text.clone());
+                            self.next_token();
+
+                            if self.get_curr_token().token_type == TokenType::Comma {
+                                self.next_token();
+                            }
+                        } else {
+                            self.errors.push(ErrMsg::UnexpectedToken {
+                                expected: TokenType::Identity,
+                                got: self.get_curr_token().token_type.clone(),
+                                line_number: self.get_curr_token().line_number,
+                            });
+                            self.next_token();
+                        }
+                    }
+                    // Don't advance past ')' here since next_token() is called at the end
+
+                    Primary::FunctionCall {
+                        name: identity_name,
+                        arguments,
+                        line_number,
+                    }
+                } else {
+                    // This is just a variable reference
+                    Primary::Identity {
+                        name: identity_name,
+                        line_number,
+                    }
+                }
+            }
             _ => Primary::Error {
                 detail: String::new(),
             },

@@ -3,7 +3,7 @@ use crate::comparison::{
 };
 use crate::statement::{
     AssignmentStatement, FunctionCallStatement, FunctionInstantiationStatement, IfStatement,
-    PrintStatement, Statement, VarInstantiationStatement, VarType, WhileStatement,
+    PrintStatement, ReturnStatement, Statement, VarInstantiationStatement, VarType, WhileStatement,
 };
 
 pub fn generate_code_str(ast: &[Statement]) -> String {
@@ -57,6 +57,7 @@ fn convert_statement_to_code(statement: &Statement) -> String {
         Statement::FunctionCall(statement_struct) => {
             convert_function_call_statement_to_code(statement_struct)
         }
+        Statement::Return(statement_struct) => convert_return_statement_to_code(statement_struct),
         Statement::Newline => convert_newline_to_code(),
         Statement::TestStub => String::from("// TestStub\n"),
         _ => String::from("NOT COVERED YET"),
@@ -231,6 +232,34 @@ fn convert_function_call_statement_to_code(statement_struct: &FunctionCallStatem
     code
 }
 
+fn convert_return_statement_to_code(statement_struct: &ReturnStatement) -> String {
+    let mut code = String::new();
+    code.push_str("return");
+
+    if let Some(return_value) = &statement_struct.return_value {
+        code.push_str(" ");
+        match statement_struct.return_type {
+            VarType::Str => {
+                // If it's a string literal, it should be quoted, otherwise it's a variable
+                if return_value.identity.starts_with('"') && return_value.identity.ends_with('"') {
+                    code.push_str(&return_value.identity);
+                } else {
+                    code.push_str(&return_value.identity);
+                }
+            }
+            VarType::Num => {
+                code.push_str(&return_value.identity);
+            }
+            VarType::Unrecognized => {
+                code.push_str(&return_value.identity);
+            }
+        }
+    }
+
+    code.push_str(";\n");
+    code
+}
+
 fn convert_logical_to_code(logical: &Logical) -> String {
     let mut code = String::new();
     let mut operator_idx = 0;
@@ -391,7 +420,27 @@ fn convert_unary_to_code(unary: &crate::comparison::Unary) -> String {
 fn convert_primary_to_code(primary: &crate::comparison::Primary) -> String {
     match primary {
         crate::comparison::Primary::Number { value } => value.clone(),
-        crate::comparison::Primary::Identity { name, line_number } => name.clone(),
+        crate::comparison::Primary::Identity {
+            name,
+            line_number: _,
+        } => name.clone(),
+        crate::comparison::Primary::FunctionCall {
+            name,
+            arguments,
+            line_number: _,
+        } => {
+            let mut code = String::new();
+            code.push_str(name);
+            code.push_str("(");
+            for (i, arg) in arguments.iter().enumerate() {
+                if i > 0 {
+                    code.push_str(", ");
+                }
+                code.push_str(arg);
+            }
+            code.push_str(")");
+            code
+        }
         crate::comparison::Primary::Error { detail: _ } => String::from("/* error in primary */"),
     }
 }

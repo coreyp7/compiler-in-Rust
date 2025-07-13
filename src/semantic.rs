@@ -323,6 +323,14 @@ impl SemanticAnalyzer {
             Primary::Error { .. } => {
                 // Error primaries indicate parsing issues, skip validation
             }
+            Primary::FunctionCall {
+                name,
+                arguments,
+                line_number,
+            } => {
+                // TODO: need to do some type of checking and validation
+                // in here when a primary is a function call.
+            }
         }
         Ok(())
     }

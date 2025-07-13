@@ -139,6 +139,11 @@ pub enum Primary {
         name: String,
         line_number: u8,
     },
+    FunctionCall {
+        name: String,
+        arguments: Vec<String>,
+        line_number: u8,
+    },
     Error {
         detail: String,
     },
