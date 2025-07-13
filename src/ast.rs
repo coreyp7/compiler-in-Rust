@@ -366,8 +366,7 @@ impl AstBuilder {
         }
         self.next_token();
 
-        // For now, default to Void/Unrecognized return type since return type parsing is disabled
-        let return_type = VarType::Unrecognized; // TODO: implement return type parsing
+        let return_type = self.parse_function_return_type();
 
         if let Some(error) = self.get_error_if_curr_not_expected(TokenType::Colon) {
             self.errors.push(error);
@@ -609,6 +608,36 @@ impl AstBuilder {
 
         parameters
     }
+
+    fn parse_function_return_type(&mut self) -> VarType {
+        // Parse return type (if present)
+        if self.get_curr_token().token_type == TokenType::Arrow {
+            self.next_token(); // consume '->'
+
+            // Expect a type after the arrow
+            if self.get_curr_token().token_type == TokenType::VarDeclaration {
+                let ret_type = convert_str_to_vartype(&self.get_curr_token().text);
+                self.next_token();
+                ret_type
+            } else if self.get_curr_token().token_type == TokenType::Identity {
+                // Handle cases like "Void" which might not be VarDeclaration tokens
+                let ret_type = convert_str_to_vartype(&self.get_curr_token().text);
+                self.next_token();
+                ret_type
+            } else {
+                self.errors.push(ErrMsg::UnexpectedToken {
+                    expected: TokenType::VarDeclaration,
+                    got: self.get_curr_token().token_type.clone(),
+                    line_number: self.get_curr_token().line_number,
+                });
+                self.next_token();
+                VarType::Unrecognized
+            }
+        } else {
+            // No return type specified, default to void/unrecognized
+            VarType::Unrecognized
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -642,6 +671,7 @@ pub fn convert_str_to_vartype(text: &str) -> VarType {
     match text {
         "Number" => VarType::Num,
         "String" => VarType::Str,
+        "Void" => VarType::Unrecognized, // Treat Void as Unrecognized for now
         _ => VarType::Unrecognized,
     }
 }
