@@ -28,6 +28,7 @@ impl AstBuilder {
         }
     }
 
+    // TODO: move to analyzer
     pub fn get_error_if_var_assignment_invalid(
         &self,
         identity: &String,
@@ -60,10 +61,7 @@ impl AstBuilder {
 
     pub fn generate_ast(&mut self) -> Vec<Statement> {
         // Phase 1: Collect all function declarations first
-        self.collect_function_declarations();
-
-        // Reset to beginning for full parsing
-        self.curr_idx = 0;
+        self.collect_symbol_declarations();
 
         // Phase 2: Full AST generation with all functions known
         self.program()
@@ -107,6 +105,7 @@ impl AstBuilder {
         None
     }
 
+    // Essentially the top of the grammar of the language.
     fn program(&mut self) -> Vec<Statement> {
         let mut statements: Vec<Statement> = Vec::new();
 
@@ -120,10 +119,10 @@ impl AstBuilder {
         statements
     }
 
-    /// Phase 1: Scan through tokens and collect all function declarations and variable declarations
-    /// This populates the function_map and var_map so forward declarations work
-    fn collect_function_declarations(&mut self) {
-        let original_idx = self.curr_idx;
+    // Scan through tokens and collect all function declarations and variable declarations.
+    // (This will keep self.curr_idx set to 0).
+    fn collect_symbol_declarations(&mut self) {
+        let og_idx = self.curr_idx;
         self.curr_idx = 0;
 
         while self.get_curr_token().token_type != TokenType::EOF {
@@ -140,14 +139,15 @@ impl AstBuilder {
             }
         }
 
-        // Restore original position
-        self.curr_idx = original_idx;
+        self.curr_idx = og_idx;
     }
 
-    /// Parse only the function header (name, parameters, return type) without the body
-    /// Used in Phase 1 to collect function signatures
+    /**
+     * Will also add the header to the function map.
+     * Just call it when you need it and it adds the declaration to our map.
+     */
     fn parse_function_header(&mut self) {
-        self.next_token(); // Skip 'function'
+        self.next_token(); // Skip 'function' keyword
 
         let function_name = self.get_curr_token().text.clone();
         self.next_token();
@@ -157,7 +157,6 @@ impl AstBuilder {
         }
         self.next_token();
 
-        // Parse function parameters
         let parameters = self.parse_function_parameters();
 
         if let Some(error) = self.get_error_if_curr_not_expected(TokenType::RightParen) {
@@ -167,7 +166,6 @@ impl AstBuilder {
 
         let return_type = self.parse_function_return_type();
 
-        // Create function header and add to function map
         let function_header = FunctionHeader {
             function_name: function_name.clone(),
             parameters,
@@ -178,26 +176,25 @@ impl AstBuilder {
             .declare_function(function_name, function_header)
             .unwrap_or_else(|err| self.errors.push(err));
 
-        // Skip the function body - just advance until we find endFunction
-        let mut brace_depth = 1; // We're inside the function
-
-        // Skip past the colon
         if self.get_curr_token().token_type == TokenType::Colon {
             self.next_token();
         }
 
+        /* // Leaving this in case my freak ass wants to implement inner functions
         while self.get_curr_token().token_type != TokenType::EOF && brace_depth > 0 {
             match self.get_curr_token().token_type {
                 //TokenType::FunctionDeclaration => brace_depth += 1, leaving in case my freak ass wants inner function inits
-                TokenType::EndFunction => brace_depth -= 1,
+                //TokenType::EndFunction => brace_depth -= 1,
                 _ => {}
             }
             self.next_token();
         }
+        */
     }
 
     fn statement(&mut self) -> Statement {
-        // Create parser context from current state using references
+        // Create parser context for the statement parser since we need them to
+        // have references to this stuff.
         let mut parser_context = ParserContext {
             tokens: &self.tokens,
             current: self.curr_idx,
@@ -373,8 +370,6 @@ impl AstBuilder {
         }
     }
 
-    /// Collect variable declaration during Phase 1 to populate var_map
-    /// This allows print statements to resolve variable types during parsing
     fn collect_variable_declaration(&mut self) {
         let var_type = VarType::from(self.get_curr_token().text.as_str());
         self.next_token();

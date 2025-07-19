@@ -5,15 +5,12 @@ use crate::tokenizer::{Token, TokenType};
 
 pub mod statements;
 
-/// Main parser trait that all statement parsers implement
-/// This allows each parser to share common functionality while specializing in their domain
 pub trait StatementParser {
     fn can_parse(&self, token_type: &TokenType) -> bool;
     fn parse(&mut self, parser_context: &mut ParserContext<'_>) -> Statement;
 }
 
-/// Shared context that all statement parsers need access to
-/// This contains all the state that was previously scattered in AstBuilder
+// NOTE: I know this sucks and is a mess.
 pub struct ParserContext<'a> {
     pub tokens: &'a [Token],
     pub current: usize,

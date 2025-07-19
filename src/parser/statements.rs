@@ -433,8 +433,6 @@ impl StatementParser for NewlineStatementParser {
 
 // Helper functions
 
-/// Temporary helper to parse a single statement
-/// In a full implementation, this would be handled by the coordinator
 fn parse_single_statement(context: &mut ParserContext<'_>) -> Statement {
     let mut coordinator = super::StatementParserCoordinator::new();
     coordinator.parse_statement(context)
