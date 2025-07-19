@@ -16,6 +16,7 @@ pub struct AstBuilder {
     curr_idx: usize,
     errors: Vec<ErrMsg>,
     pub symbol_table: SymbolTable,
+    statement_parser: StatementParserCoordinator,
 }
 
 impl AstBuilder {
@@ -25,6 +26,7 @@ impl AstBuilder {
             curr_idx: 0,
             errors: Vec::new(),
             symbol_table: SymbolTable::new(),
+            statement_parser: StatementParserCoordinator::new(),
         }
     }
 
@@ -202,8 +204,8 @@ impl AstBuilder {
             symbol_table: &mut self.symbol_table,
         };
 
-        let mut coordinator = StatementParserCoordinator::new();
-        let statement = coordinator.parse_statement(&mut parser_context);
+        // Use the reusable statement parser coordinator
+        let statement = self.statement_parser.parse_statement(&mut parser_context);
 
         // Update our state from the parser context
         self.curr_idx = parser_context.current;

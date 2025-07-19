@@ -258,12 +258,7 @@ fn convert_return_statement_to_code(statement_struct: &ReturnStatement) -> Strin
         code.push_str(" ");
         match statement_struct.return_type {
             VarType::Str => {
-                // If it's a string literal, it should be quoted, otherwise it's a variable
-                if return_value.identity.starts_with('"') && return_value.identity.ends_with('"') {
-                    code.push_str(&return_value.identity);
-                } else {
-                    code.push_str(&return_value.identity);
-                }
+                code.push_str(&return_value.identity);
             }
             VarType::Num => {
                 code.push_str(&return_value.identity);
