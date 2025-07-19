@@ -258,7 +258,15 @@ fn convert_return_statement_to_code(statement_struct: &ReturnStatement) -> Strin
         code.push_str(" ");
         match statement_struct.return_type {
             VarType::Str => {
+                // Surround "identity" in quotes if "not identity", since this just
+                // means they're returning an inline string.
+                if !statement_struct.is_identity {
+                    code.push_str("\"");
+                }
                 code.push_str(&return_value.identity);
+                if !statement_struct.is_identity {
+                    code.push_str("\"");
+                }
             }
             VarType::Num => {
                 code.push_str(&return_value.identity);

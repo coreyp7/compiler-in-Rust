@@ -54,6 +54,7 @@ pub struct ReturnStatement {
     pub return_type: VarType,
     pub return_value: Option<Var>,
     pub line_number: u8,
+    pub is_identity: bool,
 }
 
 #[derive(Debug)]

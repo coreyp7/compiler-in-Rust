@@ -137,6 +137,7 @@ impl StatementParser for ReturnStatementParser {
 
         let mut return_value = None;
         let mut return_type = VarType::Unrecognized;
+        let mut is_identity = false;
 
         // Check if there's a return value (not just a bare return)
         if !context.is_curr_token_type(&TokenType::Newline) && !context.at_end() {
@@ -172,6 +173,7 @@ impl StatementParser for ReturnStatementParser {
                             attempted_assignment_line: context.get_curr_token().line_number,
                         });
                     }
+                    is_identity = true;
                 }
                 _ => {
                     context.errors.push(ErrMsg::UnexpectedToken {
@@ -187,6 +189,7 @@ impl StatementParser for ReturnStatementParser {
             return_type,
             return_value,
             line_number: context.get_curr_token().line_number,
+            is_identity,
         })
     }
 }
