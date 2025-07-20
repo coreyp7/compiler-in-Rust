@@ -168,6 +168,21 @@ impl StatementParser for ReturnStatementParser {
                         });
                         return_type = var_info.var_type.clone();
                     } else {
+                        // NOTE: This isn't in the analyzer since we have to populate the return
+                        // value struct anyway, so we need to lookup in the map.
+                        // But perhaps we should just be returning the symbol name and then having
+                        // the analyzer figure that shit out later? I think that'd make sense.
+                        // But what if a function returns an inline variable? So,
+                        // we'd probably be best to still use the struct with info.
+                        // But it'd be better to use a struct that's actually appropriate for this situation.
+                        /*
+                        Struct new:
+                        is_identity: bool,
+                        content: String (either symbol identifier or string/num inline)
+
+                        Then, we'd actually include helpful info for the code generator.
+                        Would we regret this? I'm not sure what would be important to include later.
+                         */
                         context.errors.push(ErrMsg::VariableNotDeclared {
                             identity: var_name,
                             attempted_assignment_line: context.get_curr_token().line_number,
@@ -267,22 +282,6 @@ impl IdentityStatementParser {
         let assignment_var_type = VarType::from(assignment_token_type);
         let assignment_value_text = context.get_curr_token().text.clone();
 
-        // Validate assignment (this could be moved to semantic analysis)
-        if let Some(var) = context.symbol_table.lookup_variable(&identity) {
-            if var.var_type != assignment_var_type {
-                context.errors.push(ErrMsg::new_incorrect_type_assignment(
-                    var.var_type.clone(),
-                    assignment_var_type.clone(),
-                    context.get_curr_token().line_number,
-                ));
-            }
-        } else {
-            context.errors.push(ErrMsg::VariableNotDeclared {
-                identity: identity.clone(),
-                attempted_assignment_line: context.get_curr_token().line_number,
-            });
-        }
-
         Statement::Assignment(AssignmentStatement {
             identity,
             value: assignment_value_text,
@@ -320,6 +319,7 @@ impl StatementParser for VarDeclarationStatementParser {
 
         // Type checking (could be moved to semantic analysis)
         if var_type != assignment_var_type && assignment_var_type != VarType::Unrecognized {
+            // TODO: move into semantic analyzer
             context.errors.push(ErrMsg::new_incorrect_type_assignment(
                 var_type.clone(),
                 assignment_var_type.clone(),

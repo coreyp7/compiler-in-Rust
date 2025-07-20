@@ -3,7 +3,7 @@ use crate::statement::Statement;
 use crate::symbol_table::SymbolTable;
 use crate::tokenizer::{Token, TokenType};
 
-pub mod statements;
+pub mod statement_parsers_impl;
 
 pub trait StatementParser {
     fn can_parse(&self, token_type: &TokenType) -> bool;
@@ -75,7 +75,7 @@ pub struct StatementParserCoordinator {
 
 impl StatementParserCoordinator {
     pub fn new() -> Self {
-        use statements::*;
+        use statement_parsers_impl::*;
 
         StatementParserCoordinator {
             parsers: vec![
