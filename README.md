@@ -1,6 +1,3 @@
-# Update as of 7/12/25
-Currently modifying compiler again to be better and have more advanced language features.
-Syntax is changing and if you clone the repo, things may not be fully functional.
 
 # About
 I wrote my first lanugage programming lanugage (compiler) so I could learn Rust. <br>
