@@ -141,17 +141,26 @@ fn convert_assignment_statement_to_code(statement_struct: &AssignmentStatement) 
     code.push_str(" = ");
 
     // Handle different value types
-    match statement_struct.assigned_value_type {
-        VarType::Str => {
-            code.push_str("\"");
-            code.push_str(&statement_struct.value);
-            code.push_str("\"");
-        }
-        VarType::Num => {
-            code.push_str(&statement_struct.value);
-        }
-        VarType::Unrecognized => {
-            code.push_str(&statement_struct.value);
+
+    if statement_struct.is_function {
+        // This is being assigned a function, so change output accordingly.
+        code.push_str(&statement_struct.value);
+        // TODO: when you handle arguments, you'll have to update it here.
+        // Which sucks, because that'll be a mess.
+        code.push_str("()");
+    } else {
+        match statement_struct.assigned_value_type {
+            VarType::Str => {
+                code.push_str("\"");
+                code.push_str(&statement_struct.value);
+                code.push_str("\"");
+            }
+            VarType::Num => {
+                code.push_str(&statement_struct.value);
+            }
+            VarType::Unrecognized => {
+                code.push_str(&statement_struct.value);
+            }
         }
     }
 
