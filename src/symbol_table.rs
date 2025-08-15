@@ -15,7 +15,7 @@ pub struct SymbolTable {
 }
 
 #[derive(Debug, Clone)]
-struct Scope {
+pub struct Scope {
     /// Variables declared in this scope
     variables: HashMap<String, Var>,
     /// Type of scope (Global, Function, Block)

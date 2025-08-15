@@ -4,6 +4,7 @@ use crate::comparison::*;
 use crate::error::ErrMsg;
 use crate::expression_parser::ExpressionParser;
 use crate::statement::*;
+use crate::symbol_table::ScopeType;
 use crate::tokenizer::TokenType;
 
 /// Parser for print statements
@@ -412,6 +413,22 @@ impl StatementParser for FunctionDeclarationStatementParser {
         // Skip past the function signature since we already have it
         self.skip_function_signature(context);
 
+        // **NEW**: Push function scope and add parameters to symbol table
+        context.symbol_table.push_scope(ScopeType::Function(function_name.clone()));
+        
+        // Add function parameters to the symbol table in the function scope
+        for parameter in &function_header.parameters {
+            let var = Var {
+                var_type: parameter.param_type.clone(),
+                identity: parameter.name.clone(),
+                line_declared_on: context.get_curr_token().line_number,
+            };
+            
+            if let Err(err) = context.symbol_table.declare_variable(parameter.name.clone(), var) {
+                context.errors.push(err);
+            }
+        }
+
         // Parse the function body statements
         let mut function_statements = Vec::new();
         while !context.is_curr_token_type(&TokenType::EndFunction) && !context.at_end() {
@@ -424,6 +441,9 @@ impl StatementParser for FunctionDeclarationStatementParser {
         if !context.at_end() {
             context.next_token(); // Skip 'endFunction'
         }
+
+        // **NEW**: Pop function scope after parsing body
+        let _ = context.symbol_table.pop_scope();
 
         Statement::FunctionInstantiation(FunctionInstantiationStatement {
             header: function_header,
