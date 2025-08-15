@@ -41,6 +41,7 @@ pub struct VarInstantiationStatement {
     pub var_type: VarType,
     pub assigned_value_type: VarType,
     pub line_number: u8,
+    pub is_function: bool,
 }
 
 #[derive(Debug)]

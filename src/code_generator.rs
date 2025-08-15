@@ -182,17 +182,23 @@ fn convert_instantiation_statement_to_code(statement_struct: &VarInstantiationSt
     code.push_str(" = ");
 
     // Handle different value types
-    match statement_struct.assigned_value_type {
-        VarType::Str => {
-            code.push_str("\"");
-            code.push_str(&statement_struct.value);
-            code.push_str("\"");
-        }
-        VarType::Num => {
-            code.push_str(&statement_struct.value);
-        }
-        VarType::Unrecognized => {
-            code.push_str(&statement_struct.value);
+    if statement_struct.is_function {
+        // Function call - just use the value as is (it should contain the function call syntax)
+        code.push_str(&statement_struct.value);
+        code.push_str("()"); // Add parentheses for function call
+    } else {
+        match statement_struct.assigned_value_type {
+            VarType::Str => {
+                code.push_str("\"");
+                code.push_str(&statement_struct.value);
+                code.push_str("\"");
+            }
+            VarType::Num => {
+                code.push_str(&statement_struct.value);
+            }
+            VarType::Unrecognized => {
+                code.push_str(&statement_struct.value);
+            }
         }
     }
 

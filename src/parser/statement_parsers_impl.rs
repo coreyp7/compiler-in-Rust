@@ -362,12 +362,20 @@ impl StatementParser for VarDeclarationStatementParser {
             ));
         }
 
+        // Check if the assignment value is a function call
+        let mut is_function_call = false;
+        // Look at the assignment_primary to see if it's a function call
+        if matches!(assignment_primary, Primary::FunctionCall { .. }) {
+            is_function_call = true;
+        }
+
         Statement::VarInstantiation(VarInstantiationStatement {
             identity,
             value: assignment_value_text,
             var_type,
             assigned_value_type: assignment_var_type,
             line_number: context.get_curr_token().line_number,
+            is_function: is_function_call,
         })
     }
 }
@@ -501,14 +509,14 @@ fn extract_value_and_type_from_primary(
         } => {
             if let Some(function_info) = symbol_table.lookup_function(name) {
                 let mut call_text = name.clone();
-                call_text.push_str("(");
+                //call_text.push_str("(");
                 for (i, arg) in arguments.iter().enumerate() {
                     if i > 0 {
                         call_text.push_str(", ");
                     }
                     call_text.push_str(arg);
                 }
-                call_text.push_str(")");
+                //call_text.push_str(")");
                 (call_text, function_info.return_type.clone())
             } else {
                 (name.clone(), VarType::Unrecognized)
