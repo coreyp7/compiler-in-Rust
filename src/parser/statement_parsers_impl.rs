@@ -279,8 +279,42 @@ impl IdentityStatementParser {
         }
 
         let assignment_token_type = context.get_curr_token().token_type.clone();
-        let assignment_var_type = VarType::from(assignment_token_type);
         let assignment_value_text = context.get_curr_token().text.clone();
+        // Just in case this is a function assignment, check if next tokens are parentheses.
+        // A peek function should prolly exist TODO
+        let mut isFunctionCall = false;
+        if context.tokens.get(context.current + 1).unwrap().token_type == TokenType::LeftParen {
+            // This is a function call because we can see the parentheses.
+            // TODO: might have to improve this shitty behavior.
+            isFunctionCall = true;
+        }
+
+        // Check if we're assigning a function reference
+        let assignment_var_type = match assignment_token_type {
+            TokenType::Identity => {
+                if isFunctionCall {
+                    let mut functionReturnType = VarType::Unrecognized;
+                    let functionHeaderOption =
+                        context.symbol_table.lookup_function(&assignment_value_text);
+
+                    if let Some(functionHeader) = functionHeaderOption {
+                        functionReturnType = functionHeader.return_type.clone();
+                    }
+
+                    // If the function doesn't return anything, or other unexpected behavior
+                    // reading this, this will be unexpected. (or if its void)
+                    functionReturnType
+                } else {
+                    // This means its just a normal variable lookup
+                    // Regular variable reference - get its type
+                    context
+                        .symbol_table
+                        .get_variable_type(&assignment_value_text)
+                        .unwrap_or(VarType::Unrecognized)
+                }
+            }
+            _ => VarType::from(assignment_token_type),
+        };
 
         Statement::Assignment(AssignmentStatement {
             identity,
