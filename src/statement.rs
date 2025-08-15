@@ -31,6 +31,7 @@ pub struct AssignmentStatement {
     pub value: String,
     pub assigned_value_type: VarType,
     pub line_number: u8,
+    pub is_function: bool,
 }
 
 #[derive(Debug)]

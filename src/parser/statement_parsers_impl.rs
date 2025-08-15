@@ -321,6 +321,7 @@ impl IdentityStatementParser {
             value: assignment_value_text,
             assigned_value_type: assignment_var_type,
             line_number: context.get_curr_token().line_number,
+            is_function: isFunctionCall,
         })
     }
 }
