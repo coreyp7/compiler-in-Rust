@@ -58,3 +58,6 @@ endWhile
 
 print "now greater!"
 ```
+
+## Other notes:
+There's a more complicated build on 'feature/add-functions' for a more complicated compiler with limited function implementation. 
