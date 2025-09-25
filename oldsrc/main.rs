@@ -7,6 +7,29 @@ mod tokenizer;
 use tokenizer::Token;
 use tokenizer::Tokenizer;
 
+mod ast;
+use ast::AstBuilder;
+
+mod expression_parser;
+
+mod parser;
+
+mod symbol_table;
+
+mod semantic;
+use semantic::{ScopeType, SemanticAnalyzer};
+
+mod error;
+use error::{ErrMsg, print_all_errors};
+
+mod statement;
+use statement::Statement;
+
+mod code_generator;
+use code_generator::generate_code_str;
+
+mod comparison;
+
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
     let src_path = &args[1];
@@ -24,7 +47,6 @@ fn main() -> std::io::Result<()> {
     }
 
     // AST building
-    /*
     let mut ast_builder = AstBuilder::new(tokens);
     let ast_vec = ast_builder.generate_ast();
     let mut ast_errors = ast_builder.get_error_vec().clone();
@@ -33,10 +55,8 @@ fn main() -> std::io::Result<()> {
         debug_print_ast(&ast_vec);
         debug_print_errors_and_var_map(&ast_errors, &ast_builder);
     }
-    */
 
     // Semantic analysis on the AST
-    /*
     let mut analyzer = SemanticAnalyzer::new(
         ast_builder.symbol_table.get_variables().clone(),
         ast_builder.symbol_table.get_functions().clone(),
@@ -61,9 +81,7 @@ fn main() -> std::io::Result<()> {
         }
         return Ok(());
     }
-    */
 
-    /*
     // Generate c code str with ast
     let code: String = generate_code_str(&ast_vec);
     if debug {
@@ -74,7 +92,6 @@ fn main() -> std::io::Result<()> {
     let mut output_file = File::create(path)?;
 
     output_file.write_all(code.as_bytes())?;
-    */
 
     Ok(())
 }
@@ -88,7 +105,6 @@ fn debug_print_tokens(tokens: &[Token]) {
     println!("Tokenizer output: -----------------------------------");
 }
 
-/*
 fn debug_print_ast(ast_vec: &[Statement]) {
     println!("Ast output: -----------------------------------");
     for node in ast_vec {
@@ -96,9 +112,7 @@ fn debug_print_ast(ast_vec: &[Statement]) {
     }
     println!("Ast output: -----------------------------------");
 }
-    */
 
-/*
 fn debug_print_errors_and_var_map(ast_errors: &[ErrMsg], ast_builder: &AstBuilder) {
     println!("Ast ERRORS: -----------------------------------");
     for err in ast_errors {
@@ -109,7 +123,6 @@ fn debug_print_errors_and_var_map(ast_errors: &[ErrMsg], ast_builder: &AstBuilde
     ast_builder.symbol_table.debug_print();
     println!("Ast map: -----------------------------------");
 }
-    */
 
 fn debug_print_generated_code(code: &str) {
     println!("code generated: -----------------------------------");
