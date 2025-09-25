@@ -5,7 +5,7 @@ use std::io::Write;
 
 mod tokenizer;
 use tokenizer::Token;
-use tokenizer::Tokenizer;
+use tokenizer::tokenize_file;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -15,10 +15,9 @@ fn main() -> std::io::Result<()> {
     //let src_path: String = String::from("./example.plank"); // for testing without compiling
 
     // TODO: add error handler for reading the file
-    let mut f = File::open(src_path)?;
+    let mut plank_src_file = File::open(src_path)?;
 
-    let mut tokenizer = Tokenizer::new();
-    let tokens: Vec<Token> = tokenizer.tokenize_file(&mut f);
+    let tokens: Vec<Token> = tokenize_file(&mut plank_src_file);
     if debug {
         debug_print_tokens(&tokens);
     }
