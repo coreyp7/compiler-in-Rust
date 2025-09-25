@@ -14,70 +14,77 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::str::FromStr;
 
-/**
- * TODO: check validity of file just in case.
- */
-pub fn tokenize_file(src_file: &mut File) -> Vec<Token> {
-    let reader = BufReader::new(src_file);
-    let mut token_vec: Vec<Token> = Vec::new();
-    let mut line_number = 1;
+// ============================================================================
+// Data Structures and Enums
+// ============================================================================
 
-    for line_result in reader.lines() {
-        if let Ok(line_str) = line_result {
-            let mut tokens = tokenize_line(line_str, line_number);
-            token_vec.append(&mut tokens);
-            line_number += 1;
-        }
-    }
-    token_vec.push(create_token(TokenType::EOF, String::new(), line_number, 0));
-
-    token_vec
+#[derive(Debug)]
+enum TokenMatch {
+    Single(TokenType),
+    Double(char, TokenType), // (next_char, token_if_matched)
+    Comment,                 // Special case for comments
 }
 
-fn tokenize_line(line: String, line_number: u32) -> Vec<Token> {
-    let mut tokens: Vec<Token> = Vec::new();
-    let line_bytes: &[u8] = line.as_bytes();
-    //let mut curr_byte_index = 0;
-    let mut curr_byte_index_in_line: usize = 0;
+// Note: The Tokenizer struct was previously defined here but is not currently used.
+// It could be useful for future refactoring to make the tokenizer stateful.
 
-    while curr_byte_index_in_line < line_bytes.len() {
-        let curr = line_bytes[curr_byte_index_in_line];
-        let curr = curr as char;
-        let mut next: Option<char> = None;
-        if curr_byte_index_in_line < line_bytes.len() - 1 {
-            next = Some(line_bytes[curr_byte_index_in_line + 1] as char);
-        }
+// ============================================================================
+// Utility Functions
+// ============================================================================
 
-        let (token, skip_rest_of_line, new_index) = match_character(
-            &line_bytes,
-            curr,
-            next,
-            line_number,
-            curr_byte_index_in_line,
-        );
-
-        curr_byte_index_in_line = new_index;
-
-        if token.token_type != TokenType::UnsupportedSymbolError {
-            tokens.push(token);
-        }
-
-        if skip_rest_of_line {
-            // This is a comment; we're skipping the rest of the line.
-            curr_byte_index_in_line = line_bytes.len();
-        }
+fn create_token(
+    token_type_param: TokenType,
+    text_param: String,
+    line_number: u32,
+    curr_byte_index_in_line: usize,
+) -> Token {
+    Token {
+        token_type: token_type_param,
+        lexeme: text_param,
+        line_number: line_number,
+        col_number: curr_byte_index_in_line + 1,
     }
-
-    // End tokens list with new line, since this is the end of the line
-    tokens.push(create_token(
-        TokenType::Newline,
-        String::new(),
-        line_number,
-        line.len(),
-    ));
-
-    tokens
 }
+
+fn get_char_token_map() -> HashMap<char, TokenMatch> {
+    use TokenMatch::*;
+    //use TokenType::*;
+
+    [
+        ('+', Single(Plus)),
+        ('*', Single(Asterisk)),
+        (':', Single(Colon)),
+        ('(', Single(LeftParen)),
+        (')', Single(RightParen)),
+        (',', Single(Comma)),
+        ('-', Double('>', Arrow)),
+        ('/', Comment),
+        ('=', Double('=', EqualEqual)),
+        ('<', Double('=', LessThanEqualTo)),
+        ('>', Double('=', GreaterThanEqualTo)),
+        ('!', Double('=', NotEqual)),
+        ('&', Double('&', DoubleAmpersand)),
+        ('|', Double('|', DoubleBar)),
+    ]
+    .into_iter()
+    .collect()
+}
+
+fn get_single_char_fallback(ch: char) -> TokenType {
+    match ch {
+        '-' => TokenType::Minus,
+        '=' => TokenType::Equal,
+        '<' => TokenType::LessThan,
+        '>' => TokenType::GreaterThan,
+        '!' => TokenType::Bang,
+        '/' => TokenType::Slash,
+        _ => TokenType::UnsupportedSymbolError,
+    }
+}
+
+// ============================================================================
+// Core Tokenization Logic
+// ============================================================================
 
 /**
 Can either be:
@@ -93,7 +100,7 @@ Given
 
 Will return -> (Token, new position in string buffer)
 */
-fn create_token_from_text(
+fn create_token_from_lexume(
     line_bytes: &[u8],
     token_start: usize,
     token_type: TokenType,
@@ -187,56 +194,7 @@ fn create_token_from_text(
     (token, new_curr_byte_idx)
 }
 
-fn create_token(
-    token_type_param: TokenType,
-    text_param: String,
-    line_number: u32,
-    curr_byte_index_in_line: usize,
-) -> Token {
-    Token {
-        token_type: token_type_param,
-        lexeme: text_param,
-        line_number: line_number,
-        col_number: curr_byte_index_in_line + 1,
-    }
-}
-fn get_char_token_map() -> HashMap<char, TokenMatch> {
-    use TokenMatch::*;
-    //use TokenType::*;
-
-    [
-        ('+', Single(Plus)),
-        ('*', Single(Asterisk)),
-        (':', Single(Colon)),
-        ('(', Single(LeftParen)),
-        (')', Single(RightParen)),
-        (',', Single(Comma)),
-        ('-', Double('>', Arrow)),
-        ('/', Comment),
-        ('=', Double('=', EqualEqual)),
-        ('<', Double('=', LessThanEqualTo)),
-        ('>', Double('=', GreaterThanEqualTo)),
-        ('!', Double('=', NotEqual)),
-        ('&', Double('&', DoubleAmpersand)),
-        ('|', Double('|', DoubleBar)),
-    ]
-    .into_iter()
-    .collect()
-}
-
-fn get_single_char_fallback(ch: char) -> TokenType {
-    match ch {
-        '-' => TokenType::Minus,
-        '=' => TokenType::Equal,
-        '<' => TokenType::LessThan,
-        '>' => TokenType::GreaterThan,
-        '!' => TokenType::Bang,
-        '/' => TokenType::Slash,
-        _ => TokenType::UnsupportedSymbolError,
-    }
-}
-
-fn match_character(
+fn create_token_at_byte_in_line(
     line_bytes: &[u8],
     curr: char,
     next: Option<char>,
@@ -245,6 +203,12 @@ fn match_character(
 ) -> (Token, bool, usize) {
     let token_map = get_char_token_map();
 
+    /**
+     * TODO: need to split up this function and
+     * change the name to be less esoteric.
+     *
+     * top if block handles matching symbols only
+     */
     if let Some(token_match) = token_map.get(&curr) {
         match token_match {
             TokenMatch::Single(token_type) => (
@@ -313,7 +277,7 @@ fn match_character(
     } else {
         // Handle strings, keywords, and numbers.
         // They are handled slightly differently depending on which, so we
-        // condition the data we pass into create_token_from_text.
+        // condition the data we pass into create_token_from_lexume.
         let token_type = match curr {
             '"' => Some(TokenType::Str),
             x if x.is_numeric() => Some(TokenType::Number),
@@ -328,10 +292,10 @@ fn match_character(
                 curr_byte_index_in_line
             };
 
-            let result = create_token_from_text(line_bytes, start_index, token_type, line_number);
+            let result = create_token_from_lexume(line_bytes, start_index, token_type, line_number);
             (result.0, false, result.1)
         } else {
-            /**
+            /*
              * TODO: Spaces should be handled more explicitly. Something else
              * could go wrong here and we wouldn't know.
              */
@@ -348,32 +312,72 @@ fn match_character(
         }
     }
 }
-struct Tokenizer {
-    line_number: u32,
-    /*
-    Okay, so having this here is pretty wack, but allows easy tracking of the
-    current column in the current line being parsed.
 
-    So, this is exclusively used in tokenize_line. And purely for informational
-    purposes to show as error messages to the user.
-    */
-    curr_byte_index_in_line: usize,
-}
+// ============================================================================
+// Main Tokenization Functions
+// ============================================================================
 
-/*
-impl Tokenizer {
-    pub fn new() -> Tokenizer {
-        Tokenizer {
-            line_number: 1,
-            curr_byte_index_in_line: 0,
+fn tokenize_line(line: String, line_number: u32) -> Vec<Token> {
+    let mut tokens: Vec<Token> = Vec::new();
+    let line_bytes: &[u8] = line.as_bytes();
+    //let mut curr_byte_index = 0;
+    let mut curr_byte_index_in_line: usize = 0;
+
+    while curr_byte_index_in_line < line_bytes.len() {
+        let curr = line_bytes[curr_byte_index_in_line];
+        let curr = curr as char;
+        let mut next: Option<char> = None;
+        if curr_byte_index_in_line < line_bytes.len() - 1 {
+            next = Some(line_bytes[curr_byte_index_in_line + 1] as char);
+        }
+
+        let (token, skip_rest_of_line, new_index) = create_token_at_byte_in_line(
+            &line_bytes,
+            curr,
+            next,
+            line_number,
+            curr_byte_index_in_line,
+        );
+
+        curr_byte_index_in_line = new_index;
+
+        if token.token_type != TokenType::UnsupportedSymbolError {
+            tokens.push(token);
+        }
+
+        if skip_rest_of_line {
+            // This is a comment; we're skipping the rest of the line.
+            curr_byte_index_in_line = line_bytes.len();
         }
     }
-}
-    */
 
-#[derive(Debug)]
-enum TokenMatch {
-    Single(TokenType),
-    Double(char, TokenType), // (next_char, token_if_matched)
-    Comment,                 // Special case for comments
+    // End tokens list with new line, since this is the end of the line
+    tokens.push(create_token(
+        TokenType::Newline,
+        String::new(),
+        line_number,
+        line.len(),
+    ));
+
+    tokens
+}
+
+/**
+ * TODO: check validity of file just in case.
+ */
+pub fn tokenize_file(src_file: &mut File) -> Vec<Token> {
+    let reader = BufReader::new(src_file);
+    let mut token_vec: Vec<Token> = Vec::new();
+    let mut line_number = 1;
+
+    for line_result in reader.lines() {
+        if let Ok(line_str) = line_result {
+            let mut tokens = tokenize_line(line_str, line_number);
+            token_vec.append(&mut tokens);
+            line_number += 1;
+        }
+    }
+    token_vec.push(create_token(TokenType::EOF, String::new(), line_number, 0));
+
+    token_vec
 }
