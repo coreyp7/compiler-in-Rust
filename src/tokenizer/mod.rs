@@ -1,7 +1,11 @@
 pub mod token;
 pub mod token_type;
 
-use token::Token;
+// public api imports for this module
+pub use token::Token;
+pub use token_type::TokenType;
+//
+
 use token_type::TokenType::*;
 use token_type::*;
 
@@ -12,7 +16,7 @@ use std::io::prelude::*;
 use std::str::FromStr;
 
 pub struct Tokenizer {
-    line_number: u8,
+    line_number: u32,
     /*
     Okay, so having this here is pretty wack, but allows easy tracking of the
     current column in the current line being parsed.
@@ -85,7 +89,7 @@ impl Tokenizer {
     fn create_token(&mut self, token_type_param: TokenType, text_param: String) -> Token {
         Token {
             token_type: token_type_param,
-            text: text_param,
+            lexeme: text_param,
             line_number: self.line_number,
             col_number: self.curr_byte_index_in_line + 1,
         }
@@ -184,7 +188,7 @@ impl Tokenizer {
             // create function that returns the tokentype given a string keyword.
             // if it returns Some(type) then update the tokentype.
             // else None, then keep this as an Identity, since it doesn't match any keyword.
-            let f = TokenType::from_str(&token.text);
+            let f = TokenType::from_str(&token.lexeme);
             match f {
                 Ok(token_type) => token.token_type = token_type,
                 _ => {}
