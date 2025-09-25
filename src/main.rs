@@ -4,8 +4,8 @@ use std::fs::File;
 use std::io::Write;
 
 mod tokenizer;
-use tokenizer::Token;
 use tokenizer::Tokenizer;
+use tokenizer::token::Token;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
