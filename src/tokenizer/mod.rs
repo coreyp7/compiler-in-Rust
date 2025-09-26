@@ -190,7 +190,6 @@ fn create_token_from_lexume(
             _ => {}
         }
     }
-
     (token, new_curr_byte_idx)
 }
 
@@ -208,6 +207,7 @@ fn create_token_at_byte_in_line(
      * change the name to be less esoteric.
      *
      * top if block handles matching symbols only
+     * bottom else block handles strings, keywords, and numbers.
      */
     if let Some(token_match) = token_map.get(&curr) {
         match token_match {
@@ -351,13 +351,17 @@ fn tokenize_line(line: String, line_number: u32) -> Vec<Token> {
         }
     }
 
-    // End tokens list with new line, since this is the end of the line
+    // End tokens list with new line, since this is the end of the line.
+    // If you want to include these for good formatting, add a flag or something
+    // to allow that here. TODO
+    /*
     tokens.push(create_token(
         TokenType::Newline,
         String::new(),
         line_number,
         line.len(),
     ));
+    */
 
     tokens
 }
