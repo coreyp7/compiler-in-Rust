@@ -6,6 +6,9 @@ use std::io::Write;
 mod tokenizer;
 use tokenizer::Token;
 use tokenizer::tokenize_file;
+mod ast;
+use ast::build_ast;
+use ast::{Statement, VariableDeclarationStatement};
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -23,6 +26,11 @@ fn main() -> std::io::Result<()> {
     }
 
     // AST building
+    let ast = build_ast(&tokens);
+    if debug {
+        debug_print_ast(&ast);
+    }
+
     /*
     let mut ast_builder = AstBuilder::new(tokens);
     let ast_vec = ast_builder.generate_ast();
@@ -87,7 +95,6 @@ fn debug_print_tokens(tokens: &[Token]) {
     println!("Tokenizer output: -----------------------------------");
 }
 
-/*
 fn debug_print_ast(ast_vec: &[Statement]) {
     println!("Ast output: -----------------------------------");
     for node in ast_vec {
@@ -95,7 +102,6 @@ fn debug_print_ast(ast_vec: &[Statement]) {
     }
     println!("Ast output: -----------------------------------");
 }
-    */
 
 /*
 fn debug_print_errors_and_var_map(ast_errors: &[ErrMsg], ast_builder: &AstBuilder) {
