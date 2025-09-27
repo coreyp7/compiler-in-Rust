@@ -9,6 +9,8 @@ use tokenizer::tokenize_file;
 mod ast;
 use ast::build_ast;
 use ast::{Statement, VariableDeclarationStatement};
+mod symbol_table;
+use symbol_table::SymbolTable;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -26,9 +28,9 @@ fn main() -> std::io::Result<()> {
     }
 
     // AST building
-    let ast = build_ast(&tokens);
+    let ast_context = build_ast(tokens);
     if debug {
-        debug_print_ast(&ast);
+        debug_print_ast(&ast_context.statements);
     }
 
     /*

@@ -1,6 +1,47 @@
+use std::thread::Builder;
+
+use crate::symbol_table::SymbolTable;
 use crate::tokenizer::{Token, TokenType};
 
-pub fn build_ast(tokens: &Vec<Token>) -> Vec<Statement> {
+pub struct ast_builder {
+    /**
+     * This symbol table could contain either:
+     * - variable
+     * - function header
+     * not sure yet TODO: still figuring this out
+     */
+    symbol_table: SymbolTable,
+}
+
+pub struct BuilderContext {
+    /**
+     * This symbol table could contain either:
+     * - variable
+     * - function header
+     * not sure yet TODO: still figuring this out
+     */
+    pub symbol_table: SymbolTable,
+    tokens: Vec<Token>,
+    idx: usize,
+    pub statements: Vec<Statement>,
+}
+
+impl BuilderContext {
+    pub fn new(tokens: Vec<Token>) -> Self {
+        Self {
+            symbol_table: SymbolTable::new(),
+            tokens,
+            idx: 0,
+            statements: Vec::new(),
+        }
+    }
+
+    pub fn get_curr(&self) -> &Token {
+        &self.tokens[self.idx]
+    }
+}
+
+pub fn build_ast(tokens: Vec<Token>) -> BuilderContext {
     //, Vec<ErrMsg>, SymbolTable) {
     /*
     let mut context = ParseContext {
@@ -10,62 +51,77 @@ pub fn build_ast(tokens: &Vec<Token>) -> Vec<Statement> {
         symbol_table: SymbolTable::new(),
     };
     */
-
-    let statements = parse_program(tokens);
-    statements
+    let context = BuilderContext::new(tokens);
+    let updated_context = parse_program(context);
+    updated_context
 }
 
-fn parse_program(tokens: &Vec<Token>) -> Vec<Statement> {
-    let mut statements = Vec::new();
-    let mut token_idx = 0;
+// I think context is better because of how the Rust language works.
+// Having it in a class makes it difficult to split up functions easily without
+// having a very large class, because it'd be dependent on the state being in scope.
+// With the context param impl, we can have separate modules for processing different
+// types of statements, and can just pass the state around through context variables.
+//
+// Ownership shouldn't be an issue, because its a linear process.
+// When parse_program is done updating the context, it can return permission to
+// the caller.
+fn parse_program(mut context: BuilderContext) -> BuilderContext {
+    //let mut statements = Vec::new();
+    //let mut token_idx = 0;
+    //let token_vec_len = context.tokens.len();
 
-    while token_idx < tokens.len() {
-        let token = &tokens[token_idx];
-        match token.token_type {
+    while context.idx < context.tokens.len() {
+        let token_type = context.get_curr().token_type;
+        println!("Tokentype in top of loop: {:?}", token_type);
+        match token_type {
             // TODO: if first token is datatype, this is a variable declaration
             TokenType::VarDeclaration => {
-                if let Some((statement, new_idx)) = parse_variable_declaration(tokens, token_idx) {
-                    statements.push(statement);
-                    token_idx = new_idx;
-                } else {
-                    token_idx += 1; // Skip on error
-                }
+                // TODO: return ownership of context back here
+                context = parse_variable_declaration(context);
             }
             _ => {
                 // Any statements not implemented yet will be skipped.
-                token_idx += 1;
+                context.idx += 1;
             }
         }
     }
 
-    statements
+    context
 }
 
-fn parse_variable_declaration(tokens: &Vec<Token>, curr: usize) -> Option<(Statement, usize)> {
-    let mut idx = curr;
+fn parse_variable_declaration(mut context: BuilderContext) -> BuilderContext {
+    //let mut idx = curr;
 
-    let data_type = match &tokens[idx].lexeme.as_str() {
+    let data_type = match &context.get_curr().lexeme.as_str() {
         &"Number" => DataType::Number,
         &"String" => DataType::String,
-        _ => return None, // Error: invalid data type
+        _ => DataType::Invalid, // Is this lazy?
     };
-    idx += 1;
-    println!("Detected datatype is: {:?}", data_type);
+    context.idx += 1;
 
     // Get symbol (identifier)
-    if idx >= tokens.len() || tokens[idx].token_type != TokenType::Identity {
-        return None; // Error: expected identifier
+    if context.idx >= context.tokens.len() || context.get_curr().token_type != TokenType::Identity {
+        // Error: expected identifier
+        // NOTE: not sure what to do here.
     }
 
-    let _symbol_name = &tokens[idx].lexeme; // We'll use this for symbol table later
-    // the symbol key will be given to you by the map impl when you insert it
-    let line_declared_on = tokens[idx].line_number;
-    idx += 1;
+    let symbol_name = &context.get_curr().lexeme.clone(); // We'll use this for symbol table later
+    let line_declared_on = &context.get_curr().line_number.clone();
+    context.idx += 1;
 
-    if idx >= tokens.len() || tokens[idx].token_type != TokenType::Colon {
-        return None; // Error: expected colon
+    // Add to symbol table, get key for variable header
+    // TODO: ? is kinda lazy, maybe add better error handling.
+    // If something went wrong, there may possibly be a naming collision, which
+    // I guess would have to be handled here. Or 'number of declarations' could be
+    // added to the map, and analyzed later in the semantic analysis phase.
+    let symbol_key = context
+        .symbol_table
+        .insert(symbol_name, &data_type, line_declared_on);
+
+    if context.idx >= context.tokens.len() || context.get_curr().token_type != TokenType::Colon {
+        // NOTE: not sure what to do here.
     }
-    idx += 1;
+    context.idx += 1;
 
     // Process value with 'parse_value' function call
     // TODO: here we need to ensure that the datatype of the assigned value
@@ -73,23 +129,22 @@ fn parse_variable_declaration(tokens: &Vec<Token>, curr: usize) -> Option<(State
     // That should be done in a semantic analysis phase, not here. that's what
     // happened last time and it sucked. So, just analyze what the return type
     // is and put it into our structs.
-    if let Some((value, new_idx)) = parse_value(tokens, idx) {
-        idx = new_idx;
+    let assigned_value = parse_value(context);
+    context = assigned_value.0;
+    let value = assigned_value.1;
 
-        // Create the variable declaration statement
-        let statement = Statement::VariableDeclaration(VariableDeclarationStatement {
-            symbol_key: 3, //TODO: BAD BAD need to figure out how to assign this when adding
-            // to the symbol table
-            data_type,
-            line_declared_on,
-            // This is here so in semantic phase, we check that the types match
-            asssigned_value_data_type: value.data_type,
-        });
+    // Create the variable declaration statement
+    let statement = Statement::VariableDeclaration(VariableDeclarationStatement {
+        symbol_key: symbol_key.unwrap(), // FIXME: handle properly upstairs
+        // to the symbol table
+        data_type,
+        line_declared_on: *line_declared_on,
+        // This is here so in semantic phase, we check that the types match
+        asssigned_value_data_type: value.data_type,
+    });
+    context.statements.push(statement);
 
-        Some((statement, idx))
-    } else {
-        None // Error parsing value
-    }
+    context
 }
 
 /**
@@ -101,31 +156,32 @@ fn parse_variable_declaration(tokens: &Vec<Token>, curr: usize) -> Option<(State
  * Syntax of statement:
  * Type symbol_name: value
  */
-fn parse_value(tokens: &Vec<Token>, curr: usize) -> Option<(Value, usize)> {
-    let mut idx = curr;
+fn parse_value(mut context: BuilderContext) -> (BuilderContext, Value) {
+    //let mut idx = curr;
 
+    /* TODO: this kinda stuff should be handled in the BuilderContext functions.
     if idx >= tokens.len() {
         return None;
     }
+    */
 
-    let token = &tokens[idx];
+    let token_type = context.get_curr().token_type;
 
-    match token.token_type {
+    let value = match token_type {
         TokenType::Number => {
             // Parse inline number value
-            let value = Value {
+            Value {
                 data_type: DataType::Number,
                 value_type: ValueType::InlineNumber,
                 variable_symbol_key: None,
                 function_symbol_key: None,
                 //inline_value: token.lexeme.parse().ok(), // Convert string to number
                 comparison: None,
-            };
-            Some((value, idx + 1))
+            }
         }
         TokenType::Str => {
             // Parse inline string value
-            let value = Value {
+            Value {
                 data_type: DataType::String,
                 value_type: ValueType::InlineString,
                 variable_symbol_key: None,
@@ -134,8 +190,7 @@ fn parse_value(tokens: &Vec<Token>, curr: usize) -> Option<(Value, usize)> {
                 // As long as we have the datatype, who cares?
                 //inline_value: Some(token.lexeme),
                 comparison: None,
-            };
-            Some((value, idx + 1))
+            }
         }
         TokenType::Identity => {
             // TODO: skipping for now, but this needs to be tested.
@@ -143,27 +198,37 @@ fn parse_value(tokens: &Vec<Token>, curr: usize) -> Option<(Value, usize)> {
             // Will have to lookup in the map(s) for these.
             // Now I think having one map with two different enum variants would
             // make sense (function headers and variables).
-            let value = Value {
+            Value {
                 data_type: DataType::Number, // We'd need symbol table lookup to determine actual type
                 value_type: ValueType::Variable,
                 variable_symbol_key: Some(0), // Placeholder - should lookup in symbol table
                 function_symbol_key: None,
                 //inline_value: None,
                 comparison: None,
-            };
-            Some((value, idx + 1))
+            }
         }
         _ => {
             // Unsupported value type for now
-            None
+            // TODO: make this better?
+            Value {
+                data_type: DataType::Invalid, // We'd need symbol table lookup to determine actual type
+                value_type: ValueType::InlineNumber,
+                variable_symbol_key: None, // Placeholder - should lookup in symbol table
+                function_symbol_key: None,
+                comparison: None,
+            }
         }
-    }
+    };
+
+    context.idx += 1;
+    (context, value)
 }
 
 #[derive(Debug, Clone)]
 pub enum DataType {
     Number,
     String,
+    Invalid,
 }
 
 #[derive(Debug, Clone)]
@@ -191,6 +256,13 @@ pub struct VariableDeclarationStatement {
     pub data_type: DataType,
     pub line_declared_on: u32,
     pub asssigned_value_data_type: DataType,
+}
+
+#[derive(Debug)]
+pub struct VariableSymbol {
+    pub identifier: String,
+    pub data_type: DataType,
+    pub line_declared_on: u32,
 }
 
 #[derive(Debug, Clone)]
