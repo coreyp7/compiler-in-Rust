@@ -32,7 +32,10 @@ fn main() -> std::io::Result<()> {
     let ast_context = build_ast(tokens);
     if debug {
         debug_print_ast(&ast_context.statements);
+        println!("---symbol table---");
         println!("{:#?}", ast_context.symbol_table);
+        println!("---function table---");
+        println!("{:#?}", ast_context.function_table);
     }
 
     /*
