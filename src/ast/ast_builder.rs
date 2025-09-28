@@ -74,9 +74,7 @@ fn parse_program(mut context: BuilderContext) -> BuilderContext {
         let token_type = context.get_curr().token_type;
         println!("Tokentype in top of loop: {:?}", token_type);
         match token_type {
-            // TODO: if first token is datatype, this is a variable declaration
             TokenType::VarDeclaration => {
-                // TODO: return ownership of context back here
                 context = parse_variable_declaration(context);
             }
             _ => {
@@ -123,12 +121,6 @@ fn parse_variable_declaration(mut context: BuilderContext) -> BuilderContext {
     }
     context.idx += 1;
 
-    // Process value with 'parse_value' function call
-    // TODO: here we need to ensure that the datatype of the assigned value
-    // matches the datatype of the variable being declared. Well, do we?
-    // That should be done in a semantic analysis phase, not here. that's what
-    // happened last time and it sucked. So, just analyze what the return type
-    // is and put it into our structs.
     let assigned_value = parse_value(context);
     context = assigned_value.0;
     let value = assigned_value.1;
@@ -159,13 +151,8 @@ fn parse_variable_declaration(mut context: BuilderContext) -> BuilderContext {
 fn parse_value(mut context: BuilderContext) -> (BuilderContext, Value) {
     //let mut idx = curr;
 
-    /* TODO: this kinda stuff should be handled in the BuilderContext functions.
-    if idx >= tokens.len() {
-        return None;
-    }
-    */
-
     let token_type = context.get_curr().token_type;
+    let token_lexume = &context.get_curr().lexeme;
 
     let value = match token_type {
         TokenType::Number => {
@@ -193,15 +180,21 @@ fn parse_value(mut context: BuilderContext) -> (BuilderContext, Value) {
             }
         }
         TokenType::Identity => {
-            // TODO: skipping for now, but this needs to be tested.
-            // Could be a variable reference or function call
-            // Will have to lookup in the map(s) for these.
-            // Now I think having one map with two different enum variants would
-            // make sense (function headers and variables).
+            let variable_symbol_key = context.symbol_table.get_id_with_symbol_name(&token_lexume);
+            let mut value_data_type = DataType::Invalid;
+            match variable_symbol_key {
+                Some(key) => {
+                    if let Some(variable_symbol) = context.symbol_table.get_using_id(key) {
+                        value_data_type = variable_symbol.data_type.clone();
+                    }
+                }
+                None => (),
+            }
+
             Value {
-                data_type: DataType::Number, // We'd need symbol table lookup to determine actual type
+                data_type: value_data_type,
                 value_type: ValueType::Variable,
-                variable_symbol_key: Some(0), // Placeholder - should lookup in symbol table
+                variable_symbol_key,
                 function_symbol_key: None,
                 //inline_value: None,
                 comparison: None,

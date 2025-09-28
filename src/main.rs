@@ -9,6 +9,7 @@ use tokenizer::tokenize_file;
 mod ast;
 use ast::build_ast;
 use ast::{Statement, VariableDeclarationStatement};
+
 mod symbol_table;
 use symbol_table::SymbolTable;
 
@@ -31,6 +32,7 @@ fn main() -> std::io::Result<()> {
     let ast_context = build_ast(tokens);
     if debug {
         debug_print_ast(&ast_context.statements);
+        println!("{:#?}", ast_context.symbol_table);
     }
 
     /*
