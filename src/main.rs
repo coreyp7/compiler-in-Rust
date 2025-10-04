@@ -47,9 +47,9 @@ fn main() -> std::io::Result<()> {
     if debug {
         debug_print_ast(&ast_context.statements);
         println!("---symbol table---");
-        println!("{:#?}", ast_context.symbol_table);
+        println!("{:#?}", ast_context.get_curr_symbol_context());
         println!("---function table---");
-        println!("{:#?}", ast_context.function_table);
+        println!("{:#?}", ast_context.get_curr_function_context());
     }
 
     /*

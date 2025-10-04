@@ -1,12 +1,15 @@
 use super::function_table::FunctionTable;
+use crate::ast::Parameter;
 use crate::symbol_table::SymbolTable;
 use crate::tokenizer::{Token, TokenType};
 
-pub struct BuilderContext {
-    /// Symbol table for variable symbols only
+pub struct SymbolContext {
     pub symbol_table: SymbolTable,
-    /// Function table for function symbols only
     pub function_table: FunctionTable,
+}
+
+pub struct BuilderContext {
+    symbol_context_stack: Vec<SymbolContext>,
     tokens: Vec<Token>,
     idx: usize,
     pub statements: Vec<Statement>,
@@ -14,9 +17,14 @@ pub struct BuilderContext {
 
 impl BuilderContext {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self {
+        let mut symbol_context_stack: Vec<SymbolContext> = Vec::new();
+        symbol_context_stack.push(SymbolContext {
             symbol_table: SymbolTable::new(),
             function_table: FunctionTable::new(),
+        });
+
+        Self {
+            symbol_context_stack,
             tokens,
             idx: 0,
             statements: Vec::new(),
@@ -25,6 +33,45 @@ impl BuilderContext {
 
     pub fn get_curr(&self) -> &Token {
         &self.tokens[self.idx]
+    }
+
+    pub fn add_to_symbol_table(
+        &mut self,
+        symbol_name: &String,
+        data_type: &DataType,
+        line_declared_on: &u32,
+    ) -> Option<u8> {
+        // TODO: maybe make this more thorough
+        return self
+            .symbol_context_stack
+            .last_mut()
+            .unwrap()
+            .symbol_table
+            .insert(symbol_name, data_type, line_declared_on);
+    }
+
+    pub fn add_to_function_table(
+        &mut self,
+        function_name: &String,
+        parameters: Vec<Parameter>,
+        return_type: DataType,
+        line_declared_on: &u32,
+    ) -> Option<u8> {
+        // TODO: maybe make this more thorough
+        return self
+            .symbol_context_stack
+            .last_mut()
+            .unwrap()
+            .function_table
+            .insert(&function_name, parameters, return_type, line_declared_on);
+    }
+
+    pub fn get_curr_symbol_context(&self) -> &SymbolTable {
+        &self.symbol_context_stack.last().unwrap().symbol_table
+    }
+
+    pub fn get_curr_function_context(&self) -> &FunctionTable {
+        &self.symbol_context_stack.last().unwrap().function_table
     }
 }
 
@@ -102,9 +149,7 @@ fn parse_variable_declaration(mut context: BuilderContext) -> BuilderContext {
     // If something went wrong, there may possibly be a naming collision, which
     // I guess would have to be handled here. Or 'number of declarations' could be
     // added to the map, and analyzed later in the semantic analysis phase.
-    let symbol_key = context
-        .symbol_table
-        .insert(symbol_name, &data_type, line_declared_on);
+    let symbol_key = context.add_to_symbol_table(symbol_name, &data_type, line_declared_on);
 
     if context.idx >= context.tokens.len() || context.get_curr().token_type != TokenType::Colon {
         // NOTE: not sure what to do here.
@@ -149,7 +194,7 @@ fn parse_function_declaration(mut context: BuilderContext) -> BuilderContext {
     let return_type = DataType::Void;
 
     // Insert into function table
-    let function_key = context.function_table.insert(
+    let function_key = context.add_to_function_table(
         &function_name,
         parameters,
         return_type.clone(),
@@ -209,9 +254,13 @@ fn parse_value(mut context: BuilderContext) -> (BuilderContext, Value) {
         }
         TokenType::Identity => {
             // First check if it's a variable
-            let variable_symbol_key = context.symbol_table.get_id_with_symbol_name(&token_lexume);
+            let variable_symbol_key = context
+                .get_curr_symbol_context()
+                .get_id_with_symbol_name(&token_lexume);
             if let Some(var_key) = variable_symbol_key {
-                if let Some(variable_symbol) = context.symbol_table.get_using_id(var_key) {
+                if let Some(variable_symbol) =
+                    context.get_curr_symbol_context().get_using_id(var_key)
+                {
                     let data_type = variable_symbol.data_type.clone();
                     context.idx += 1;
                     return (
@@ -229,10 +278,12 @@ fn parse_value(mut context: BuilderContext) -> (BuilderContext, Value) {
 
             // If not a variable, check if it's a function
             let function_symbol_key = context
-                .function_table
+                .get_curr_function_context()
                 .get_id_with_function_name(&token_lexume);
             if let Some(func_key) = function_symbol_key {
-                if let Some(function_symbol) = context.function_table.get_using_id(func_key) {
+                if let Some(function_symbol) =
+                    context.get_curr_function_context().get_using_id(func_key)
+                {
                     let return_type = function_symbol.return_type.clone();
                     context.idx += 1;
                     return (
