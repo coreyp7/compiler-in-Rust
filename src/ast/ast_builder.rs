@@ -145,22 +145,27 @@ pub fn build_ast(tokens: Vec<Token>, function_def_map: FunctionTable) -> Builder
 // the caller.
 fn parse_program(mut context: BuilderContext) -> BuilderContext {
     while context.idx < context.tokens.len() {
-        let token_type = context.get_curr().token_type;
-        //println!("Tokentype in top of loop: {:?}", token_type);
-        match token_type {
-            TokenType::VarDeclaration => {
-                context = parse_variable_declaration(context);
-            }
-            TokenType::FunctionDeclaration => {
-                context = parse_function_declaration(context);
-            }
-            _ => {
-                // Any statements not implemented yet will be skipped.
-                context.idx += 1;
-            }
-        }
+        context = parse_statement(context);
     }
 
+    context
+}
+
+fn parse_statement(mut context: BuilderContext) -> BuilderContext {
+    let token_type = context.get_curr().token_type;
+    //println!("Tokentype in top of loop: {:?}", token_type);
+    match token_type {
+        TokenType::VarDeclaration => {
+            context = parse_variable_declaration(context);
+        }
+        TokenType::FunctionDeclaration => {
+            context = parse_function_declaration(context);
+        }
+        _ => {
+            // Any statements not implemented yet will be skipped.
+            context.idx += 1;
+        }
+    }
     context
 }
 
@@ -234,14 +239,17 @@ fn parse_function_declaration(mut context: BuilderContext) -> BuilderContext {
     // STUB: just getting this working with context popping.
     // TODO: need to handle properly if we never find endFunction
     while context.get_curr().token_type != TokenType::EndFunction {
-        context.idx += 1;
+        //context.idx += 1;
+        context = parse_statement(context);
     }
 
     println!("popping symbol context of function {}", function_name);
     println!("before: {:#?}", context.get_curr_symbol_context());
+    println!("before: {:#?}", context.get_curr_function_context());
     context.pop_curr_symbol_table_context();
     context.idx += 1;
     println!("after: {:#?}", context.get_curr_symbol_context());
+    println!("after: {:#?}", context.get_curr_function_context());
 
     // Parse all statements inside this function.
 
