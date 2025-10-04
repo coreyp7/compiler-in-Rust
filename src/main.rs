@@ -7,11 +7,15 @@ mod tokenizer;
 use tokenizer::Token;
 use tokenizer::tokenize_file;
 mod ast;
+use ast::FunctionTable;
 use ast::build_ast;
 use ast::{Statement, VariableDeclarationStatement};
 
 mod symbol_table;
 use symbol_table::SymbolTable;
+
+mod first_pass;
+use first_pass::gather_declarations;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -29,6 +33,16 @@ fn main() -> std::io::Result<()> {
     }
 
     // AST building
+
+    // First pass: gather all declarations.
+    //let (var_table, tokens) = first_pass::gather_declarations(tokens);
+    let function_header_map = gather_declarations(&tokens);
+    println!("below is the function header map");
+    println!("{:#?}", function_header_map);
+    return Result::Ok(());
+
+    //let function_table = FunctionTable::new();
+
     let ast_context = build_ast(tokens);
     if debug {
         debug_print_ast(&ast_context.statements);
