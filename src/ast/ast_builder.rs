@@ -75,6 +75,10 @@ impl BuilderContext {
         &self.symbol_context_stack.last().unwrap().function_table
     }
 
+    pub fn pop_curr_symbol_table_context(&mut self) {
+        self.symbol_context_stack.pop();
+    }
+
     pub fn push_new_symbol_table_context(&mut self, function_name: &String) {
         //println!("Pushing new symbol table context for '{}'", function_name);
         // TODO: add error handling if it doesn't exist.
@@ -226,6 +230,18 @@ fn parse_function_declaration(mut context: BuilderContext) -> BuilderContext {
     // Push new symbol context to the BuilderContext. Can just provide the function
     // name and the BuilderContext should do the rest.
     context.push_new_symbol_table_context(&function_name);
+
+    // STUB: just getting this working with context popping.
+    // TODO: need to handle properly if we never find endFunction
+    while context.get_curr().token_type != TokenType::EndFunction {
+        context.idx += 1;
+    }
+
+    println!("popping symbol context of function {}", function_name);
+    println!("before: {:#?}", context.get_curr_symbol_context());
+    context.pop_curr_symbol_table_context();
+    context.idx += 1;
+    println!("after: {:#?}", context.get_curr_symbol_context());
 
     // Parse all statements inside this function.
 
