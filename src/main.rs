@@ -34,15 +34,15 @@ fn main() -> std::io::Result<()> {
 
     // AST building
 
-    // First pass: gather all declarations.
-    //let (var_table, tokens) = first_pass::gather_declarations(tokens);
+    // First pass: gather all function declarations. Allows file to do
+    // forward declarations.
     let function_header_map = gather_declarations(&tokens);
-    println!("below is the function header map");
-    println!("{:#?}", function_header_map);
-    return Result::Ok(());
+    if debug {
+        println!("---Function header map---");
+        println!("{:#?}", function_header_map);
+    }
 
-    //let function_table = FunctionTable::new();
-
+    // Second pass: generate ast given token list.
     let ast_context = build_ast(tokens);
     if debug {
         debug_print_ast(&ast_context.statements);
