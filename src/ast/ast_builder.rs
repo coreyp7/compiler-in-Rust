@@ -1,3 +1,5 @@
+use std::thread::Builder;
+
 use super::function_table::FunctionTable;
 use crate::ast::{FunctionSymbol, Parameter};
 use crate::symbol_table::SymbolTable;
@@ -170,6 +172,13 @@ fn parse_statement(mut context: BuilderContext) -> BuilderContext {
         TokenType::FunctionDeclaration => {
             context = parse_function_declaration(context);
         }
+        TokenType::Return => {
+            context = parse_return_statement(context);
+        }
+        TokenType::EndFunction => {
+            // AKA wrap things up, and pop the current variable scope.
+            context = parse_end_of_function(context);
+        }
         _ => {
             // Any statements not implemented yet will be skipped.
             context.idx += 1;
@@ -260,43 +269,21 @@ fn parse_function_declaration(mut context: BuilderContext) -> BuilderContext {
     println!("after: {:#?}", context.get_curr_symbol_context());
     println!("after: {:#?}", context.get_curr_function_context());
 
-    // Parse all statements inside this function.
+    context
+}
 
-    /*
-    // Skip 'func' or function keyword
-    context.idx += 1;
+fn parse_return_statement(mut context: BuilderContext) -> BuilderContext {
+    // analyze the value being returned (call parse_value()).
 
-    // Get function name
-    if context.idx >= context.tokens.len() || context.get_curr().token_type != TokenType::Identity {
-        // Error: expected identifier
-        // NOTE: Better error handling needed
-    }
-
-    let function_name = context.get_curr().lexeme.clone();
-    let line_declared_on = context.get_curr().line_number;
-    context.idx += 1;
-
-    // For now, assume no parameters and return type is Number
-    // TODO: Parse actual parameters and return type
-    let parameters = Vec::new();
-    let return_type = DataType::Void;
-
-    // Insert into function table
-    let function_key = context.add_to_function_table(
-        &function_name,
-        parameters,
-        return_type.clone(),
-        &line_declared_on,
-    );
-
-    // Create the function declaration statement
-    let statement = Statement::FunctionDeclaration(FunctionDeclarationStatement {
-        function_key: function_key.unwrap(), // FIXME: handle properly
-        return_type,
-        line_declared_on,
-    });
-    context.statements.push(statement);
-    */
+    // if all is good, indicate this SOMEWHERE. Idk where yet.
+    // - in SymbolContext? But how do we keep this around and pass it to the
+    // semantic analysis
+    // - in function symbol? That seems inappropriate, and will be including
+    // other data in there for error messages that feels inappropriate to have there.
+    // - a variant of Statement called 'FunctionDeclaration', where it indicates this
+    // information about the declaration? This is getting a bit confusing having all these
+    // different kinds of Function definition structs everywhere, but this would feel
+    // more appropriate.
 
     context
 }
