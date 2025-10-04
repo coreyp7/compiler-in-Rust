@@ -1,9 +1,7 @@
 use crate::{
-    ast::DataType,
-    symbol_table::SymbolTable,
+    ast::{DataType, FunctionTable, Parameter},
     tokenizer::{Token, TokenType},
 };
-use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct FunctionHeader {
@@ -13,18 +11,12 @@ pub struct FunctionHeader {
     pub line_declared_on: u32,
 }
 
-#[derive(Debug, Clone)]
-pub struct Parameter {
-    pub name: String,
-    pub data_type: DataType,
-}
-
 /**
- * Returns a map containing all function definitions defined in a
+ * Returns a FunctionTable containing all function definitions defined in a
  * tokenized plank file.
  */
-pub fn gather_declarations(tokens: &[Token]) -> HashMap<String, FunctionHeader> {
-    let mut function_headers = HashMap::new();
+pub fn gather_declarations(tokens: &[Token]) -> FunctionTable {
+    let mut function_table = FunctionTable::new();
     let mut idx = 0;
 
     while idx < tokens.len() {
@@ -32,14 +24,19 @@ pub fn gather_declarations(tokens: &[Token]) -> HashMap<String, FunctionHeader> 
 
         if token.token_type == TokenType::FunctionDeclaration {
             let (function_header, new_idx) = parse_function_declaration(&tokens, idx);
-            function_headers.insert(function_header.identifier.clone(), function_header);
+            function_table.insert(
+                &function_header.identifier,
+                function_header.parameters,
+                function_header.return_type,
+                &function_header.line_declared_on,
+            );
             idx = new_idx;
         } else {
             idx += 1;
         }
     }
 
-    function_headers
+    function_table
 }
 
 // TODO: need to add more security / failure handling in here.

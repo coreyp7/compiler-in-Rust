@@ -1,8 +1,9 @@
 use super::function_table::FunctionTable;
-use crate::ast::Parameter;
+use crate::ast::{FunctionSymbol, Parameter};
 use crate::symbol_table::SymbolTable;
 use crate::tokenizer::{Token, TokenType};
 
+#[derive(Debug)]
 pub struct SymbolContext {
     pub symbol_table: SymbolTable,
     pub function_table: FunctionTable,
@@ -16,11 +17,11 @@ pub struct BuilderContext {
 }
 
 impl BuilderContext {
-    pub fn new(tokens: Vec<Token>) -> Self {
+    pub fn new(tokens: Vec<Token>, function_def_map: FunctionTable) -> Self {
         let mut symbol_context_stack: Vec<SymbolContext> = Vec::new();
         symbol_context_stack.push(SymbolContext {
             symbol_table: SymbolTable::new(),
-            function_table: FunctionTable::new(),
+            function_table: function_def_map,
         });
 
         Self {
@@ -73,9 +74,48 @@ impl BuilderContext {
     pub fn get_curr_function_context(&self) -> &FunctionTable {
         &self.symbol_context_stack.last().unwrap().function_table
     }
+
+    pub fn push_new_symbol_table_context(&mut self, function_name: &String) {
+        //println!("Pushing new symbol table context for '{}'", function_name);
+        // TODO: add error handling if it doesn't exist.
+
+        //println!("COREY here's the function table that you're trying to fetch functionname from");
+        //println!("{:#?}", self.get_curr_function_context());
+
+        let function_definition = self
+            .get_curr_function_context()
+            .get_func_def_using_str(function_name);
+
+        //println!("Function def: {:#?}", function_definition);
+
+        // Create new symbol context for the function 'function_name'
+        let mut new_symbol_table = SymbolTable::new();
+
+        // Populate new symbol context with variable declarations for all params
+        // we find in the function definition.
+        //println!("we're at the function def unwrapping ....");
+        for parameter in &function_definition.unwrap().parameters {
+            new_symbol_table.insert(
+                &parameter.name,
+                &parameter.data_type,
+                &function_definition.unwrap().line_declared_on,
+            );
+        }
+
+        let new_symbol_context = SymbolContext {
+            symbol_table: new_symbol_table,
+            function_table: FunctionTable::new(),
+        };
+
+        //println!("Here's the new symbol context we're pushing:");
+        //println!("{:#?}", new_symbol_context);
+
+        // push this new symbol context
+        self.symbol_context_stack.push(new_symbol_context);
+    }
 }
 
-pub fn build_ast(tokens: Vec<Token>) -> BuilderContext {
+pub fn build_ast(tokens: Vec<Token>, function_def_map: FunctionTable) -> BuilderContext {
     //, Vec<ErrMsg>, SymbolTable) {
     /*
     let mut context = ParseContext {
@@ -85,7 +125,7 @@ pub fn build_ast(tokens: Vec<Token>) -> BuilderContext {
         symbol_table: SymbolTable::new(),
     };
     */
-    let context = BuilderContext::new(tokens);
+    let context = BuilderContext::new(tokens, function_def_map);
     let updated_context = parse_program(context);
     updated_context
 }
@@ -100,13 +140,9 @@ pub fn build_ast(tokens: Vec<Token>) -> BuilderContext {
 // When parse_program is done updating the context, it can return permission to
 // the caller.
 fn parse_program(mut context: BuilderContext) -> BuilderContext {
-    //let mut statements = Vec::new();
-    //let mut token_idx = 0;
-    //let token_vec_len = context.tokens.len();
-
     while context.idx < context.tokens.len() {
         let token_type = context.get_curr().token_type;
-        println!("Tokentype in top of loop: {:?}", token_type);
+        //println!("Tokentype in top of loop: {:?}", token_type);
         match token_type {
             TokenType::VarDeclaration => {
                 context = parse_variable_declaration(context);
@@ -174,7 +210,26 @@ fn parse_variable_declaration(mut context: BuilderContext) -> BuilderContext {
     context
 }
 
+// TODO: we're chaning this to parse what's inside this declaration with a new context on the stack.
+// We can largely ignore the function definition because we don't care; its already in the map.
 fn parse_function_declaration(mut context: BuilderContext) -> BuilderContext {
+    // TODO: this needs to be improved I think
+    context.idx += 1;
+
+    let function_name = context.get_curr().lexeme.clone();
+
+    while context.get_curr().token_type != TokenType::Colon {
+        context.idx += 1;
+    }
+    context.idx += 1; // skip to first statement in function.
+
+    // Push new symbol context to the BuilderContext. Can just provide the function
+    // name and the BuilderContext should do the rest.
+    context.push_new_symbol_table_context(&function_name);
+
+    // Parse all statements inside this function.
+
+    /*
     // Skip 'func' or function keyword
     context.idx += 1;
 
@@ -208,6 +263,7 @@ fn parse_function_declaration(mut context: BuilderContext) -> BuilderContext {
         line_declared_on,
     });
     context.statements.push(statement);
+    */
 
     context
 }

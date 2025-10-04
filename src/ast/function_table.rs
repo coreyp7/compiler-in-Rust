@@ -76,6 +76,23 @@ impl FunctionTable {
         self.name_to_id.get(name).copied()
     }
 
+    pub fn get_func_def_using_str(&self, function_name: &String) -> Option<&FunctionSymbol> {
+        // TODO need better error handling
+        let id_optional = self.get_id_with_function_name(function_name);
+        match id_optional {
+            None => {
+                println!(
+                    "HEY: the id lookup for the function named {} failed.",
+                    function_name
+                );
+                return None;
+            }
+            _ => (),
+        }
+        let function_def = self.get_using_id(id_optional.unwrap());
+        function_def
+    }
+
     /// Checks if a function with the given name exists
     pub fn contains_name(&self, name: &str) -> bool {
         self.name_to_id.contains_key(name)

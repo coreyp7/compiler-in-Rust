@@ -43,7 +43,7 @@ fn main() -> std::io::Result<()> {
     }
 
     // Second pass: generate ast given token list.
-    let ast_context = build_ast(tokens);
+    let ast_context = build_ast(tokens, function_header_map);
     if debug {
         debug_print_ast(&ast_context.statements);
         println!("---symbol table---");
