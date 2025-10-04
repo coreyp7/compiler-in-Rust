@@ -46,6 +46,7 @@ fn main() -> std::io::Result<()> {
     let ast_context = build_ast(tokens, function_header_map);
     if debug {
         debug_print_ast(&ast_context.statements);
+
         println!("---symbol table---");
         println!("{:#?}", ast_context.get_curr_symbol_context());
         println!("---function table---");

@@ -8,6 +8,10 @@ pub struct FunctionSymbol {
     pub parameters: Vec<Parameter>,
     pub return_type: DataType,
     pub line_declared_on: u32,
+    // A FunctionSymbol is "assumed guilty until proven innocent".
+    // When the ast parses this function and sees its return type is valid,
+    // we can mark this as true.
+    pub properly_returns: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +61,7 @@ impl FunctionTable {
             parameters,
             return_type,
             line_declared_on: *line,
+            properly_returns: false,
         };
 
         self.functions.insert(id, function_symbol);

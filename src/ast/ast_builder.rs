@@ -7,6 +7,9 @@ use crate::tokenizer::{Token, TokenType};
 pub struct SymbolContext {
     pub symbol_table: SymbolTable,
     pub function_table: FunctionTable,
+    // If in a function scope, this will be Some(id).
+    // If global, this will be None.
+    pub scope: Option<u8>,
 }
 
 pub struct BuilderContext {
@@ -22,6 +25,9 @@ impl BuilderContext {
         symbol_context_stack.push(SymbolContext {
             symbol_table: SymbolTable::new(),
             function_table: function_def_map,
+            // This constructor assumes that the BuilderContext will be in global scope.
+            // (We set scope to None)
+            scope: None,
         });
 
         Self {
@@ -85,7 +91,9 @@ impl BuilderContext {
 
         //println!("COREY here's the function table that you're trying to fetch functionname from");
         //println!("{:#?}", self.get_curr_function_context());
-
+        let function_id = self
+            .get_curr_function_context()
+            .get_id_with_function_name(&function_name);
         let function_definition = self
             .get_curr_function_context()
             .get_func_def_using_str(function_name);
@@ -109,10 +117,11 @@ impl BuilderContext {
         let new_symbol_context = SymbolContext {
             symbol_table: new_symbol_table,
             function_table: FunctionTable::new(),
+            scope: function_id,
         };
 
-        //println!("Here's the new symbol context we're pushing:");
-        //println!("{:#?}", new_symbol_context);
+        println!("Here's the new symbol context we're pushing:");
+        println!("{:#?}", new_symbol_context);
 
         // push this new symbol context
         self.symbol_context_stack.push(new_symbol_context);
