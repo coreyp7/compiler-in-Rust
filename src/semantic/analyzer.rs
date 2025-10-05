@@ -79,17 +79,19 @@ impl SemanticAnalyzer {
 
         // Check for type mismatch between declared type and assigned value type
         if var_decl.data_type != var_decl.assigned_value.data_type {
-            // Only report error if the assigned value type is not Invalid or Unknown
-            //if !matches!(
-            //var_decl.assigned_value.data_type,
-            //DataType::Invalid | DataType::Unknown
-            //) {
-            self.errors.push(SemanticError::TypeMismatch {
-                expected: var_decl.data_type.clone(),
-                found: var_decl.assigned_value.data_type.clone(),
-                line: var_decl.line_declared_on,
-            });
-            //}
+            // Only report error if the assigned value type is not Invalid or Unknown.
+            // If Invalid/Unknown, could be an undeclared variable, reference,
+            // which is a different error reported later.
+            if !matches!(
+                var_decl.assigned_value.data_type,
+                DataType::Invalid | DataType::Unknown
+            ) {
+                self.errors.push(SemanticError::TypeMismatch {
+                    expected: var_decl.data_type.clone(),
+                    found: var_decl.assigned_value.data_type.clone(),
+                    line: var_decl.line_declared_on,
+                });
+            }
         }
 
         // Validate the assigned value itself
