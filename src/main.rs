@@ -28,7 +28,7 @@ fn main() -> std::io::Result<()> {
 
     let tokens: Vec<Token> = tokenize_file(&mut plank_src_file);
     if debug {
-        debug_print_tokens(&tokens);
+        //debug_print_tokens(&tokens);
     }
 
     // First pass: gather all function declarations. Allows file to do
@@ -42,7 +42,7 @@ fn main() -> std::io::Result<()> {
     // Second pass: generate AST given token list
     let ast_context = build_ast(tokens);
     if debug {
-        debug_print_ast(&ast_context.statements);
+        //debug_print_ast(&ast_context.statements);
     }
 
     // Third pass: semantic analysis
@@ -50,16 +50,20 @@ fn main() -> std::io::Result<()> {
     let semantic_errors = semantic_analyzer.analyze(&ast_context.statements);
 
     if !semantic_errors.is_empty() {
-        println!("Semantic errors found:");
+        semantic::print_failures_message(semantic_errors.len());
         for error in &semantic_errors {
             error.print_error();
         }
+        println!("{:#?}", semantic_analyzer.get_current_symbol_context());
+        println!("{:#?}", semantic_analyzer.get_current_function_context());
         return Ok(());
+    } else {
+        semantic::print_success_message();
+        println!("{:#?}", semantic_analyzer.get_current_symbol_context());
+        println!("{:#?}", semantic_analyzer.get_current_function_context());
     }
 
-    if debug {
-        println!("Semantic analysis passed successfully!");
-    }
+    if debug {}
 
     /*
     let mut ast_builder = AstBuilder::new(tokens);

@@ -210,13 +210,25 @@ impl SemanticAnalyzer {
 
         // Check if variable already exists in current scope
         if current_context.symbol_table.contains_name(name) {
+            println!("{} exists in the table already:", name);
+            println!("{:#?}", current_context.symbol_table);
             if let Some(existing_var) = current_context.symbol_table.get(name) {
                 return Err(SemanticError::VariableAlreadyDeclared {
                     name: name.to_string(),
                     first_line: existing_var.line_declared_on,
                     redeclaration_line: line,
                 });
+            } else {
+                println!("So the name exists in the table, but trying to get it results in None.");
             }
+        } else {
+            println!("------------");
+            println!(
+                "The symbol '{}' doesn't exist yet in the following table.",
+                name
+            );
+            println!("{:#?}", current_context.symbol_table);
+            println!("------------");
         }
 
         // Add to symbol table

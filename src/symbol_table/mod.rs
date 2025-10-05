@@ -73,7 +73,7 @@ impl SymbolTable {
     }
 
     pub fn get(&self, symbol_name: &str) -> Option<&VariableSymbol> {
-        if self.contains_name(symbol_name) {
+        if !self.contains_name(symbol_name) {
             return None;
         }
 

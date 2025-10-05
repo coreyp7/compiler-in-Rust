@@ -57,7 +57,7 @@ fn parse_function_declaration(tokens: &[Token], mut idx: usize) -> (FunctionHead
         println!(
             "The current token isn't what we expect for params. TODO: return early with err or something"
         );
-        println!("{:#?}", tokens[idx]);
+        //println!("{:#?}", tokens[idx]);
     }
 
     idx += 1; // skip ')', this should be moved into the above function
@@ -108,13 +108,13 @@ fn parse_function_parameters(tokens: &[Token], mut idx: usize) -> (Vec<Parameter
 
         let param_name = tokens[idx].lexeme.clone();
         idx += 1;
-        println!("param name: {}", param_name);
+        //println!("param name: {}", param_name);
 
         parameters.push(Parameter {
             name: param_name,
             data_type: param_type,
         });
-        println!("after adding param: {:#?}", parameters);
+        //println!("after adding param: {:#?}", parameters);
 
         if idx < tokens.len() && tokens[idx].token_type == TokenType::Comma {
             idx += 1; // skip comma, resume loop on next param var declaration
