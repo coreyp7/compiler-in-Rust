@@ -75,10 +75,6 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
             let (stmt, ctx) = parse_return_statement(context);
             (Some(stmt), ctx)
         }
-        TokenType::EndFunction => {
-            let ctx = parse_end_of_function(context);
-            (None, ctx)
-        }
         _ => {
             // Skip unsupported statements for now
             context.advance();
@@ -208,27 +204,22 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
 }
 
 fn parse_return_statement(mut context: BuilderContext) -> (Statement, BuilderContext) {
+    let line_declared_on = context.get_curr().line_number;
     context.advance(); // Skip "return" keyword
 
-    let line_declared_on = if !context.is_at_end() {
-        context.get_curr().line_number
-    } else {
-        0
-    };
+    // What types of things can be returned?
+    // A value I suppose.
+    let (val, returned_context) = parse_value(context);
+    context = returned_context;
 
     // For now, just create a simple return statement
     // TODO: Parse the return value
     let statement = Statement::Return(ReturnStatement {
         line_declared_on,
-        return_value: None,
+        return_value: Some(val),
     });
 
     (statement, context)
-}
-
-fn parse_end_of_function(mut context: BuilderContext) -> BuilderContext {
-    context.advance(); // Skip "endFunction" keyword
-    context
 }
 
 /// Parse a value expression - no validation, just structure
