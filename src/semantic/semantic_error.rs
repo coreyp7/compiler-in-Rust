@@ -29,8 +29,13 @@ pub enum SemanticError {
 }
 
 // Helper functions for formatting error messages
-fn error_header(title: &str) {
-    eprintln!("{} {}", "✗ Semantic Error:".bold().red(), title.bold());
+fn error_header(title: &str, line: u32) {
+    eprintln!(
+        "{} {} (line {})",
+        "✗ Error:".bold().red(),
+        title.bold(),
+        format_line(line)
+    );
 }
 
 fn error_line_start() -> ColoredString {
@@ -76,20 +81,19 @@ impl SemanticError {
     pub fn print_error(&self) {
         match self {
             SemanticError::VariableNotDeclared { name, line } => {
-                error_header("Variable not declared");
+                error_header("Variable not declared", *line);
                 eprintln!(
                     "  {} Variable '{}' is not declared",
                     error_line_start(),
                     format_name(name)
                 );
-                eprintln!("  {} at line {}", error_line_end(), format_line(*line));
             }
             SemanticError::VariableAlreadyDeclared {
                 name,
                 first_line,
                 redeclaration_line,
             } => {
-                error_header("Variable redeclaration");
+                error_header("Variable redeclaration", *redeclaration_line);
                 eprintln!(
                     "  {} Variable '{}' is already declared",
                     error_line_start(),
@@ -100,22 +104,16 @@ impl SemanticError {
                     error_line_middle(),
                     format_line(*first_line)
                 );
-                eprintln!(
-                    "  {} Redeclared at line {}",
-                    error_line_end(),
-                    format_line(*redeclaration_line)
-                );
             }
             SemanticError::TypeMismatch {
                 expected,
                 found,
                 line,
             } => {
-                error_header("Type mismatch");
-                eprintln!("  {} at line {}", error_line_start(), format_line(*line));
+                error_header("Type mismatch", *line);
                 eprintln!(
                     "  {} Expected: {}",
-                    error_line_middle(),
+                    error_line_start(),
                     format_type(expected)
                 );
                 eprintln!(
@@ -125,22 +123,20 @@ impl SemanticError {
                 );
             }
             SemanticError::FunctionNotDeclared { name, line } => {
-                error_header("Function not declared");
+                error_header("Function not declared", *line);
                 eprintln!(
                     "  {} Function '{}' is not declared",
                     error_line_start(),
                     format_name(name)
                 );
-                eprintln!("  {} at line {}", error_line_end(), format_line(*line));
             }
             SemanticError::InvalidValueReference { name, line } => {
-                error_header("Invalid reference");
+                error_header("Invalid reference", *line);
                 eprintln!(
                     "  {} Invalid reference to '{}'",
                     error_line_start(),
                     format_name(name)
                 );
-                eprintln!("  {} at line {}", error_line_end(), format_line(*line));
             }
         }
     }
