@@ -1,67 +1,7 @@
 use crate::ast::FunctionTable;
 use crate::ast::{DataType, Statement, Value, ValueType, VariableDeclarationStatement};
+use crate::semantic::SemanticError;
 use crate::symbol_table::SymbolTable;
-
-/// Represents different types of semantic errors
-#[derive(Debug, Clone)]
-pub enum SemanticError {
-    VariableNotDeclared {
-        name: String,
-        line: u32,
-    },
-    VariableAlreadyDeclared {
-        name: String,
-        first_line: u32,
-        redeclaration_line: u32,
-    },
-    TypeMismatch {
-        expected: DataType,
-        found: DataType,
-        line: u32,
-    },
-    FunctionNotDeclared {
-        name: String,
-        line: u32,
-    },
-    InvalidValueReference {
-        name: String,
-        line: u32,
-    },
-}
-
-impl SemanticError {
-    pub fn print_error(&self) {
-        match self {
-            SemanticError::VariableNotDeclared { name, line } => {
-                eprintln!("Error: Variable '{}' not declared (line {})", name, line);
-            }
-            SemanticError::VariableAlreadyDeclared {
-                name,
-                first_line,
-                redeclaration_line,
-            } => {
-                eprintln!("Error: Variable '{}' already declared", name);
-                eprintln!("  First declared on line {}", first_line);
-                eprintln!("  Redeclared on line {}", redeclaration_line);
-            }
-            SemanticError::TypeMismatch {
-                expected,
-                found,
-                line,
-            } => {
-                eprintln!("Error: Type mismatch on line {}", line);
-                eprintln!("  Expected: {:?}", expected);
-                eprintln!("  Found: {:?}", found);
-            }
-            SemanticError::FunctionNotDeclared { name, line } => {
-                eprintln!("Error: Function '{}' not declared (line {})", name, line);
-            }
-            SemanticError::InvalidValueReference { name, line } => {
-                eprintln!("Error: Invalid reference to '{}' (line {})", name, line);
-            }
-        }
-    }
-}
 
 /// Semantic analyzer context for managing scope
 pub struct SemanticContext {
@@ -103,7 +43,7 @@ impl SemanticAnalyzer {
         self.errors.clone()
     }
 
-    /// Analyze a single statement
+    // Analyze a single statement
     fn analyze_statement(&mut self, statement: &Statement) {
         match statement {
             Statement::VariableDeclaration(var_decl) => {
@@ -114,7 +54,7 @@ impl SemanticAnalyzer {
                 // Here we might validate the function body when we implement it
             }
             Statement::Return(return_stmt) => {
-                // For now, just check if return value is valid if present
+                // TODO: improve this to check the type and symbol lookup validation
                 if let Some(ref return_value) = return_stmt.return_value {
                     if let Some(error) =
                         self.validate_value(return_value, return_stmt.line_declared_on)
@@ -140,16 +80,16 @@ impl SemanticAnalyzer {
         // Check for type mismatch between declared type and assigned value type
         if var_decl.data_type != var_decl.assigned_value.data_type {
             // Only report error if the assigned value type is not Invalid or Unknown
-            if !matches!(
-                var_decl.assigned_value.data_type,
-                DataType::Invalid | DataType::Unknown
-            ) {
-                self.errors.push(SemanticError::TypeMismatch {
-                    expected: var_decl.data_type.clone(),
-                    found: var_decl.assigned_value.data_type.clone(),
-                    line: var_decl.line_declared_on,
-                });
-            }
+            //if !matches!(
+            //var_decl.assigned_value.data_type,
+            //DataType::Invalid | DataType::Unknown
+            //) {
+            self.errors.push(SemanticError::TypeMismatch {
+                expected: var_decl.data_type.clone(),
+                found: var_decl.assigned_value.data_type.clone(),
+                line: var_decl.line_declared_on,
+            });
+            //}
         }
 
         // Validate the assigned value itself

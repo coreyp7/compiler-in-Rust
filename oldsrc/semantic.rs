@@ -158,7 +158,7 @@ impl SemanticAnalyzer {
             Statement::FunctionCall(call) => {
                 self.validate_function_call(call)?;
             }
-            Statement::VarInstantiation(var_inst) => {
+            Statement::VariableDeclarationStatement(var_inst) => {
                 // Type checking - ensure the declared type matches the assigned value type
                 if var_inst.var_type != var_inst.assigned_value_type {
                     return Err(ErrMsg::IncorrectTypeAssignment {

@@ -44,7 +44,6 @@ fn main() -> std::io::Result<()> {
     if debug {
         debug_print_ast(&ast_context.statements);
     }
-    return Result::Ok(());
 
     // Third pass: semantic analysis
     let mut semantic_analyzer = SemanticAnalyzer::new(function_header_map);
