@@ -1,13 +1,8 @@
-mod ast_builder;
 mod function_table;
+mod pure_builder;
 
-// Public facing API of AST module
-pub use ast_builder::build_ast;
+// Public facing API of AST module - using new pure builder
+pub use pure_builder::{build_ast};
+pub use pure_builder::{DataType, Statement, VariableDeclarationStatement, Value, ValueType};
 
-// TODO: temporary, should be moved into different module or something.
-pub use ast_builder::DataType;
-pub use ast_builder::FunctionDeclarationStatement;
-pub use ast_builder::Statement;
-pub use ast_builder::VariableDeclarationStatement;
-pub use ast_builder::VariableSymbol;
 pub use function_table::{FunctionSymbol, FunctionTable, Parameter};

@@ -1,6 +1,12 @@
 use crate::ast::DataType;
-use crate::ast::VariableSymbol;
 use std::collections::HashMap;
+
+#[derive(Debug)]
+pub struct VariableSymbol {
+    pub identifier: String,
+    pub data_type: DataType,
+    pub line_declared_on: u32,
+}
 
 /// A wrapper around HashMap for managing symbol identifiers in the compiler.
 /// Automatically assigns unique u8 keys when symbols are inserted and maintains

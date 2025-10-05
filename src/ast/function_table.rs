@@ -1,4 +1,4 @@
-use super::DataType;
+use super::pure_builder::DataType;
 use std::collections::HashMap;
 
 // Function-related structures
@@ -21,7 +21,7 @@ pub struct Parameter {
 }
 
 /// Function table for managing function symbols
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunctionTable {
     functions: HashMap<u8, FunctionSymbol>,
     name_to_id: HashMap<String, u8>,

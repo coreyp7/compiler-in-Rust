@@ -1,26 +1,25 @@
-use colored::Colorize;
 use std::env;
 use std::fs::File;
-use std::io::Write;
 
 mod tokenizer;
 use tokenizer::Token;
 use tokenizer::tokenize_file;
 mod ast;
-use ast::FunctionTable;
+use ast::Statement;
 use ast::build_ast;
-use ast::{Statement, VariableDeclarationStatement};
 
 mod symbol_table;
-use symbol_table::SymbolTable;
 
 mod first_pass;
 use first_pass::gather_declarations;
 
+mod semantic;
+use semantic::SemanticAnalyzer;
+
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
     let src_path = &args[1];
-    let output_path = &args[2];
+    let _output_path = &args[2];
     let debug = args.len() > 3 && (args[3] == "--debug");
     //let src_path: String = String::from("./example.plank"); // for testing without compiling
 
@@ -32,25 +31,35 @@ fn main() -> std::io::Result<()> {
         debug_print_tokens(&tokens);
     }
 
-    // AST building
-
     // First pass: gather all function declarations. Allows file to do
     // forward declarations.
     let function_header_map = gather_declarations(&tokens);
     if debug {
-        println!("---Function header map---");
-        println!("{:#?}", function_header_map);
+        //println!("---Function header map---");
+        //println!("{:#?}", function_header_map);
     }
 
-    // Second pass: generate ast given token list.
-    let ast_context = build_ast(tokens, function_header_map);
+    // Second pass: generate AST given token list
+    let ast_context = build_ast(tokens);
     if debug {
         debug_print_ast(&ast_context.statements);
+    }
+    return Result::Ok(());
 
-        println!("---symbol table---");
-        println!("{:#?}", ast_context.get_curr_symbol_context());
-        println!("---function table---");
-        println!("{:#?}", ast_context.get_curr_function_context());
+    // Third pass: semantic analysis
+    let mut semantic_analyzer = SemanticAnalyzer::new(function_header_map);
+    let semantic_errors = semantic_analyzer.analyze(&ast_context.statements);
+
+    if !semantic_errors.is_empty() {
+        println!("Semantic errors found:");
+        for error in &semantic_errors {
+            error.print_error();
+        }
+        return Ok(());
+    }
+
+    if debug {
+        println!("Semantic analysis passed successfully!");
     }
 
     /*
