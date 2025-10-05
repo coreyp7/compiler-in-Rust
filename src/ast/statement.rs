@@ -1,83 +1,37 @@
-use crate::comparison::Logical;
+//use crate::comparison::Logical;
+use crate::ast::DataType;
+use crate::ast::Value;
 
-/*
-// Re-export types for convenience
-pub use crate::ast::{FunctionHeader, Var, VarType};
+/**
+ * Contains 'Statement' enum, and all of the specific Statement structs
+ * that make up the AST, and is analyzed by the semantic module.
+ */
 
 #[derive(Debug)]
-pub struct PrintStatement {
-    pub content: String,
-    pub is_content_identity_name: bool,
-    pub variable_type: Option<VarType>, // Type of the variable being printed (if it's a variable)
-    pub line_number: u8,
+pub struct VariableDeclarationStatement {
+    pub symbol_name: String,
+    pub data_type: DataType,
+    pub line_declared_on: u32,
+    pub assigned_value: Value,
 }
 
 #[derive(Debug)]
-pub struct IfStatement {
-    pub logical: Logical,
-    pub statements: Vec<Statement>,
-    pub line_number: u8,
-}
-
-#[derive(Debug)]
-pub struct WhileStatement {
-    pub logical: Logical,
-    pub statements: Vec<Statement>,
-    pub line_number: u8,
-}
-
-#[derive(Debug)]
-pub struct AssignmentStatement {
-    pub identity: String,
-    pub value: String,
-    pub assigned_value_type: VarType,
-    pub line_number: u8,
-    pub is_function: bool,
-}
-
-#[derive(Debug)]
-pub struct VarInstantiationStatement {
-    pub identity: String,
-    pub value: String,
-    pub var_type: VarType,
-    pub assigned_value_type: VarType,
-    pub line_number: u8,
-    pub is_function: bool,
-}
-
-#[derive(Debug)]
-pub struct FunctionInstantiationStatement {
-    pub header: FunctionHeader,
-    pub statements: Vec<Statement>,
-    pub line_number: u8,
+pub struct FunctionDeclarationStatement {
+    pub function_name: String,
+    pub return_type: DataType,
+    pub line_declared_on: u32,
+    pub body: Vec<Statement>,
 }
 
 #[derive(Debug)]
 pub struct ReturnStatement {
-    pub return_type: VarType,
-    pub return_value: Option<Var>,
-    pub line_number: u8,
-    pub is_identity: bool,
-}
-
-#[derive(Debug)]
-pub struct FunctionCallStatement {
-    pub function_name: String,
-    pub arguments: Vec<String>,
-    pub line_number: u8,
+    pub line_declared_on: u32,
+    pub return_value: Option<Value>,
 }
 
 #[derive(Debug)]
 pub enum Statement {
-    Print(PrintStatement),
-    If(IfStatement),
-    While(WhileStatement),
-    Assignment(AssignmentStatement),
-    VarInstantiation(VarInstantiationStatement),
-    FunctionInstantiation(FunctionInstantiationStatement),
-    FunctionCall(FunctionCallStatement),
+    VariableDeclaration(VariableDeclarationStatement),
+    FunctionDeclaration(FunctionDeclarationStatement),
     Return(ReturnStatement),
-    Newline,
-    TestStub,
 }
-*/

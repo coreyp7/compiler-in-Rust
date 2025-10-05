@@ -1,4 +1,8 @@
 use super::builder_context::BuilderContext;
+use super::statement::{
+    FunctionDeclarationStatement, ReturnStatement, Statement, VariableDeclarationStatement,
+};
+
 use crate::tokenizer::{Token, TokenType};
 
 /// Build AST from tokens - pure structural parsing, no validation
@@ -244,35 +248,6 @@ pub enum ValueType {
     InlineString,
     Variable,
     Invalid,
-}
-
-#[derive(Debug)]
-pub enum Statement {
-    VariableDeclaration(VariableDeclarationStatement),
-    FunctionDeclaration(FunctionDeclarationStatement),
-    Return(ReturnStatement),
-}
-
-#[derive(Debug)]
-pub struct VariableDeclarationStatement {
-    pub symbol_name: String,
-    pub data_type: DataType,
-    pub line_declared_on: u32,
-    pub assigned_value: Value,
-}
-
-#[derive(Debug)]
-pub struct FunctionDeclarationStatement {
-    pub function_name: String,
-    pub return_type: DataType,
-    pub line_declared_on: u32,
-    pub body: Vec<Statement>,
-}
-
-#[derive(Debug)]
-pub struct ReturnStatement {
-    pub line_declared_on: u32,
-    pub return_value: Option<Value>,
 }
 
 #[derive(Debug, Clone)]

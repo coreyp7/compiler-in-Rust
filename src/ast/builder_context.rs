@@ -1,9 +1,10 @@
+use super::statement::Statement;
 use crate::tokenizer::Token;
 
 // Used to track state in the ast builder.
 pub struct BuilderContext {
     tokens: Vec<Token>,
-    idx: usize,
+    pub idx: usize,
     pub statements: Vec<Statement>,
 }
 
