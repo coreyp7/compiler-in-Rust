@@ -41,44 +41,53 @@ impl BuilderContext {
 
 /// Build AST from tokens - pure structural parsing, no validation
 pub fn build_ast(tokens: Vec<Token>) -> BuilderContext {
-    let mut context = BuilderContext::new(tokens);
-    parse_program(&mut context);
+    let context = BuilderContext::new(tokens);
+    parse_program(context)
+}
+
+fn parse_program(mut context: BuilderContext) -> BuilderContext {
+    while !context.is_at_end() {
+        let (stmt, returned_context) = parse_statement(context);
+        context = returned_context;
+        if let Some(statement) = stmt {
+            context.statements.push(statement);
+        }
+    }
     context
 }
 
-fn parse_program(context: &mut BuilderContext) {
-    while !context.is_at_end() {
-        parse_statement(context);
-    }
-}
-
-fn parse_statement(context: &mut BuilderContext) {
+fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderContext) {
     if context.is_at_end() {
-        return;
+        return (None, context);
     }
 
     let token_type = context.get_curr().token_type;
     match token_type {
         TokenType::VarDeclaration => {
-            parse_variable_declaration(context);
+            let (stmt, ctx) = parse_variable_declaration(context);
+            (Some(stmt), ctx)
         }
         TokenType::FunctionDeclaration => {
-            parse_function_declaration(context);
+            let (stmt, ctx) = parse_function_declaration(context);
+            (Some(stmt), ctx)
         }
         TokenType::Return => {
-            parse_return_statement(context);
+            let (stmt, ctx) = parse_return_statement(context);
+            (Some(stmt), ctx)
         }
         TokenType::EndFunction => {
-            parse_end_of_function(context);
+            let ctx = parse_end_of_function(context);
+            (None, ctx)
         }
         _ => {
             // Skip unsupported statements for now
             context.advance();
+            (None, context)
         }
     }
 }
 
-fn parse_variable_declaration(context: &mut BuilderContext) {
+fn parse_variable_declaration(mut context: BuilderContext) -> (Statement, BuilderContext) {
     // Parse data type
     let data_type = match context.get_curr().lexeme.as_str() {
         "Number" => DataType::Number,
@@ -89,8 +98,18 @@ fn parse_variable_declaration(context: &mut BuilderContext) {
 
     // Parse identifier
     if context.is_at_end() || context.get_curr().token_type != TokenType::Identity {
-        // Skip malformed declaration
-        return;
+        // Return invalid statement for malformed declaration
+        let invalid_stmt = Statement::VariableDeclaration(VariableDeclarationStatement {
+            symbol_name: String::new(),
+            data_type: DataType::Invalid,
+            line_declared_on: 0,
+            assigned_value: Value {
+                data_type: DataType::Invalid,
+                value_type: ValueType::Invalid,
+                raw_text: String::new(),
+            },
+        });
+        return (invalid_stmt, context);
     }
 
     let symbol_name = context.get_curr().lexeme.clone();
@@ -99,13 +118,23 @@ fn parse_variable_declaration(context: &mut BuilderContext) {
 
     // Expect colon
     if context.is_at_end() || context.get_curr().token_type != TokenType::Colon {
-        // Skip malformed declaration
-        return;
+        // Return invalid statement for malformed declaration
+        let invalid_stmt = Statement::VariableDeclaration(VariableDeclarationStatement {
+            symbol_name,
+            data_type: DataType::Invalid,
+            line_declared_on,
+            assigned_value: Value {
+                data_type: DataType::Invalid,
+                value_type: ValueType::Invalid,
+                raw_text: String::new(),
+            },
+        });
+        return (invalid_stmt, context);
     }
     context.advance();
 
     // Parse the assigned value
-    let value = parse_value(context);
+    let (value, context) = parse_value(context);
 
     // Create the variable declaration statement
     let statement = Statement::VariableDeclaration(VariableDeclarationStatement {
@@ -114,14 +143,21 @@ fn parse_variable_declaration(context: &mut BuilderContext) {
         line_declared_on,
         assigned_value: value,
     });
-    context.statements.push(statement);
+
+    (statement, context)
 }
 
-fn parse_function_declaration(context: &mut BuilderContext) {
+fn parse_function_declaration(mut context: BuilderContext) -> (Statement, BuilderContext) {
     context.advance(); // Skip "Function" keyword
 
     if context.is_at_end() || context.get_curr().token_type != TokenType::Identity {
-        return;
+        let invalid_stmt = Statement::FunctionDeclaration(FunctionDeclarationStatement {
+            function_name: String::new(),
+            line_declared_on: 0,
+            return_type: DataType::Invalid,
+            body: Vec::new(),
+        });
+        return (invalid_stmt, context);
     }
 
     let function_name = context.get_curr().lexeme.clone();
@@ -137,28 +173,48 @@ fn parse_function_declaration(context: &mut BuilderContext) {
         context.advance(); // Skip colon
     }
 
-    // Parse function body - for now we just skip to the end
+    // Parse function body statements
+    let mut body = Vec::new();
     while !context.is_at_end() && context.get_curr().token_type != TokenType::EndFunction {
         let start_idx = context.idx;
-        parse_statement(context);
 
-        // Prevent infinite loop if parse_statement doesn't advance
+        let (stmt, returned_context) = parse_statement(context);
+        context = returned_context;
+
+        if let Some(statement) = stmt {
+            body.push(statement);
+        }
+
+        // Prevent infinite loop if parse_statement doesn't advance for some reason
         if context.idx == start_idx {
             context.advance();
         }
     }
+
+    // Skip EndFunction token
+    if !context.is_at_end() {
+        context.advance();
+    }
+
+    // Return the complete function declaration with body
     let statement = Statement::FunctionDeclaration(FunctionDeclarationStatement {
         function_name,
         line_declared_on,
         return_type: DataType::Void, // Default for now
+        body,
     });
-    context.statements.push(statement);
+
+    (statement, context)
 }
 
-fn parse_return_statement(context: &mut BuilderContext) {
+fn parse_return_statement(mut context: BuilderContext) -> (Statement, BuilderContext) {
     context.advance(); // Skip "return" keyword
 
-    let line_declared_on = context.get_curr().line_number;
+    let line_declared_on = if !context.is_at_end() {
+        context.get_curr().line_number
+    } else {
+        0
+    };
 
     // For now, just create a simple return statement
     // TODO: Parse the return value
@@ -166,21 +222,24 @@ fn parse_return_statement(context: &mut BuilderContext) {
         line_declared_on,
         return_value: None,
     });
-    context.statements.push(statement);
+
+    (statement, context)
 }
 
-fn parse_end_of_function(context: &mut BuilderContext) {
+fn parse_end_of_function(mut context: BuilderContext) -> BuilderContext {
     context.advance(); // Skip "endFunction" keyword
+    context
 }
 
 /// Parse a value expression - no validation, just structure
-fn parse_value(context: &mut BuilderContext) -> Value {
+fn parse_value(mut context: BuilderContext) -> (Value, BuilderContext) {
     if context.is_at_end() {
-        return Value {
+        let invalid_value = Value {
             data_type: DataType::Invalid,
             value_type: ValueType::Invalid,
             raw_text: String::new(),
         };
+        return (invalid_value, context);
     }
 
     let token = context.get_curr();
@@ -212,7 +271,7 @@ fn parse_value(context: &mut BuilderContext) -> Value {
     };
 
     context.advance();
-    value
+    (value, context)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -254,6 +313,7 @@ pub struct FunctionDeclarationStatement {
     pub function_name: String,
     pub return_type: DataType,
     pub line_declared_on: u32,
+    pub body: Vec<Statement>,
 }
 
 #[derive(Debug)]
