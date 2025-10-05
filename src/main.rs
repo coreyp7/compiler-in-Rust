@@ -28,7 +28,7 @@ fn main() -> std::io::Result<()> {
 
     let tokens: Vec<Token> = tokenize_file(&mut plank_src_file);
     if debug {
-        //debug_print_tokens(&tokens);
+        debug_print_tokens(&tokens);
     }
 
     // First pass: gather all function declarations. Allows file to do
@@ -42,7 +42,7 @@ fn main() -> std::io::Result<()> {
     // Second pass: generate AST given token list
     let ast_context = build_ast(tokens);
     if debug {
-        //debug_print_ast(&ast_context.statements);
+        debug_print_ast(&ast_context.statements);
     }
 
     // Third pass: semantic analysis
