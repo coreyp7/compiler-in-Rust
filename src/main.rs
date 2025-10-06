@@ -1,3 +1,4 @@
+use colored::*;
 use std::env;
 use std::fs::File;
 use std::io::Write;
@@ -166,7 +167,13 @@ fn debug_print_errors_and_var_map(ast_errors: &[ErrMsg], ast_builder: &AstBuilde
     */
 
 fn debug_print_generated_code(code: &str) {
-    println!("code generated: -----------------------------------");
-    println!("{}", code);
-    println!("code generated: -----------------------------------");
+    println!(
+        "{}",
+        "code generated: -----------------------------------".yellow()
+    );
+    println!("{}", code.green());
+    println!(
+        "{}",
+        "code generated: -----------------------------------".yellow()
+    );
 }

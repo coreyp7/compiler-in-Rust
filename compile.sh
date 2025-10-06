@@ -6,6 +6,7 @@ plankCompilerPath="./target/debug/compiler"
 exitEarly=0
 setup=0
 debug=0
+nocompile=0
 helloplanksimple="print \"hello, plank\""
 helloplank=$"
 /! Declaring a variable.
@@ -48,6 +49,9 @@ while [ "${1:-}" != '' ]; do
         ;;
         '-d' | '--debug')
         debug=1
+        ;;
+        '-n' | '--nocompile')
+        nocompile=1
         ;;
     esac
     shift
@@ -119,6 +123,10 @@ if [ ! -f $cCodeFile ]; then
 fi
 
 #echo "Created C code :D"
+if [ $nocompile -eq 1 ]; then
+    echo "not compiling; process done"
+    exit
+fi
 
 # Compile the C code into exe.
 if [ $debug -eq 1 ]; then
