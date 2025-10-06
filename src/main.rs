@@ -1,5 +1,6 @@
 use std::env;
 use std::fs::File;
+use std::io::Write;
 
 mod tokenizer;
 use tokenizer::Token;
@@ -16,10 +17,13 @@ use first_pass::gather_declarations;
 mod semantic;
 use semantic::SemanticAnalyzer;
 
+mod code_generate;
+use code_generate::generate_code_str;
+
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
     let src_path = &args[1];
-    let _output_path = &args[2];
+    let output_path = &args[2];
     let debug = args.len() > 3 && (args[3] == "--debug");
     //let src_path: String = String::from("./example.plank"); // for testing without compiling
 
@@ -63,7 +67,16 @@ fn main() -> std::io::Result<()> {
         println!("{:#?}", semantic_analyzer.get_current_function_context());
     }
 
-    if debug {}
+    // Generate c code str with ast
+    let code = generate_code_str(&ast_context.statements);
+    if debug {
+        debug_print_generated_code(&code);
+    }
+
+    let path = format!("{output_path}/main.c");
+    let mut output_file = File::create(path)?;
+
+    output_file.write_all(code.as_bytes())?;
 
     /*
     let mut ast_builder = AstBuilder::new(tokens);
