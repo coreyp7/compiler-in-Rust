@@ -84,8 +84,25 @@ impl SemanticAnalyzer {
             // which is a different error reported later.
             if !matches!(
                 var_decl.assigned_value.data_type,
-                DataType::Invalid | DataType::Unknown
+                (DataType::Invalid | DataType::Unknown)
             ) {
+                self.errors.push(SemanticError::TypeMismatch {
+                    expected: var_decl.data_type.clone(),
+                    found: var_decl.assigned_value.data_type.clone(),
+                    line: var_decl.line_declared_on,
+                });
+            }
+
+            // TODO: if this is a variable call, then the assigned DataType is Unknown.
+            // Do a symbol lookup and see if the assigned variable type matches.
+            // If not, throw error here.
+            let assigned_data_type: &DataType = &self
+                .get_current_symbol_context()
+                .get(&var_decl.assigned_value.raw_text)
+                .unwrap()
+                .data_type;
+
+            if &var_decl.data_type != assigned_data_type {
                 self.errors.push(SemanticError::TypeMismatch {
                     expected: var_decl.data_type.clone(),
                     found: var_decl.assigned_value.data_type.clone(),

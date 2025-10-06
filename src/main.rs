@@ -53,6 +53,8 @@ fn main() -> std::io::Result<()> {
     let mut semantic_analyzer = SemanticAnalyzer::new(function_header_map);
     let semantic_errors = semantic_analyzer.analyze(&ast_context.statements);
 
+    println!("semantic errors:\n{:#?}", semantic_errors);
+
     if !semantic_errors.is_empty() {
         semantic::print_failures_message(semantic_errors.len());
         for error in &semantic_errors {
