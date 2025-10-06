@@ -96,18 +96,40 @@ impl SemanticAnalyzer {
             // TODO: if this is a variable call, then the assigned DataType is Unknown.
             // Do a symbol lookup and see if the assigned variable type matches.
             // If not, throw error here.
-            let assigned_data_type: &DataType = &self
+            // Also need to check that this variable even exists.
+            let assigned_symbol_def = &self
                 .get_current_symbol_context()
-                .get(&var_decl.assigned_value.raw_text)
-                .unwrap()
-                .data_type;
+                .get(&var_decl.assigned_value.raw_text);
 
-            if &var_decl.data_type != assigned_data_type {
-                self.errors.push(SemanticError::TypeMismatch {
-                    expected: var_decl.data_type.clone(),
-                    found: var_decl.assigned_value.data_type.clone(),
-                    line: var_decl.line_declared_on,
-                });
+            match assigned_symbol_def {
+                // If the var being called exists, ensure that the types match.
+                Some(symbol_def) => {
+                    let assigned_data_type = &symbol_def.data_type;
+                    if &var_decl.data_type != assigned_data_type {
+                        self.errors.push(SemanticError::TypeMismatch {
+                            expected: var_decl.data_type.clone(),
+                            found: var_decl.assigned_value.data_type.clone(),
+                            line: var_decl.line_declared_on,
+                        });
+                    }
+                }
+                // If this is not found, then we add an error that the assigned var
+                // doesn't exist. (This is done when 'validate_value' is called below,
+                // so here we won't be adding anything.)
+                // Leaving previous code for convenience.
+                None => {
+                    /*
+                    if !self
+                        .get_current_symbol_context()
+                        .contains_name(&var_decl.assigned_value.raw_text)
+                    {
+                        self.errors.push(SemanticError::InvalidValueReference {
+                            name: var_decl.assigned_value.raw_text.clone(),
+                            line: var_decl.line_declared_on,
+                        });
+                    };
+                    */
+                }
             }
         }
 
