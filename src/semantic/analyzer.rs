@@ -1,5 +1,8 @@
-use crate::ast::FunctionTable;
-use crate::ast::{DataType, Statement, Value, ValueType, VariableDeclarationStatement};
+use crate::ast::{
+    DataType, FunctionDeclarationStatement, Statement, Value, ValueType,
+    VariableDeclarationStatement,
+};
+use crate::ast::{FunctionTable, ReturnStatement};
 use crate::semantic::SemanticError;
 use crate::symbol_table::SymbolTable;
 
@@ -49,9 +52,10 @@ impl SemanticAnalyzer {
             Statement::VariableDeclaration(var_decl) => {
                 self.analyze_variable_declaration(var_decl);
             }
-            Statement::FunctionDeclaration(_func_decl) => {
+            Statement::FunctionDeclaration(func_decl) => {
                 // Function declarations are handled in the first pass
                 // Here we might validate the function body when we implement it
+                self.analyze_function_declaration(func_decl);
             }
             Statement::Return(return_stmt) => {
                 // TODO: improve this to check the type and symbol lookup validation
@@ -138,6 +142,31 @@ impl SemanticAnalyzer {
             self.validate_value(&var_decl.assigned_value, var_decl.line_declared_on)
         {
             self.errors.push(error);
+        }
+    }
+
+    pub fn analyze_function_declaration(&mut self, func_decl: &FunctionDeclarationStatement) {
+        // TODO: need to change the context that we're in to be the function
+        // context. That is, one with the parameters of the function.
+        // Update the SemanticContext accordingly.
+        // Could additionally use this in the error handler to print the function name
+        // of the problematic code.
+
+        // TODO: exit early if body is empty.
+
+        // Ensure there's a return statement that matches the type in the signature
+        let last_statement_in_body = func_decl.body.last().unwrap();
+        let does_return_exist =
+            matches!(last_statement_in_body, Statement::Return(return_statement));
+        let is_function_return_type_void = func_decl.return_type == DataType::Void;
+        if !is_function_return_type_void && !does_return_exist {
+            // there should be a return statement, but there isn't.
+            // TODO: throw error here.
+        }
+
+        // Validate that every statement in body is good.
+        for statement in &func_decl.body {
+            self.analyze_statement(&statement);
         }
     }
 
