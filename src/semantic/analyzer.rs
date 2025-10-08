@@ -1,10 +1,12 @@
+use std::fmt::Error;
+
 use crate::ast::{
     DataType, FunctionDeclarationStatement, Statement, Value, ValueType,
     VariableDeclarationStatement,
 };
 use crate::ast::{FunctionTable, ReturnStatement};
 use crate::semantic::SemanticError;
-use crate::symbol_table::SymbolTable;
+use crate::symbol_table::{self, SymbolTable};
 
 /// Semantic analyzer context for managing scope
 pub struct SemanticContext {
@@ -152,6 +154,44 @@ impl SemanticAnalyzer {
         // Could additionally use this in the error handler to print the function name
         // of the problematic code.
 
+        /*
+        let func_header_option = self
+            .get_current_function_context()
+            .get_func_def_using_str(&func_decl.function_name);
+        let mut symbol_table = SymbolTable::new();
+
+        if let Some(func_header) = func_header_option {
+            for param in &func_header.parameters {
+                // create var in function context for all the parameters
+                // passed in to this function.
+                symbol_table.insert(&param.name, &param.data_type, &func_decl.line_declared_on);
+            }
+
+            let func_id = self
+                .get_current_function_context()
+                .get_id_with_function_name(&func_decl.function_name);
+        }
+        */
+        let result = self.push_scope(&func_decl.function_name);
+        /* TODO: figure this shit out add error
+        match result {
+            Err(error) => {
+                match error {
+                    SemanticError::FunctionNotDeclared { name, mut line } => {
+                        // Don't know line inside push_scope, so need to set here.
+                        let err = SemanticError::FunctionNotDeclared { name, line };
+                        err.line = func_decl.line_declared_on;
+                        self.errors.push(error);
+                    }
+                    _ => (),
+                }
+            }
+            _ => (),
+        }
+        */
+
+        // get the function header of the function to get its parameters.
+
         // TODO: exit early if body is empty.
 
         // Ensure there's a return statement that matches the type in the signature
@@ -218,6 +258,7 @@ impl SemanticAnalyzer {
 
     /// Push a new scope (for function analysis)
     pub fn push_scope(&mut self, function_name: &str) {
+        //-> Result<(), SemanticError> {
         let current_context = self.context_stack.last().unwrap();
 
         // Get function information for the new scope
@@ -249,7 +290,18 @@ impl SemanticAnalyzer {
 
                 self.context_stack.push(new_context);
             }
+        } else {
+            /*
+            return Result(
+                (),
+                SemanticError::FunctionNotDeclared {
+                    name: function_name.to_string(),
+                    line: 0, // this has to be populated elsewhere
+                },
+            );
+            */
         }
+        //return Ok(());
     }
 
     /// Pop the current scope
