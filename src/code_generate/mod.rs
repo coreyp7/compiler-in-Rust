@@ -21,6 +21,8 @@ pub fn generate_code_str(ast_vec: &Vec<Statement>) -> String {
     // Generate code for each statement (with indentation)
     for statement in ast_vec {
         // NOTE: this is temporary, should be generic in the future.
+        code_str.push_str(&statement.to_code_str());
+        /*
         match statement {
             Statement::VariableDeclaration(struc) => {
                 code_str.push_str("    "); // 4-space indentation
@@ -29,6 +31,7 @@ pub fn generate_code_str(ast_vec: &Vec<Statement>) -> String {
             }
             _ => {}
         }
+        */
     }
 
     // Close main function
