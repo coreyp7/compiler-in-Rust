@@ -58,8 +58,17 @@ fn to_code_str_var_decl(var_decl: &VariableDeclarationStatement) -> String {
     )
 }
 
-fn to_code_str_return(_return_stmt: &ReturnStatement) -> String {
-    "RETURN NOT IMPL YET\n".to_string()
+fn to_code_str_return(return_stmt: &ReturnStatement) -> String {
+    //"RETURN NOT IMPL YET\n".to_string()
+    let mut code_str = String::new();
+    let return_value_option = &return_stmt.return_value;
+    match return_value_option {
+        Some(value) => code_str.push_str(&format!("return {};\n", value.to_string())),
+        None => {
+            // TODO add handling
+        }
+    }
+    code_str
 }
 
 pub fn to_code_str_func_decl_stmt(
