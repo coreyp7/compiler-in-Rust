@@ -17,11 +17,27 @@ pub fn generate_code_str(ast_vec: &Vec<Statement>, function_defs: &FunctionTable
 
     // Include function headers that are user declared
     for function_def in function_defs.get_all_defs() {
+        /*
         code_str.push_str(&format!(
-            "{} {}();\n",
+            "{} {});\n",
             function_def.return_type.to_string(),
             function_def.identifier
         ));
+        */
+        code_str.push_str(&format!(
+            "{} {}(",
+            function_def.return_type.to_string(),
+            function_def.identifier
+        ));
+
+        // Params
+        for (i, param) in function_def.parameters.iter().enumerate() {
+            code_str.push_str(&format!("{} {}", param.data_type, param.name));
+            if i < function_def.parameters.len() - 1 {
+                code_str.push_str(", ");
+            }
+        }
+        code_str.push_str(");\n");
     }
 
     // Start main function
