@@ -1,8 +1,9 @@
 mod convert_statement;
 
 use crate::ast::{FunctionDeclarationStatement, FunctionSymbol, FunctionTable, Statement};
-pub use convert_statement::GenerateCode;
-pub use convert_statement::{convert_function_header_to_code_str, to_code_str_func_decl_stmt};
+pub use convert_statement::{
+    convert_function_header_to_code_str, to_code_str, to_code_str_func_decl_stmt,
+};
 
 /**
  * Converts an AST into c code equivalent (in the form of a string).
@@ -35,7 +36,7 @@ pub fn generate_code_str(ast_vec: &Vec<Statement>, function_defs: &FunctionTable
                 func_declaration_statements.push(func_decl_statement);
             }
             _ => {
-                code_str.push_str(&statement.to_code_str());
+                code_str.push_str(&to_code_str(statement));
             }
         }
     }

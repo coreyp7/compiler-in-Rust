@@ -37,37 +37,29 @@ impl fmt::Display for Value {
     }
 }
 
-pub trait GenerateCode {
-    fn to_code_str(&self) -> String;
-}
-
-impl GenerateCode for Statement {
-    fn to_code_str(&self) -> String {
-        match self {
-            Statement::FunctionDeclaration(funcDeclSt) => {
-                "I KNOW THIS IS STUPID BUT USE THE NON TRAIT VERSION OF THIS FUNCTION".to_string()
-            }
-            Statement::VariableDeclaration(varDeclSt) => varDeclSt.to_code_str(),
-            Statement::Return(returnStatement) => returnStatement.to_code_str(),
+pub fn to_code_str(statement: &Statement) -> String {
+    match statement {
+        Statement::FunctionDeclaration(func_decl_st) => {
+            // This case is handled outside of the function, and this should never
+            // be reached. returning empty string.
+            String::new()
         }
+        Statement::VariableDeclaration(var_decl_st) => to_code_str_var_decl(var_decl_st),
+        Statement::Return(return_statement) => to_code_str_return(return_statement),
     }
 }
 
-impl GenerateCode for VariableDeclarationStatement {
-    fn to_code_str(&self) -> String {
-        format!(
-            "{} {} = {};\n",
-            self.data_type.to_string(),
-            self.symbol_name,
-            self.assigned_value.to_string()
-        )
-    }
+fn to_code_str_var_decl(var_decl: &VariableDeclarationStatement) -> String {
+    format!(
+        "{} {} = {};\n",
+        var_decl.data_type.to_string(),
+        var_decl.symbol_name,
+        var_decl.assigned_value.to_string()
+    )
 }
 
-impl GenerateCode for ReturnStatement {
-    fn to_code_str(&self) -> String {
-        "RETURN NOT IMPL YET\n".to_string()
-    }
+fn to_code_str_return(_return_stmt: &ReturnStatement) -> String {
+    "RETURN NOT IMPL YET\n".to_string()
 }
 
 pub fn to_code_str_func_decl_stmt(
@@ -84,7 +76,7 @@ pub fn to_code_str_func_decl_stmt(
     for statement in &func_stmt.body {
         code.push_str("   ");
         // WARNING: this will break I think if a function is declared in a function.
-        code.push_str(&statement.to_code_str());
+        code.push_str(&to_code_str(statement));
     }
 
     // Close function
