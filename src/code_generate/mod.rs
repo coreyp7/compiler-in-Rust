@@ -1,12 +1,12 @@
 mod convert_statement;
 
-use crate::ast::Statement;
+use crate::ast::{FunctionTable, Statement};
 pub use convert_statement::GenerateCode;
 
 /**
  * Converts an AST into c code equivalent (in the form of a string).
  */
-pub fn generate_code_str(ast_vec: &Vec<Statement>) -> String {
+pub fn generate_code_str(ast_vec: &Vec<Statement>, function_defs: &FunctionTable) -> String {
     let mut code_str = String::new();
 
     // Add C headers
@@ -14,6 +14,15 @@ pub fn generate_code_str(ast_vec: &Vec<Statement>) -> String {
     code_str.push_str("#include <stdlib.h>\n");
     code_str.push_str("#include <string.h>\n");
     code_str.push_str("\n");
+
+    // Include function headers that are user declared
+    for function_def in function_defs.get_all_defs() {
+        code_str.push_str(&format!(
+            "{} {}();\n",
+            function_def.return_type.to_string(),
+            function_def.identifier
+        ));
+    }
 
     // Start main function
     code_str.push_str("int main() {\n");

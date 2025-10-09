@@ -16,7 +16,7 @@ mod first_pass;
 use first_pass::gather_declarations;
 
 mod semantic;
-use semantic::SemanticAnalyzer;
+use semantic::analyze_statements;
 
 mod code_generate;
 use code_generate::generate_code_str;
@@ -51,8 +51,7 @@ fn main() -> std::io::Result<()> {
     }
 
     // Third pass: semantic analysis
-    let mut semantic_analyzer = SemanticAnalyzer::new(function_header_map);
-    let semantic_errors = semantic_analyzer.analyze(&ast_context.statements);
+    let semantic_errors = analyze_statements(&ast_context.statements, &function_header_map);
 
     println!("semantic errors:\n{:#?}", semantic_errors);
 
@@ -61,17 +60,13 @@ fn main() -> std::io::Result<()> {
         for error in &semantic_errors {
             error.print_error();
         }
-        println!("{:#?}", semantic_analyzer.get_current_symbol_context());
-        println!("{:#?}", semantic_analyzer.get_current_function_context());
         return Ok(());
     } else {
         semantic::print_success_message();
-        println!("{:#?}", semantic_analyzer.get_current_symbol_context());
-        println!("{:#?}", semantic_analyzer.get_current_function_context());
     }
 
     // Generate c code str with ast
-    let code = generate_code_str(&ast_context.statements);
+    let code = generate_code_str(&ast_context.statements, &function_header_map);
     if debug {
         debug_print_generated_code(&code);
     }

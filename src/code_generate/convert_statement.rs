@@ -73,6 +73,7 @@ impl GenerateCode for FunctionDeclarationStatement {
         let mut code = String::new();
 
         // Function signature: return_type function_name() {
+        // TODO: add parameters
         code.push_str(&format!(
             "{} {}() {{\n",
             self.return_type.to_string(),

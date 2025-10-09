@@ -1,5 +1,5 @@
 use super::pure_builder::DataType;
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map::Values};
 
 // Function-related structures
 #[derive(Debug, Clone)]
@@ -116,5 +116,9 @@ impl FunctionTable {
     /// Returns an iterator over all key-value pairs
     pub fn iter(&self) -> impl Iterator<Item = (&u8, &FunctionSymbol)> {
         self.functions.iter()
+    }
+
+    pub fn get_all_defs(&self) -> Values<'_, u8, FunctionSymbol> {
+        return self.functions.values();
     }
 }
