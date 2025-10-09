@@ -1,5 +1,5 @@
 use crate::ast::{DataType, ReturnStatement, Value, VariableDeclarationStatement};
-use crate::ast::{FunctionDeclarationStatement, Statement, ValueType};
+use crate::ast::{FunctionDeclarationStatement, FunctionSymbol, Statement, ValueType};
 use std::fmt;
 
 // Implement Display for DataType so we can call .to_string() on it
@@ -44,7 +44,9 @@ pub trait GenerateCode {
 impl GenerateCode for Statement {
     fn to_code_str(&self) -> String {
         match self {
-            Statement::FunctionDeclaration(funcDeclSt) => funcDeclSt.to_code_str(),
+            Statement::FunctionDeclaration(funcDeclSt) => {
+                "I KNOW THIS IS STUPID BUT USE THE NON TRAIT VERSION OF THIS FUNCTION".to_string()
+            }
             Statement::VariableDeclaration(varDeclSt) => varDeclSt.to_code_str(),
             Statement::Return(returnStatement) => returnStatement.to_code_str(),
         }
@@ -68,26 +70,44 @@ impl GenerateCode for ReturnStatement {
     }
 }
 
-impl GenerateCode for FunctionDeclarationStatement {
-    fn to_code_str(&self) -> String {
-        let mut code = String::new();
+pub fn to_code_str_func_decl_stmt(
+    func_stmt: &FunctionDeclarationStatement,
+    function_def: &FunctionSymbol,
+) -> String {
+    let mut code = String::new();
 
-        // Function signature: return_type function_name() {
-        // TODO: add parameters
-        code.push_str(&format!(
-            "{} {}() {{\n",
-            self.return_type.to_string(),
-            self.function_name
-        ));
+    code.push_str(&convert_function_header_to_code_str(function_def));
 
-        // Generate code for function body
-        for statement in &self.body {
-            code.push_str("   ");
-            code.push_str(&statement.to_code_str());
-        }
+    code.push_str("{\n");
 
-        // Close function
-        code.push_str("}\n");
-        code
+    // Generate code for function body
+    for statement in &func_stmt.body {
+        code.push_str("   ");
+        // WARNING: this will break I think if a function is declared in a function.
+        code.push_str(&statement.to_code_str());
     }
+
+    // Close function
+    code.push_str("}\n");
+    code
+}
+
+pub fn convert_function_header_to_code_str(function_def: &FunctionSymbol) -> String {
+    let mut code_str = String::new();
+    code_str.push_str(&format!(
+        "{} {}(",
+        function_def.return_type.to_string(),
+        function_def.identifier
+    ));
+
+    // Params
+    for (i, param) in function_def.parameters.iter().enumerate() {
+        code_str.push_str(&format!("{} {}", param.data_type, param.name));
+        if i < function_def.parameters.len() - 1 {
+            code_str.push_str(", ");
+        }
+    }
+    code_str.push_str(")");
+
+    code_str
 }

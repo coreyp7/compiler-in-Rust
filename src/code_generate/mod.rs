@@ -2,6 +2,7 @@ mod convert_statement;
 
 use crate::ast::{FunctionDeclarationStatement, FunctionSymbol, FunctionTable, Statement};
 pub use convert_statement::GenerateCode;
+pub use convert_statement::{convert_function_header_to_code_str, to_code_str_func_decl_stmt};
 
 /**
  * Converts an AST into c code equivalent (in the form of a string).
@@ -18,6 +19,7 @@ pub fn generate_code_str(ast_vec: &Vec<Statement>, function_defs: &FunctionTable
     // Include function headers that are user declared
     for function_def in function_defs.get_all_defs() {
         code_str.push_str(&convert_function_header_to_code_str(function_def));
+        code_str.push_str(";\n");
     }
 
     code_str.push_str("int main() {\n");
@@ -38,33 +40,19 @@ pub fn generate_code_str(ast_vec: &Vec<Statement>, function_defs: &FunctionTable
         }
     }
 
-    code_str.push_str("    return 0;\n");
+    code_str.push_str("return 0;\n");
     code_str.push_str("}\n");
 
     // TODO: put all function declarations down here.
     for func_decl in func_declaration_statements {
-        code_str.push_str(&func_decl.to_code_str());
-    }
-
-    code_str
-}
-
-fn convert_function_header_to_code_str(function_def: &FunctionSymbol) -> String {
-    let mut code_str = String::new();
-    code_str.push_str(&format!(
-        "{} {}(",
-        function_def.return_type.to_string(),
-        function_def.identifier
-    ));
-
-    // Params
-    for (i, param) in function_def.parameters.iter().enumerate() {
-        code_str.push_str(&format!("{} {}", param.data_type, param.name));
-        if i < function_def.parameters.len() - 1 {
-            code_str.push_str(", ");
+        let function_def = function_defs.get_func_def_using_str(&func_decl.function_name);
+        match function_def {
+            Some(def) => code_str.push_str(&to_code_str_func_decl_stmt(func_decl, def)),
+            None => {
+                // TODO add something here
+            }
         }
     }
-    code_str.push_str(");\n");
 
     code_str
 }
