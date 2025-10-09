@@ -25,6 +25,7 @@ pub enum TokenType {
     Do,
     EndWhile,
     Return,
+    Returns, // used in function declarations
     LeftParen,
     RightParen,
     Comma,
@@ -75,6 +76,7 @@ impl FromStr for TokenType {
             "update" => Ok(TokenType::UpdateKeyword),
             "function" => Ok(TokenType::FunctionDeclaration),
             "return" => Ok(TokenType::Return),
+            "returns" => Ok(TokenType::Returns),
             "endFunction" => Ok(TokenType::EndFunction),
             _ => Err(()),
         }
@@ -126,6 +128,7 @@ impl TokenType {
             TokenType::UnsupportedSymbolError => "UnsupportedSymbol",
             TokenType::Space => " ",
             TokenType::Return => "return",
+            TokenType::Returns => "returns",
             TokenType::LeftParen => "(",
             TokenType::RightParen => ")",
             TokenType::Comma => ",",

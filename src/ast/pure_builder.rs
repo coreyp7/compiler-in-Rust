@@ -126,9 +126,22 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
     let line_declared_on = context.get_curr().line_number;
     context.advance();
 
-    // Skip to colon (simplified parsing for now)
-    while !context.is_at_end() && context.get_curr().token_type != TokenType::Colon {
+    // Skip to return type; we already have the function header in the function map.
+    // TODO: put the function header in this struct; would make semantics alot easier
+    // to just look in the struct than doing a lookup to a map. But this might be naive,
+    // not sure what downsides there'd be.
+    while !context.is_at_end() && context.get_curr().token_type != TokenType::Returns {
         context.advance();
+    }
+    // At returns now, go forward and get datatype specified for return type.
+    context.advance();
+    let return_type_lexeme: &str = &context.get_curr().lexeme;
+    let mut return_type: DataType = DataType::Invalid;
+    match return_type_lexeme {
+        "Number" => return_type = DataType::Number,
+        "String" => return_type = DataType::String,
+        "Void" => return_type = DataType::Void,
+        _ => (),
     }
 
     if !context.is_at_end() {
@@ -162,7 +175,7 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
     let statement = Statement::FunctionDeclaration(FunctionDeclarationStatement {
         function_name,
         line_declared_on,
-        return_type: DataType::Void, // Default for now
+        return_type,
         body,
     });
 
