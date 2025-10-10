@@ -26,6 +26,10 @@ pub enum SemanticError {
         name: String,
         line: u32,
     },
+    ReturnMissing {
+        funct_name: String,
+        func_declared_on_line: u32,
+    },
 }
 
 // Helper functions for formatting error messages
@@ -137,6 +141,17 @@ impl SemanticError {
                     error_line_start(),
                     format_name(name)
                 );
+            }
+            SemanticError::ReturnMissing {
+                funct_name,
+                func_declared_on_line,
+            } => {
+                error_header("Function missing return statement", *func_declared_on_line);
+                eprintln!(
+                    "{} Function '{}' missing return statement",
+                    error_line_start(),
+                    funct_name,
+                )
             }
         }
     }

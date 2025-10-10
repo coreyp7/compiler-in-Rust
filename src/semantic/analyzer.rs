@@ -147,11 +147,14 @@ fn analyze_function_declaration(
         let is_function_return_type_void = func_decl.return_type == DataType::Void;
 
         if !is_function_return_type_void && !does_return_exist {
-            // TODO: add missing return statement error
+            state.errors.push(SemanticError::ReturnMissing {
+                funct_name: func_decl.function_name.clone(),
+                func_declared_on_line: func_decl.line_declared_on,
+            });
         }
     }
 
-    // Analyze function body
+    // Analyze each statement in function body
     for statement in &func_decl.body {
         analyze_statement(statement, state, function_table);
     }
