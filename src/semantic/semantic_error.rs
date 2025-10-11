@@ -30,6 +30,11 @@ pub enum SemanticError {
         funct_name: String,
         func_declared_on_line: u32,
     },
+    IncorrectParameters {
+        parameters_expected: usize,
+        parameters_provided: usize,
+        line: u32,
+    },
 }
 
 // Helper functions for formatting error messages
@@ -152,6 +157,23 @@ impl SemanticError {
                     error_line_start(),
                     funct_name,
                 )
+            }
+            SemanticError::IncorrectParameters {
+                parameters_expected,
+                parameters_provided,
+                line,
+            } => {
+                error_header("Incorrect number of parameters", *line);
+                eprintln!(
+                    "  {} Expected: {} parameters",
+                    error_line_start(),
+                    parameters_expected.to_string().green().bold()
+                );
+                eprintln!(
+                    "  {} Found:    {} parameters",
+                    error_line_end(),
+                    parameters_provided.to_string().red().bold()
+                );
             }
         }
     }

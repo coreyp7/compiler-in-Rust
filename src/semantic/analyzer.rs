@@ -35,7 +35,7 @@ impl AnalysisState {
 
 // Main analysis entry point
 pub fn analyze_statements(
-    statements: &[Statement],
+    statements: &mut [Statement],
     function_table: &FunctionTable,
 ) -> Vec<SemanticError> {
     let mut state = AnalysisState::new();
@@ -49,7 +49,7 @@ pub fn analyze_statements(
 
 /// Analyze a single statement
 fn analyze_statement(
-    statement: &Statement,
+    statement: &mut Statement,
     state: &mut AnalysisState,
     function_table: &FunctionTable,
 ) {
@@ -61,7 +61,8 @@ fn analyze_statement(
             analyze_function_declaration(func_decl, state, function_table);
         }
         Statement::Return(return_stmt) => {
-            if let Some(ref return_value) = return_stmt.return_value {
+            if let Some(ref mut return_value) = return_stmt.return_value {
+                resolve_value_type(return_value, state, function_table);
                 if let Some(error) = validate_value(
                     return_value,
                     return_stmt.line_declared_on,
@@ -77,10 +78,13 @@ fn analyze_statement(
 
 /// Analyze variable declaration for semantic correctness
 fn analyze_variable_declaration(
-    var_decl: &VariableDeclarationStatement,
+    var_decl: &mut VariableDeclarationStatement,
     state: &mut AnalysisState,
     function_table: &FunctionTable,
 ) {
+    // First, resolve the type of the assigned value
+    resolve_value_type(&mut var_decl.assigned_value, state, function_table);
+
     // First, try to add the variable to the current scope
     if let Err(error) = add_variable_to_current_scope(
         &var_decl.symbol_name,
@@ -91,33 +95,43 @@ fn analyze_variable_declaration(
         state.errors.push(error);
     }
 
-    // Type checking logic
+    // Now do type checking with resolved types
     if var_decl.data_type != var_decl.assigned_value.data_type {
-        if !matches!(
-            var_decl.assigned_value.data_type,
-            DataType::Invalid | DataType::Unknown
-        ) {
+        if !matches!(var_decl.assigned_value.data_type, DataType::Invalid) {
             state.errors.push(SemanticError::TypeMismatch {
                 expected: var_decl.data_type.clone(),
                 found: var_decl.assigned_value.data_type.clone(),
                 line: var_decl.line_declared_on,
             });
         }
+    }
 
-        // Symbol lookup for assigned value
-        let current_context = state.context_stack.last().unwrap();
-        let assigned_symbol_def = current_context
-            .symbol_table
-            .get(&var_decl.assigned_value.raw_text);
+    // Function call parameter validation (if applicable)
+    if let ValueType::FunctionCall = var_decl.assigned_value.value_type {
+        if let Some(func_def) =
+            function_table.get_func_def_using_str(&var_decl.assigned_value.raw_text)
+        {
+            if let Some(ref param_values) = var_decl.assigned_value.param_values {
+                if param_values.len() != func_def.parameters.len() {
+                    state.errors.push(SemanticError::IncorrectParameters {
+                        parameters_expected: func_def.parameters.len(),
+                        parameters_provided: param_values.len(),
+                        line: var_decl.line_declared_on,
+                    });
+                }
 
-        if let Some(symbol_def) = assigned_symbol_def {
-            let assigned_data_type = &symbol_def.data_type;
-            if &var_decl.data_type != assigned_data_type {
-                state.errors.push(SemanticError::TypeMismatch {
-                    expected: var_decl.data_type.clone(),
-                    found: var_decl.assigned_value.data_type.clone(),
-                    line: var_decl.line_declared_on,
-                });
+                // Type check each parameter
+                for (i, param_value) in param_values.iter().enumerate() {
+                    if let Some(expected_param) = func_def.parameters.get(i) {
+                        if param_value.data_type != expected_param.data_type {
+                            state.errors.push(SemanticError::TypeMismatch {
+                                expected: expected_param.data_type.clone(),
+                                found: param_value.data_type.clone(),
+                                line: var_decl.line_declared_on,
+                            });
+                        }
+                    }
+                }
             }
         }
     }
@@ -135,7 +149,7 @@ fn analyze_variable_declaration(
 
 /// Analyze function declaration
 fn analyze_function_declaration(
-    func_decl: &FunctionDeclarationStatement,
+    func_decl: &mut FunctionDeclarationStatement,
     state: &mut AnalysisState,
     function_table: &FunctionTable,
 ) {
@@ -155,7 +169,7 @@ fn analyze_function_declaration(
     }
 
     // Analyze each statement in function body
-    for statement in &func_decl.body {
+    for statement in &mut func_decl.body {
         analyze_statement(statement, state, function_table);
     }
 
@@ -206,6 +220,40 @@ fn validate_value(
     }
 
     None
+}
+
+// The datatype of values (variables/function calls) is incomplete, since the AST
+// shouldn't be having to worry about type enforcement.
+// This function is used when we need to update the value struct with the datatype
+// of whatever is being called.
+fn resolve_value_type(value: &mut Value, state: &AnalysisState, function_table: &FunctionTable) {
+    if value.data_type != DataType::Unknown {
+        return; // Already resolved
+    }
+
+    let current_context = state.context_stack.last().unwrap();
+
+    match value.value_type {
+        ValueType::Variable => {
+            if let Some(symbol) = current_context.symbol_table.get(&value.raw_text) {
+                value.data_type = symbol.data_type.clone();
+            }
+        }
+        ValueType::FunctionCall => {
+            // First resolve parameter types if they exist
+            if let Some(ref mut param_values) = value.param_values {
+                for param_value in param_values {
+                    resolve_value_type(param_value, state, function_table);
+                }
+            }
+
+            // Then resolve the function's return type
+            if let Some(func_def) = function_table.get_func_def_using_str(&value.raw_text) {
+                value.data_type = func_def.return_type.clone();
+            }
+        }
+        _ => {} // Other types should already have correct data_type
+    }
 }
 
 /// Push a new scope for function analysis

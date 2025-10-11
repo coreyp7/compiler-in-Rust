@@ -45,13 +45,13 @@ fn main() -> std::io::Result<()> {
     }
 
     // Second pass: generate AST given token list
-    let ast_context = build_ast(tokens);
+    let mut ast_context = build_ast(tokens);
     if debug {
         debug_print_ast(&ast_context.statements);
     }
 
     // Third pass: semantic analysis
-    let semantic_errors = analyze_statements(&ast_context.statements, &function_header_map);
+    let semantic_errors = analyze_statements(&mut ast_context.statements, &function_header_map);
 
     println!("semantic errors:\n{:#?}", semantic_errors);
 
