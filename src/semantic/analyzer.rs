@@ -1,8 +1,8 @@
+use crate::ast::FunctionTable;
 use crate::ast::{
     DataType, FunctionDeclarationStatement, Statement, Value, ValueType,
     VariableDeclarationStatement,
 };
-use crate::ast::{FunctionSymbol, FunctionTable};
 use crate::semantic::SemanticError;
 use crate::symbol_table::SymbolTable;
 
@@ -41,7 +41,7 @@ pub fn analyze_statements(
     let mut state = AnalysisState::new();
 
     for statement in statements {
-        analyze_statement(statement, &mut state, function_table);
+        state = analyze_statement(statement, state, function_table);
     }
 
     state.errors
@@ -50,47 +50,49 @@ pub fn analyze_statements(
 /// Analyze a single statement
 fn analyze_statement(
     statement: &mut Statement,
-    state: &mut AnalysisState,
+    state: AnalysisState,
     function_table: &FunctionTable,
-) {
+) -> AnalysisState {
+    let mut state = state;
     match statement {
         Statement::VariableDeclaration(var_decl) => {
-            analyze_variable_declaration(var_decl, state, function_table);
+            state = analyze_variable_declaration(var_decl, state, function_table);
         }
         Statement::FunctionDeclaration(func_decl) => {
-            analyze_function_declaration(func_decl, state, function_table);
+            state = analyze_function_declaration(func_decl, state, function_table);
         }
         Statement::Return(return_stmt) => {
             if let Some(ref mut return_value) = return_stmt.return_value {
-                resolve_value_type(return_value, state, function_table);
-                if let Some(error) = validate_value(
+                state = resolve_value_type(return_value, state, function_table);
+                state = validate_value(
                     return_value,
                     return_stmt.line_declared_on,
                     state,
                     function_table,
-                ) {
-                    state.errors.push(error);
-                }
+                );
             }
         }
     }
+    state
 }
 
 /// Analyze variable declaration for semantic correctness
 fn analyze_variable_declaration(
     var_decl: &mut VariableDeclarationStatement,
-    state: &mut AnalysisState,
+    state: AnalysisState,
     function_table: &FunctionTable,
-) {
+) -> AnalysisState {
+    let mut state = state;
+
     // Not done in AST, so we need to do it here.
-    resolve_value_type(&mut var_decl.assigned_value, state, function_table);
+    state = resolve_value_type(&mut var_decl.assigned_value, state, function_table);
 
     // First, try to add the variable to the current scope
     if let Err(error) = add_variable_to_current_scope(
         &var_decl.symbol_name,
         &var_decl.data_type,
         var_decl.line_declared_on,
-        state,
+        &mut state,
     ) {
         state.errors.push(error);
     }
@@ -108,64 +110,24 @@ fn analyze_variable_declaration(
     }
 
     // Validate the assigned value
-    if let Some(error) = validate_value(
+    state = validate_value(
         &var_decl.assigned_value,
         var_decl.line_declared_on,
         state,
         function_table,
-    ) {
-        state.errors.push(error);
-    }
-}
+    );
 
-/**
- * Given the variable declaration (whose value is Value::FunctionCall), this checks
- * that the function being called is being called correctly.
- */
-fn analyze_function_call(
-    state: &mut AnalysisState,
-    function_table: &FunctionTable,
-    var_decl: &VariableDeclarationStatement,
-) {
-    let func_def = match function_table.get_func_def_using_str(&var_decl.assigned_value.raw_text) {
-        Some(func_def) => func_def,
-        None => return,
-    };
-
-    let param_values = match &var_decl.assigned_value.param_values {
-        Some(params) => params,
-        None => return,
-    };
-
-    if param_values.len() != func_def.parameters.len() {
-        state.errors.push(SemanticError::IncorrectParameters {
-            parameters_expected: func_def.parameters.len(),
-            parameters_provided: param_values.len(),
-            line: var_decl.line_declared_on,
-        });
-    }
-
-    // Type check each parameter
-    for (i, param_value) in param_values.iter().enumerate() {
-        if let Some(expected_param) = func_def.parameters.get(i) {
-            if param_value.data_type != expected_param.data_type {
-                state.errors.push(SemanticError::TypeMismatch {
-                    expected: expected_param.data_type.clone(),
-                    found: param_value.data_type.clone(),
-                    line: var_decl.line_declared_on,
-                });
-            }
-        }
-    }
+    state
 }
 
 /// Analyze function declaration
 fn analyze_function_declaration(
     func_decl: &mut FunctionDeclarationStatement,
-    state: &mut AnalysisState,
+    state: AnalysisState,
     function_table: &FunctionTable,
-) {
-    push_scope(&func_decl.function_name, state, function_table);
+) -> AnalysisState {
+    let mut state = state;
+    state = push_scope(&func_decl.function_name, state, function_table);
 
     // Check return statement requirement
     if let Some(last_statement_in_body) = func_decl.body.last() {
@@ -182,30 +144,29 @@ fn analyze_function_declaration(
 
     // Analyze each statement in function body
     for statement in &mut func_decl.body {
-        analyze_statement(statement, state, function_table);
+        state = analyze_statement(statement, state, function_table);
     }
 
-    pop_scope(state);
+    state = pop_scope(state);
+    state
 }
 
 /// Validate that a value reference is semantically correct
-// corey TODO:
-// this function needs to be changed to take ownership of the state, so we can add
-// errors to it, and then we need to return the ownership.
-// Instead of returning an optional value, we will return the state (which has
-// bee nupdated with any amount of errors that has been detected.)
 fn validate_value(
     value: &Value,
     line: u32,
-    state: &AnalysisState,
+    state: AnalysisState,
     function_table: &FunctionTable,
-) -> Option<SemanticError> {
+) -> AnalysisState {
+    state = resolve_value_type(value, state, function_table);
+
+    let mut state = state;
     let current_context = state.context_stack.last().unwrap();
 
     match value.value_type {
         ValueType::Variable => {
             if !current_context.symbol_table.contains_name(&value.raw_text) {
-                return Some(SemanticError::VariableNotDeclared {
+                state.errors.push(SemanticError::VariableNotDeclared {
                     name: value.raw_text.clone(),
                     line,
                 });
@@ -216,17 +177,13 @@ fn validate_value(
                 .get_id_with_function_name(&value.raw_text)
                 .is_none()
             {
-                return Some(SemanticError::FunctionNotDeclared {
+                state.errors.push(SemanticError::FunctionNotDeclared {
                     name: value.raw_text.clone(),
                     line,
                 });
+            } else {
+                state = analyze_function_call(value, line, state, function_table);
             }
-            // Function call parameter validation (if applicable)
-            // TODO; having to handle this specifically for functions here is weird.
-            // In theory, it'd be best to have a generic function that handles Value validation.
-            // But not sure if that's possible currently.
-            // TODO: this function is kinda weird and unintuitive. Could improve.
-            analyze_function_call(state, function_table, var_decl);
         }
         ValueType::InlineNumber | ValueType::InlineString => {
             // Inline values don't need validation
@@ -235,25 +192,79 @@ fn validate_value(
             // Expression validation would be more complex
         }
         ValueType::Invalid => {
-            return Some(SemanticError::InvalidValueReference {
+            state.errors.push(SemanticError::InvalidValueReference {
                 name: value.raw_text.clone(),
                 line,
             });
         }
     }
 
-    None
+    state
+}
+
+/// Analyze function call parameters and validate them
+fn analyze_function_call(
+    value: &Value,
+    line: u32,
+    state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
+    let mut state = state;
+
+    // Validate function call parameters
+    if let Some(func_def) = function_table.get_func_def_using_str(&value.raw_text) {
+        if let Some(ref param_values) = value.param_values {
+            // Check parameter count
+            if param_values.len() != func_def.parameters.len() {
+                state.errors.push(SemanticError::IncorrectParameters {
+                    parameters_expected: func_def.parameters.len(),
+                    parameters_provided: param_values.len(),
+                    line,
+                });
+            }
+
+            // Validate each parameter recursively and check types
+            for (i, param_value) in param_values.iter().enumerate() {
+                state = validate_value(param_value, line, state, function_table);
+
+                // Type check parameter if it exists in function definition
+                if let Some(expected_param) = func_def.parameters.get(i) {
+                    if param_value.data_type != expected_param.data_type {
+                        state.errors.push(SemanticError::TypeMismatch {
+                            expected: expected_param.data_type.clone(),
+                            found: param_value.data_type.clone(),
+                            line,
+                        });
+                    }
+                }
+            }
+        } else if !func_def.parameters.is_empty() {
+            // Function expects parameters but none provided
+            state.errors.push(SemanticError::IncorrectParameters {
+                parameters_expected: func_def.parameters.len(),
+                parameters_provided: 0,
+                line,
+            });
+        }
+    }
+
+    state
 }
 
 // The datatype of values (variables/function calls) is incomplete, since the AST
 // shouldn't be having to worry about type enforcement.
 // This function is used when we need to update the value struct with the datatype
 // of whatever is being called.
-fn resolve_value_type(value: &mut Value, state: &AnalysisState, function_table: &FunctionTable) {
+fn resolve_value_type(
+    value: &mut Value,
+    state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
     if value.data_type != DataType::Unknown {
-        return; // Already resolved
+        return state; // Already resolved
     }
 
+    let mut state = state;
     let current_context = state.context_stack.last().unwrap();
 
     match value.value_type {
@@ -266,7 +277,7 @@ fn resolve_value_type(value: &mut Value, state: &AnalysisState, function_table: 
             // First resolve parameter types if they exist
             if let Some(ref mut param_values) = value.param_values {
                 for param_value in param_values {
-                    resolve_value_type(param_value, state, function_table);
+                    state = resolve_value_type(param_value, state, function_table);
                 }
             }
 
@@ -277,10 +288,17 @@ fn resolve_value_type(value: &mut Value, state: &AnalysisState, function_table: 
         }
         _ => {} // Other types should already have correct data_type
     }
+
+    state
 }
 
 /// Push a new scope for function analysis
-fn push_scope(function_name: &str, state: &mut AnalysisState, function_table: &FunctionTable) {
+fn push_scope(
+    function_name: &str,
+    state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
+    let mut state = state;
     if let Some(function_id) = function_table.get_id_with_function_name(function_name) {
         if let Some(function_def) =
             function_table.get_func_def_using_str(&function_name.to_string())
@@ -304,13 +322,16 @@ fn push_scope(function_name: &str, state: &mut AnalysisState, function_table: &F
             state.context_stack.push(new_context);
         }
     }
+    state
 }
 
 /// Pop the current scope
-fn pop_scope(state: &mut AnalysisState) {
+fn pop_scope(state: AnalysisState) -> AnalysisState {
+    let mut state = state;
     if state.context_stack.len() > 1 {
         state.context_stack.pop();
     }
+    state
 }
 
 /// Add a variable to the current scope
