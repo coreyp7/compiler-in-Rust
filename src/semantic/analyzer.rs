@@ -151,14 +151,15 @@ fn analyze_function_declaration(
     state
 }
 
-/// Validate that a value reference is semantically correct
+// Validate that a value reference is semantically correct
 fn validate_value(
     value: &Value,
     line: u32,
     state: AnalysisState,
     function_table: &FunctionTable,
 ) -> AnalysisState {
-    state = resolve_value_type(value, state, function_table);
+    // this is being done in a previous phase now
+    //state = resolve_value_type(value, state, function_table);
 
     let mut state = state;
     let current_context = state.context_stack.last().unwrap();

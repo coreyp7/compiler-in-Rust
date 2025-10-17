@@ -17,6 +17,7 @@ use first_pass::gather_declarations;
 
 mod semantic;
 use semantic::analyze_statements;
+use semantic::resolve_all_value_types_in_ast;
 
 mod code_generate;
 use code_generate::generate_code_str;
@@ -33,27 +34,42 @@ fn main() -> std::io::Result<()> {
 
     let tokens: Vec<Token> = tokenize_file(&mut plank_src_file);
     if debug {
-        debug_print_tokens(&tokens);
+        //debug_print_tokens(&tokens);
     }
 
     // First pass: gather all function declarations. Allows file to do
     // forward declarations.
     let function_header_map = gather_declarations(&tokens);
     if debug {
-        //println!("---Function header map---");
-        //println!("{:#?}", function_header_map);
+        println!("---Function header map---");
+        println!("{:#?}", function_header_map);
+        println!("---Function header map end---");
     }
 
     // Second pass: generate AST given token list
     let mut ast_context = build_ast(tokens);
     if debug {
+        println!("---ast start---");
         debug_print_ast(&ast_context.statements);
+        println!("---ast end---");
+    }
+
+    // Resolve any unknown datatypes in values.
+    let statements: &mut Vec<Statement> = &mut ast_context.statements;
+    resolve_all_value_types_in_ast(statements, &function_header_map);
+
+    if debug {
+        println!("---ast (post type resolution) start---");
+        debug_print_ast(&ast_context.statements);
+        println!("---ast (post type resolution) end---");
     }
 
     // Third pass: semantic analysis
     let semantic_errors = analyze_statements(&mut ast_context.statements, &function_header_map);
 
-    println!("semantic errors:\n{:#?}", semantic_errors);
+    if debug {
+        //println!("semantic errors:\n{:#?}", semantic_errors);
+    }
 
     if !semantic_errors.is_empty() {
         semantic::print_failures_message(semantic_errors.len());

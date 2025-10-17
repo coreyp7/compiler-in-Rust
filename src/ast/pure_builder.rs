@@ -308,7 +308,7 @@ pub enum DataType {
     Invalid,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ValueType {
     FunctionCall,
     Expression,
