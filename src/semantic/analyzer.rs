@@ -107,11 +107,10 @@ fn analyze_statement(
 
 fn analyze_variable_assignment(
     var_ass: &mut VariableAssignmentStatement,
-    state: AnalysisState,
+    mut state: AnalysisState,
     function_table: &FunctionTable,
 ) -> AnalysisState {
     // What things do we need to validate here?
-    // - the variable being assigned to exists in this scope
     // - type check
     // I can't think of anything else rn so just do these
 
@@ -123,6 +122,47 @@ fn analyze_variable_assignment(
 
     println!("Updated statement in ast:");
     println!("{:#?}", var_ass);
+
+    // Check the variable being assigned to exists in this scope
+    // TODO: helper functions for this shit needs to be made lol
+    let var_op = state
+        .context_stack
+        .last()
+        .unwrap()
+        .symbol_table
+        .get(&var_ass.var_name);
+
+    match var_op {
+        Some(var_def) => {
+            println!("some var def found for {}", var_ass.var_name);
+            // Type check the variable with its assignment
+
+            if var_def.data_type != var_ass.assigned_value.data_type {
+                state.errors.push(SemanticError::TypeMismatch {
+                    expected: var_def.data_type.clone(),
+                    found: var_ass.assigned_value.data_type.clone(),
+                    line: var_ass.line_number,
+                });
+            }
+
+            // TODO: we also need to check for validity of all types of values here,
+            // (variables, function calls, etc.).
+            // isn't there a function I wrote for this?
+        }
+        None => {
+            println!("NONE found for {}", var_ass.var_name);
+            state.errors.push(SemanticError::VariableNotDeclared {
+                name: var_ass.var_name.clone(),
+                line: var_ass.line_number,
+            });
+        }
+    }
+    state = validate_value(
+        &var_ass.assigned_value,
+        var_ass.line_number,
+        state,
+        function_table,
+    );
 
     state
 }

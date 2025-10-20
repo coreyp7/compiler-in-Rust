@@ -21,6 +21,7 @@ pub struct VariableAssignmentStatement {
     pub var_data_type: DataType,
     pub assigned_value: Value,
     pub line_var_was_declared_on: u32,
+    pub line_number: u32,
 }
 
 #[derive(Debug)]

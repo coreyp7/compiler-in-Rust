@@ -114,6 +114,7 @@ fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statemen
     // - var assignment
     // - i think that's it, since there's no reason to call a function without returning something from it.
     let identity_lexeme = context.get_curr().lexeme.clone();
+    let line_number = context.get_curr().line_number;
     context.advance();
 
     // TODO: confirm that this token is <= (assignment token)
@@ -126,6 +127,7 @@ fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statemen
         var_data_type: DataType::Unknown, // unknown until semantic analysis
         assigned_value: val,
         line_var_was_declared_on: 0, // unknown until semantic analysis
+        line_number,
     });
 
     ((assignent_struct), returned_context)
