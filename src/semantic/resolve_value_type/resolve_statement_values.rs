@@ -50,7 +50,9 @@ pub fn resolve_variable_declaration(
     // Check that the value_type is a function call
     // if function call: Set the assigned value data_type
     // using the function_header_map
-    match var_decl_stmt.assigned_value.value_type {
+    let var_decl_value_type = var_decl_stmt.assigned_value.value_type.clone();
+    match var_decl_value_type {
+        // TODO: could this be moved into a more generic 'resolve value' function?
         ValueType::FunctionCall => {
             let func_call_decl_op =
                 function_header_map.get_func_def_using_str(&var_decl_stmt.assigned_value.raw_text);
@@ -58,12 +60,14 @@ pub fn resolve_variable_declaration(
             match func_call_decl_op {
                 Some(func_decl) => {
                     var_decl_stmt.assigned_value.data_type = func_decl.return_type.clone();
-                    println!("we set the return type!");
-                    println!("func_decl type: {:?}", func_decl.return_type);
-                    println!(
-                        "assigned value new type: {:?}",
-                        var_decl_stmt.assigned_value.data_type
-                    );
+                    if let Some(params) = var_decl_stmt.assigned_value.param_values.as_mut() {
+                        for param in params {
+                            if let Some(param_var_def) = symbol_table.get(&param.raw_text) {
+                                param.data_type = param_var_def.data_type.clone();
+                            }
+                        }
+                    }
+                    // Resolve the passed in parameter types
                 }
                 None => {
                     // TODO: when would this error even happen? I suppose if they're
