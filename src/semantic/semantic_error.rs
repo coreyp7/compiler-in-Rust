@@ -1,4 +1,4 @@
-use crate::ast::DataType;
+use crate::ast::{DataType, FunctionSymbol};
 use colored::*;
 
 /// Represents different types of semantic errors
@@ -31,13 +31,19 @@ pub enum SemanticError {
         func_declared_on_line: u32,
     },
     ReturnTypeIncorrect {
-        func_name: String,
+        func_def: FunctionSymbol,
         line: u32,
     },
     IncorrectParameters {
         parameters_expected: usize,
         parameters_provided: usize,
         line: u32,
+    },
+    /// First created this for when returns are found outside of functions.
+    /// Helpful for more generic errors thatr we can just write a sentence for.
+    UnexpectedStatement {
+        line: u32,
+        explanation: String,
     },
 }
 
@@ -179,13 +185,23 @@ impl SemanticError {
                     parameters_provided.to_string().red().bold()
                 );
             }
-            SemanticError::ReturnTypeIncorrect { func_name, line } => {
+            SemanticError::ReturnTypeIncorrect { func_def, line } => {
                 error_header("Incorrect return type", *line);
                 eprintln!(
-                    " {} Return statement in function {} is of incorrect type.",
+                    "  {} Return statement in function '{}' is of incorrect type.",
                     error_line_start(),
-                    func_name
+                    func_def.identifier
                 );
+                eprintln!(
+                    "  {} '{}' declared on line {}",
+                    error_line_end(),
+                    func_def.identifier,
+                    func_def.line_declared_on
+                );
+            }
+            SemanticError::UnexpectedStatement { line, explanation } => {
+                error_header("Unexpected statement found", *line);
+                eprintln!("  {} {}", error_line_start(), explanation);
             }
         }
     }

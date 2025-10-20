@@ -67,22 +67,33 @@ fn analyze_statement(
                 state = resolve_value_type(return_value, state, function_table);
                 // TODO: if incorrect return statement not in function, this will crash.
                 // NEED TO HANDLE IF THIS IS THE CASE.
+                /*
                 let curr_func_id = state.context_stack.last().unwrap().scope.unwrap();
                 let curr_func_def = function_table.get_using_id(curr_func_id).unwrap();
                 if return_value.data_type != curr_func_def.return_type {
                     state.errors.push(SemanticError::ReturnTypeIncorrect {
-                        func_name: curr_func_def.identifier.clone(),
+                        func_def: curr_func_def.clone(),
                         line: return_stmt.line_declared_on,
                     })
                 }
-                /*
-                state = validate_value(
-                    return_value,
-                    return_stmt.line_declared_on,
-                    state,
-                    function_table,
-                );
                 */
+
+                // If scope is null, we're in global scope, which means a return shouldn't exist.
+                // Handle it appropriately.
+                if let Some(curr_func_id) = state.context_stack.last().unwrap().scope {
+                    let curr_func_def = function_table.get_using_id(curr_func_id).unwrap();
+                    if return_value.data_type != curr_func_def.return_type {
+                        state.errors.push(SemanticError::ReturnTypeIncorrect {
+                            func_def: curr_func_def.clone(),
+                            line: return_stmt.line_declared_on,
+                        })
+                    }
+                } else {
+                    state.errors.push(SemanticError::UnexpectedStatement {
+                        line: return_stmt.line_declared_on,
+                        explanation: "This return statement is not in a function.".to_string(),
+                    })
+                }
             }
         }
     }
