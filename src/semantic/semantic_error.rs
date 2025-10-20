@@ -30,6 +30,10 @@ pub enum SemanticError {
         funct_name: String,
         func_declared_on_line: u32,
     },
+    ReturnTypeIncorrect {
+        func_name: String,
+        line: u32,
+    },
     IncorrectParameters {
         parameters_expected: usize,
         parameters_provided: usize,
@@ -173,6 +177,14 @@ impl SemanticError {
                     "  {} Found:    {} parameters",
                     error_line_end(),
                     parameters_provided.to_string().red().bold()
+                );
+            }
+            SemanticError::ReturnTypeIncorrect { func_name, line } => {
+                error_header("Incorrect return type", *line);
+                eprintln!(
+                    " {} Return statement in function {} is of incorrect type.",
+                    error_line_start(),
+                    func_name
                 );
             }
         }

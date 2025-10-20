@@ -4,7 +4,7 @@ use crate::ast::{
     VariableDeclarationStatement,
 };
 use crate::semantic::SemanticError;
-use crate::semantic::resolve_value_type::resolve_variable_declaration;
+use crate::semantic::resolve_value_type::resolve_variable_declaration_types;
 use crate::symbol_table::SymbolTable;
 
 /// Semantic analyzer context for managing scope
@@ -65,12 +65,24 @@ fn analyze_statement(
         Statement::Return(return_stmt) => {
             if let Some(ref mut return_value) = return_stmt.return_value {
                 state = resolve_value_type(return_value, state, function_table);
+                // TODO: if incorrect return statement not in function, this will crash.
+                // NEED TO HANDLE IF THIS IS THE CASE.
+                let curr_func_id = state.context_stack.last().unwrap().scope.unwrap();
+                let curr_func_def = function_table.get_using_id(curr_func_id).unwrap();
+                if return_value.data_type != curr_func_def.return_type {
+                    state.errors.push(SemanticError::ReturnTypeIncorrect {
+                        func_name: curr_func_def.identifier.clone(),
+                        line: return_stmt.line_declared_on,
+                    })
+                }
+                /*
                 state = validate_value(
                     return_value,
                     return_stmt.line_declared_on,
                     state,
                     function_table,
                 );
+                */
             }
         }
     }
@@ -87,7 +99,7 @@ fn analyze_variable_declaration(
 
     // Not done in AST, so we need to do it here.
     //state = resolve_value_type(&mut var_decl.assigned_value, state, function_table);
-    resolve_variable_declaration(
+    resolve_variable_declaration_types(
         var_decl,
         function_table,
         &state.context_stack.last().unwrap().symbol_table,

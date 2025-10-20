@@ -36,13 +36,13 @@ fn resolve_statement(
     // this is just going to be a giant match statement
     match statement {
         Statement::VariableDeclaration(var_decl_stmt) => {
-            resolve_variable_declaration(var_decl_stmt, function_header_map, symbol_table);
+            resolve_variable_declaration_types(var_decl_stmt, function_header_map, symbol_table);
         }
         _ => (),
     }
 }
 
-pub fn resolve_variable_declaration(
+pub fn resolve_variable_declaration_types(
     var_decl_stmt: &mut VariableDeclarationStatement,
     function_header_map: &FunctionTable,
     symbol_table: &SymbolTable,
