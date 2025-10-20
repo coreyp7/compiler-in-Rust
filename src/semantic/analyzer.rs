@@ -1,9 +1,10 @@
 use crate::ast::FunctionTable;
 use crate::ast::{
     DataType, FunctionDeclarationStatement, Statement, Value, ValueType,
-    VariableDeclarationStatement,
+    VariableAssignmentStatement, VariableDeclarationStatement,
 };
 use crate::semantic::SemanticError;
+use crate::semantic::resolve_value_type::resolve_variable_assignment_stmt_types;
 use crate::semantic::resolve_value_type::resolve_variable_declaration_types;
 use crate::symbol_table::SymbolTable;
 
@@ -59,6 +60,9 @@ fn analyze_statement(
         Statement::VariableDeclaration(var_decl) => {
             state = analyze_variable_declaration(var_decl, state, function_table);
         }
+        Statement::VariableAssignment(var_ass) => {
+            state = analyze_variable_assignment(var_ass, state, function_table);
+        }
         Statement::FunctionDeclaration(func_decl) => {
             state = analyze_function_declaration(func_decl, state, function_table);
         }
@@ -96,7 +100,30 @@ fn analyze_statement(
                 }
             }
         }
+        _ => (),
     }
+    state
+}
+
+fn analyze_variable_assignment(
+    var_ass: &mut VariableAssignmentStatement,
+    state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
+    // What things do we need to validate here?
+    // - the variable being assigned to exists in this scope
+    // - type check
+    // I can't think of anything else rn so just do these
+
+    resolve_variable_assignment_stmt_types(
+        var_ass,
+        function_table,
+        &state.context_stack.last().unwrap().symbol_table,
+    );
+
+    println!("Updated statement in ast:");
+    println!("{:#?}", var_ass);
+
     state
 }
 

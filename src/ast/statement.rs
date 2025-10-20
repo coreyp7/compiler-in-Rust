@@ -16,6 +16,14 @@ pub struct VariableDeclarationStatement {
 }
 
 #[derive(Debug)]
+pub struct VariableAssignmentStatement {
+    pub var_name: String,
+    pub var_data_type: DataType,
+    pub assigned_value: Value,
+    pub line_var_was_declared_on: u32,
+}
+
+#[derive(Debug)]
 pub struct FunctionDeclarationStatement {
     pub function_name: String,
     pub return_type: DataType,
@@ -32,6 +40,7 @@ pub struct ReturnStatement {
 #[derive(Debug)]
 pub enum Statement {
     VariableDeclaration(VariableDeclarationStatement),
+    VariableAssignment(VariableAssignmentStatement),
     FunctionDeclaration(FunctionDeclarationStatement),
     Return(ReturnStatement),
 }

@@ -46,6 +46,7 @@ pub fn to_code_str(statement: &Statement) -> String {
         }
         Statement::VariableDeclaration(var_decl_st) => to_code_str_var_decl(var_decl_st),
         Statement::Return(return_statement) => to_code_str_return(return_statement),
+        _ => "".to_string(),
     }
 }
 

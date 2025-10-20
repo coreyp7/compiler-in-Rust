@@ -35,7 +35,7 @@ fn main() -> std::io::Result<()> {
 
     let tokens: Vec<Token> = tokenize_file(&mut plank_src_file);
     if debug {
-        //debug_print_tokens(&tokens);
+        debug_print_tokens(&tokens);
     }
 
     // First pass: gather all function declarations. Allows file to do
@@ -55,18 +55,10 @@ fn main() -> std::io::Result<()> {
         println!("---ast end---");
     }
 
-    // Resolve any unknown datatypes in values.
-    //let statements: &mut Vec<Statement> = &mut ast_context.statements;
-    //let symbol_table = SymbolTable::new(); // Create a symbol table for type resolution
-    //resolve_all_value_types_in_ast(statements, &function_header_map, &symbol_table);
-
-    if debug {
-        // println!("---ast (post type resolution) start---");
-        // debug_print_ast(&ast_context.statements);
-        // println!("---ast (post type resolution) end---");
-    }
-
-    // Third pass: semantic analysis
+    // Third pass: semantic analysis.
+    // (There is also some type resolution done in here, since the semantic analyzer
+    // keeps track of scope of available symbols/functions, so was easier to make as
+    // a part of the same step)
     let semantic_errors = analyze_statements(&mut ast_context.statements, &function_header_map);
 
     if debug {

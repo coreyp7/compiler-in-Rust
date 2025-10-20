@@ -1,8 +1,11 @@
+use std::thread::Builder;
+
 use super::builder_context::BuilderContext;
 use super::statement::{
     FunctionDeclarationStatement, ReturnStatement, Statement, VariableDeclarationStatement,
 };
 
+use crate::ast::VariableAssignmentStatement;
 use crate::tokenizer::{Token, TokenType};
 
 /// Build AST from tokens - pure structural parsing, no validation
@@ -41,6 +44,11 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
             let (stmt, ctx) = parse_return_statement(context);
             (Some(stmt), ctx)
         }
+        TokenType::Identity => {
+            let (stmt, ctx) = parse_identity_assignment_statement(context);
+            (Some(stmt), ctx)
+        }
+        //TokenType::Identity => (Some(stmt), ctx),
         _ => {
             // Skip unsupported statements for now
             context.advance();
@@ -99,6 +107,28 @@ fn parse_variable_declaration(mut context: BuilderContext) -> (Statement, Builde
     });
 
     (statement, context)
+}
+
+fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statement, BuilderContext) {
+    // Okay; what could this identity be?
+    // - var assignment
+    // - i think that's it, since there's no reason to call a function without returning something from it.
+    let identity_lexeme = context.get_curr().lexeme.clone();
+    context.advance();
+
+    // TODO: confirm that this token is <= (assignment token)
+    context.advance();
+
+    let (val, returned_context) = parse_value(context);
+
+    let assignent_struct = Statement::VariableAssignment(VariableAssignmentStatement {
+        var_name: identity_lexeme,
+        var_data_type: DataType::Unknown, // unknown until semantic analysis
+        assigned_value: val,
+        line_var_was_declared_on: 0, // unknown until semantic analysis
+    });
+
+    ((assignent_struct), returned_context)
 }
 
 fn parse_function_declaration(mut context: BuilderContext) -> (Statement, BuilderContext) {

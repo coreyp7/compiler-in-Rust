@@ -1,7 +1,9 @@
 use crate::ast::DataType;
 use crate::ast::FunctionTable;
 use crate::ast::Statement;
+use crate::ast::Value;
 use crate::ast::ValueType;
+use crate::ast::VariableAssignmentStatement;
 use crate::ast::VariableDeclarationStatement;
 use crate::symbol_table::SymbolTable;
 
@@ -50,24 +52,52 @@ pub fn resolve_variable_declaration_types(
     // Check that the value_type is a function call
     // if function call: Set the assigned value data_type
     // using the function_header_map
-    let var_decl_value_type = var_decl_stmt.assigned_value.value_type.clone();
-    match var_decl_value_type {
+    resolve_value(
+        &mut var_decl_stmt.assigned_value,
+        function_header_map,
+        symbol_table,
+    );
+}
+
+pub fn resolve_variable_assignment_stmt_types(
+    var_ass_stmt: &mut VariableAssignmentStatement,
+    function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
+    // Also need to resolve the type of the variable being assigned to.
+    let var_name = &var_ass_stmt.var_name;
+    if let Some(var_def) = symbol_table.get(var_name) {
+        var_ass_stmt.var_data_type = var_def.data_type.clone();
+    }
+
+    resolve_value(
+        &mut var_ass_stmt.assigned_value,
+        function_header_map,
+        symbol_table,
+    );
+}
+
+fn resolve_value(val: &mut Value, function_header_map: &FunctionTable, symbol_table: &SymbolTable) {
+    let val_type = &val.value_type;
+    match val_type {
         // TODO: could this be moved into a more generic 'resolve value' function?
         ValueType::FunctionCall => {
-            let func_call_decl_op =
-                function_header_map.get_func_def_using_str(&var_decl_stmt.assigned_value.raw_text);
+            let func_call_decl_op = function_header_map.get_func_def_using_str(&val.raw_text);
 
             match func_call_decl_op {
                 Some(func_decl) => {
-                    var_decl_stmt.assigned_value.data_type = func_decl.return_type.clone();
-                    if let Some(params) = var_decl_stmt.assigned_value.param_values.as_mut() {
+                    val.data_type = func_decl.return_type.clone();
+                    // TODO: NOTE: This assumes all the passed in values are variables.
+                    // This isn't generic at all, and if some value that isn't a variable
+                    // is here, it won't be handled correctly.
+                    // This needs to be resolved.
+                    if let Some(params) = val.param_values.as_mut() {
                         for param in params {
                             if let Some(param_var_def) = symbol_table.get(&param.raw_text) {
                                 param.data_type = param_var_def.data_type.clone();
                             }
                         }
                     }
-                    // Resolve the passed in parameter types
                 }
                 None => {
                     // TODO: when would this error even happen? I suppose if they're
@@ -82,11 +112,9 @@ pub fn resolve_variable_declaration_types(
         ValueType::Variable => {
             // Now we can use the symbol_table to resolve variable types
             // You can implement variable type resolution logic here
-            let var_type_op = symbol_table.get(&var_decl_stmt.assigned_value.raw_text);
+            let var_type_op = symbol_table.get(&val.raw_text);
             match var_type_op {
-                Some(var_type) => {
-                    var_decl_stmt.assigned_value.data_type = var_type.data_type.clone()
-                }
+                Some(var_type) => val.data_type = var_type.data_type.clone(),
                 None => (), // TODO: maybe do something? nah, this hsould be handled in analysis
             }
         }
