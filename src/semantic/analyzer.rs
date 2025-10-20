@@ -90,7 +90,7 @@ fn analyze_variable_declaration(
     resolve_variable_declaration(
         var_decl,
         function_table,
-        &state.context_stack.get(0).unwrap().symbol_table,
+        &state.context_stack.last().unwrap().symbol_table,
     );
 
     println!("Updated statement in ast:");

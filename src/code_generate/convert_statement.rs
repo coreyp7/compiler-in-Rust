@@ -50,12 +50,43 @@ pub fn to_code_str(statement: &Statement) -> String {
 }
 
 fn to_code_str_var_decl(var_decl: &VariableDeclarationStatement) -> String {
-    format!(
+    let mut code_str = format!(
         "{} {} = {};\n",
         var_decl.data_type.to_string(),
         var_decl.symbol_name,
-        var_decl.assigned_value.to_string()
-    )
+        to_code_str_value(&var_decl.assigned_value)
+    );
+    code_str
+}
+
+fn to_code_str_value(value: &Value) -> String {
+    let mut code_str = String::new();
+    match value.value_type {
+        ValueType::FunctionCall => {
+            code_str.push_str(&value.raw_text);
+            code_str.push_str("(");
+            if let Some(params) = &value.param_values {
+                for (idx, param) in params.iter().enumerate() {
+                    code_str.push_str(&param.raw_text);
+                    if idx < params.len() - 1 {
+                        code_str.push_str(", ");
+                    }
+                }
+            }
+            code_str.push_str(")");
+        }
+        ValueType::InlineNumber | ValueType::Variable => {
+            code_str.push_str(&value.raw_text);
+        }
+        ValueType::InlineString => {
+            code_str.push_str("\"");
+            code_str.push_str(&value.raw_text);
+            code_str.push_str("\"");
+        }
+        _ => (),
+    }
+
+    code_str
 }
 
 fn to_code_str_return(return_stmt: &ReturnStatement) -> String {
