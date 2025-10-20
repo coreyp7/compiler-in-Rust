@@ -11,6 +11,7 @@ use ast::Statement;
 use ast::build_ast;
 
 mod symbol_table;
+use symbol_table::SymbolTable;
 
 mod first_pass;
 use first_pass::gather_declarations;
@@ -55,13 +56,14 @@ fn main() -> std::io::Result<()> {
     }
 
     // Resolve any unknown datatypes in values.
-    let statements: &mut Vec<Statement> = &mut ast_context.statements;
-    resolve_all_value_types_in_ast(statements, &function_header_map);
+    //let statements: &mut Vec<Statement> = &mut ast_context.statements;
+    //let symbol_table = SymbolTable::new(); // Create a symbol table for type resolution
+    //resolve_all_value_types_in_ast(statements, &function_header_map, &symbol_table);
 
     if debug {
-        println!("---ast (post type resolution) start---");
-        debug_print_ast(&ast_context.statements);
-        println!("---ast (post type resolution) end---");
+        // println!("---ast (post type resolution) start---");
+        // debug_print_ast(&ast_context.statements);
+        // println!("---ast (post type resolution) end---");
     }
 
     // Third pass: semantic analysis

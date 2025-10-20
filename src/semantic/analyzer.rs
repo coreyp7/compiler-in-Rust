@@ -4,6 +4,7 @@ use crate::ast::{
     VariableDeclarationStatement,
 };
 use crate::semantic::SemanticError;
+use crate::semantic::resolve_value_type::resolve_variable_declaration;
 use crate::symbol_table::SymbolTable;
 
 /// Semantic analyzer context for managing scope
@@ -85,7 +86,15 @@ fn analyze_variable_declaration(
     let mut state = state;
 
     // Not done in AST, so we need to do it here.
-    state = resolve_value_type(&mut var_decl.assigned_value, state, function_table);
+    //state = resolve_value_type(&mut var_decl.assigned_value, state, function_table);
+    resolve_variable_declaration(
+        var_decl,
+        function_table,
+        &state.context_stack.get(0).unwrap().symbol_table,
+    );
+
+    println!("Updated statement in ast:");
+    println!("{:#?}", var_decl);
 
     // First, try to add the variable to the current scope
     if let Err(error) = add_variable_to_current_scope(

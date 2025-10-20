@@ -1,2 +1,3 @@
 mod resolve_statement_values;
 pub use resolve_statement_values::resolve_all_value_types_in_ast;
+pub use resolve_statement_values::resolve_variable_declaration;

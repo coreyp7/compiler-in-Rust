@@ -2,10 +2,13 @@ use crate::ast::DataType;
 use crate::ast::FunctionTable;
 use crate::ast::Statement;
 use crate::ast::ValueType;
+use crate::ast::VariableDeclarationStatement;
+use crate::symbol_table::SymbolTable;
 
 pub fn resolve_all_value_types_in_ast(
     ast_statements: &mut Vec<Statement>,
     function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
 ) {
     // TODO:
     // Loop through statements and handle differently depending on statement.
@@ -20,44 +23,75 @@ pub fn resolve_all_value_types_in_ast(
 
     for i in 0..ast_statements.len() {
         let vec_stmt = &mut ast_statements[i];
-        resolve_statement(vec_stmt, function_header_map);
+        resolve_statement(vec_stmt, function_header_map, symbol_table);
     }
     //return ast;
 }
 
-fn resolve_statement(statement: &mut Statement, function_header_map: &FunctionTable) {
+fn resolve_statement(
+    statement: &mut Statement,
+    function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
     // this is just going to be a giant match statement
     match statement {
         Statement::VariableDeclaration(var_decl_stmt) => {
-            // Check that the value_type is a function call
-            // if function call: Set the assigned value data_type
-            // using the function_header_map
-            if var_decl_stmt.assigned_value.value_type == ValueType::FunctionCall {
-                let func_call_decl_op = function_header_map
-                    .get_func_def_using_str(&var_decl_stmt.assigned_value.raw_text);
+            resolve_variable_declaration(var_decl_stmt, function_header_map, symbol_table);
+        }
+        _ => (),
+    }
+}
 
-                match func_call_decl_op {
-                    Some(func_decl) => {
-                        var_decl_stmt.assigned_value.data_type = func_decl.return_type.clone();
-                        println!("we set the return type!");
-                        println!("func_decl type: {:?}", func_decl.return_type);
-                        println!(
-                            "assigned value new type: {:?}",
-                            var_decl_stmt.assigned_value.data_type
-                        );
-                    }
-                    None => {
-                        // TODO: when would this error even happen? I suppose if they're
-                        // calling a function that doesn't exist, then it'd happen.
-                        // Thus, leaving it unknown could indicate that the function
-                        // dne. But isn't that handled in semantic analyzer anyway?
-                        // So maybe we don't need to do anything here. Test this.
-                        println!("NONE was found when trying to set the return type :(");
-                    }
+pub fn resolve_variable_declaration(
+    var_decl_stmt: &mut VariableDeclarationStatement,
+    function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
+    // Check that the value_type is a function call
+    // if function call: Set the assigned value data_type
+    // using the function_header_map
+    match var_decl_stmt.assigned_value.value_type {
+        ValueType::FunctionCall => {
+            let func_call_decl_op =
+                function_header_map.get_func_def_using_str(&var_decl_stmt.assigned_value.raw_text);
+
+            match func_call_decl_op {
+                Some(func_decl) => {
+                    var_decl_stmt.assigned_value.data_type = func_decl.return_type.clone();
+                    println!("we set the return type!");
+                    println!("func_decl type: {:?}", func_decl.return_type);
+                    println!(
+                        "assigned value new type: {:?}",
+                        var_decl_stmt.assigned_value.data_type
+                    );
+                }
+                None => {
+                    // TODO: when would this error even happen? I suppose if they're
+                    // calling a function that doesn't exist, then it'd happen.
+                    // Thus, leaving it unknown could indicate that the function
+                    // dne. But isn't that handled in semantic analyzer anyway?
+                    // So maybe we don't need to do anything here. Test this.
+                    println!("NONE was found when trying to set the return type :(");
                 }
             }
         }
-        _ => (),
+        ValueType::Variable => {
+            // Now we can use the symbol_table to resolve variable types
+            // You can implement variable type resolution logic here
+            let var_type_op = symbol_table.get(&var_decl_stmt.assigned_value.raw_text);
+            match var_type_op {
+                Some(var_type) => {
+                    var_decl_stmt.assigned_value.data_type = var_type.data_type.clone()
+                }
+                None => (), // TODO: maybe do something? nah, this hsould be handled in analysis
+            }
+        }
+        ValueType::Expression
+        | ValueType::InlineNumber
+        | ValueType::InlineString
+        | ValueType::Invalid => {
+            // These don't need type resolution from function table or symbol table
+        }
     }
 }
 
