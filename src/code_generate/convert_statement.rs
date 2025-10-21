@@ -1,4 +1,6 @@
-use crate::ast::{DataType, ReturnStatement, Value, VariableDeclarationStatement};
+use crate::ast::{
+    DataType, ReturnStatement, Value, VariableAssignmentStatement, VariableDeclarationStatement,
+};
 use crate::ast::{FunctionDeclarationStatement, FunctionSymbol, Statement, ValueType};
 use std::fmt;
 
@@ -45,19 +47,27 @@ pub fn to_code_str(statement: &Statement) -> String {
             String::new()
         }
         Statement::VariableDeclaration(var_decl_st) => to_code_str_var_decl(var_decl_st),
+        Statement::VariableAssignment(var_assign_st) => to_code_str_var_assignment(var_assign_st),
         Statement::Return(return_statement) => to_code_str_return(return_statement),
         _ => "".to_string(),
     }
 }
 
 fn to_code_str_var_decl(var_decl: &VariableDeclarationStatement) -> String {
-    let mut code_str = format!(
+    format!(
         "{} {} = {};\n",
         var_decl.data_type.to_string(),
         var_decl.symbol_name,
         to_code_str_value(&var_decl.assigned_value)
-    );
-    code_str
+    )
+}
+
+fn to_code_str_var_assignment(var_assign: &VariableAssignmentStatement) -> String {
+    format!(
+        "{} = {};\n",
+        var_assign.var_name,
+        to_code_str_value(&var_assign.assigned_value)
+    )
 }
 
 fn to_code_str_value(value: &Value) -> String {
