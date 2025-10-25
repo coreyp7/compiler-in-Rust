@@ -273,8 +273,15 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
     };
 
     if !context.is_at_end() {
-        context.advance(); // Skip colon
+        context.advance(); // Skip return type (we've already confirmed its there)
     }
+
+    expect_token!(
+        context,
+        TokenType::Colon,
+        "Expected delimiter colon after function declaration"
+    );
+    context.advance();
 
     // Parse function body statements
     let mut body = Vec::new();
