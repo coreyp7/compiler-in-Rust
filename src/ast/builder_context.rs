@@ -28,7 +28,10 @@ impl BuilderContext {
     }
 
     pub fn is_at_end(&self) -> bool {
-        self.idx >= self.tokens.len()
+        //self.idx >= self.tokens.len()
+
+        // Leaving for now, but this makes a lot more sense.
+        self.get_curr().token_type == TokenType::EOF
     }
 
     pub fn advance(&mut self) {
@@ -70,8 +73,8 @@ impl BuilderContext {
         }
     }
 
-    /// Helper function for error recovery - adds error and advances to next statement
-    pub fn handle_parse_error(&mut self, line: usize, explanation: String) {
+    /// Adds error and advances to next statement
+    pub fn handle_parse_error(&mut self, line: u32, explanation: String) {
         self.errors.push(SemanticError::UnexpectedStatement {
             line: line as u32,
             explanation,

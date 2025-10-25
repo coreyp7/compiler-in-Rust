@@ -19,18 +19,24 @@ fn create_invalid_statement() -> Statement {
     })
 }
 
-/// Macro to handle expected token checking with error recovery
-/// TODO: can move into error module or something
+/// Macro to handle expected token checking with error recovery (find start
+/// of next statement).
+/// Current logic; return early from the parsing function without creating a
+/// new statement. Before returning, add a parsing error indicating that there
+/// was a problem parsing the current statement.
 macro_rules! expect_token {
     ($context:expr, $expected:pat, $error_msg:expr) => {
         if $context.is_at_end() {
-            $context.handle_parse_error(0, format!("Unexpected end of file: {}", $error_msg));
+            $context.handle_parse_error(
+                $context.get_curr().line_number,
+                format!("Unexpected end of file: {}", $error_msg),
+            );
             return (create_invalid_statement(), $context);
         }
 
         if !matches!($context.get_curr().token_type, $expected) {
             $context.handle_parse_error(
-                $context.get_curr().line_number as usize,
+                $context.get_curr().line_number,
                 format!("{}, found '{}'", $error_msg, $context.get_curr().lexeme),
             );
             return (create_invalid_statement(), $context);
@@ -87,7 +93,7 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
         _ => {
             // Unexpected token - report error and skip to next statement
             context.handle_parse_error(
-                context.get_curr().line_number as usize,
+                context.get_curr().line_number,
                 format!("Unexpected token: '{}'", context.get_curr().lexeme),
             );
             (None, context)
@@ -123,7 +129,7 @@ fn parse_variable_declaration(mut context: BuilderContext) -> (Statement, Builde
         "String" => DataType::String,
         _ => {
             context.handle_parse_error(
-                context.get_curr().line_number as usize,
+                context.get_curr().line_number,
                 format!("Invalid data type: '{}'", context.get_curr().lexeme),
             );
             return (create_invalid_statement(), context);
@@ -183,7 +189,7 @@ fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statemen
     // For now, just advance assuming it's an assignment operator
     if context.is_at_end() {
         context.handle_parse_error(
-            line_number as usize,
+            line_number,
             "Expected assignment operator after variable name".to_string(),
         );
         return (create_invalid_statement(), context);
@@ -235,7 +241,7 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
 
     if context.is_at_end() {
         context.handle_parse_error(
-            start_line as usize,
+            start_line,
             "Expected 'Returns' keyword in function declaration".to_string(),
         );
         return (create_invalid_statement(), context);
@@ -246,7 +252,7 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
 
     if context.is_at_end() {
         context.handle_parse_error(
-            start_line as usize,
+            start_line,
             "Expected return type after 'Returns'".to_string(),
         );
         return (create_invalid_statement(), context);
@@ -259,7 +265,7 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
         "Void" => DataType::Void,
         _ => {
             context.handle_parse_error(
-                context.get_curr().line_number as usize,
+                context.get_curr().line_number,
                 format!("Invalid return type: '{}'", return_type_lexeme),
             );
             return (create_invalid_statement(), context);
@@ -291,7 +297,7 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
     // Expect EndFunction token
     if context.is_at_end() {
         context.handle_parse_error(
-            start_line as usize,
+            start_line,
             "Expected 'EndFunction' to close function declaration".to_string(),
         );
         return (create_invalid_statement(), context);
