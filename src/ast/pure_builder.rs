@@ -1,12 +1,12 @@
 use std::thread::Builder;
 
 use super::builder_context::BuilderContext;
+use super::parse_error::ParseError;
 use super::statement::{
     FunctionDeclarationStatement, ReturnStatement, Statement, VariableDeclarationStatement,
 };
 
 use crate::ast::VariableAssignmentStatement;
-use crate::semantic::SemanticError;
 use crate::tokenizer::{Token, TokenType};
 
 /// Helper function to create an invalid statement - used when parsing fails
@@ -27,18 +27,19 @@ fn create_invalid_statement() -> Statement {
 macro_rules! expect_token {
     ($context:expr, $expected:pat, $error_msg:expr) => {
         if $context.is_at_end() {
-            $context.handle_parse_error(
-                $context.get_curr().line_number,
-                format!("Unexpected end of file: {}", $error_msg),
-            );
+            $context.handle_parse_error(ParseError::UnexpectedEndOfFile {
+                line: $context.get_curr().line_number,
+                expected: $error_msg.to_string(),
+            });
             return (create_invalid_statement(), $context);
         }
 
         if !matches!($context.get_curr().token_type, $expected) {
-            $context.handle_parse_error(
-                $context.get_curr().line_number,
-                format!("{}, found '{}'", $error_msg, $context.get_curr().lexeme),
-            );
+            $context.handle_parse_error(ParseError::UnexpectedToken {
+                line: $context.get_curr().line_number,
+                expected: $error_msg.to_string(),
+                found: $context.get_curr().lexeme.clone(),
+            });
             return (create_invalid_statement(), $context);
         }
     };
@@ -92,10 +93,11 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
         //TokenType::Identity => (Some(stmt), ctx),
         _ => {
             // Unexpected token - report error and skip to next statement
-            context.handle_parse_error(
-                context.get_curr().line_number,
-                format!("Unexpected token: '{}'", context.get_curr().lexeme),
-            );
+            context.handle_parse_error(ParseError::UnexpectedToken {
+                line: context.get_curr().line_number,
+                expected: "statement".to_string(),
+                found: context.get_curr().lexeme.clone(),
+            });
             (None, context)
         }
     };
@@ -128,10 +130,10 @@ fn parse_variable_declaration(mut context: BuilderContext) -> (Statement, Builde
         "Number" => DataType::Number,
         "String" => DataType::String,
         _ => {
-            context.handle_parse_error(
-                context.get_curr().line_number,
-                format!("Invalid data type: '{}'", context.get_curr().lexeme),
-            );
+            context.handle_parse_error(ParseError::InvalidDataType {
+                line: context.get_curr().line_number,
+                data_type: context.get_curr().lexeme.clone(),
+            });
             return (create_invalid_statement(), context);
         }
     };
@@ -188,10 +190,7 @@ fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statemen
     // TODO: confirm that this token is <= (assignment token)
     // For now, just advance assuming it's an assignment operator
     if context.is_at_end() {
-        context.handle_parse_error(
-            line_number,
-            "Expected assignment operator after variable name".to_string(),
-        );
+        context.handle_parse_error(ParseError::MissingAssignmentOperator { line: line_number });
         return (create_invalid_statement(), context);
     }
     context.advance();
@@ -240,10 +239,11 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
     }
 
     if context.is_at_end() {
-        context.handle_parse_error(
-            start_line,
-            "Expected 'Returns' keyword in function declaration".to_string(),
-        );
+        context.handle_parse_error(ParseError::MissingKeyword {
+            line: start_line,
+            keyword: "Returns".to_string(),
+            context: "function declaration".to_string(),
+        });
         return (create_invalid_statement(), context);
     }
 
@@ -251,10 +251,10 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
     context.advance();
 
     if context.is_at_end() {
-        context.handle_parse_error(
-            start_line,
-            "Expected return type after 'Returns'".to_string(),
-        );
+        context.handle_parse_error(ParseError::UnexpectedEndOfFile {
+            line: start_line,
+            expected: "return type after 'Returns'".to_string(),
+        });
         return (create_invalid_statement(), context);
     }
 
@@ -264,10 +264,10 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
         "String" => DataType::String,
         "Void" => DataType::Void,
         _ => {
-            context.handle_parse_error(
-                context.get_curr().line_number,
-                format!("Invalid return type: '{}'", return_type_lexeme),
-            );
+            context.handle_parse_error(ParseError::InvalidReturnType {
+                line: context.get_curr().line_number,
+                return_type: return_type_lexeme.to_string(),
+            });
             return (create_invalid_statement(), context);
         }
     };
@@ -303,10 +303,10 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
 
     // Expect EndFunction token
     if context.is_at_end() {
-        context.handle_parse_error(
-            start_line,
-            "Expected 'EndFunction' to close function declaration".to_string(),
-        );
+        context.handle_parse_error(ParseError::UnterminatedFunctionDeclaration {
+            line: start_line,
+            function_name: function_name.clone(),
+        });
         return (create_invalid_statement(), context);
     }
 

@@ -1,6 +1,7 @@
+use super::parse_error::ParseError;
 use super::statement::Statement;
+use crate::tokenizer::Token;
 use crate::tokenizer::TokenType;
-use crate::{semantic::SemanticError, tokenizer::Token};
 
 // Used to track state in the ast builder.
 #[derive(Debug)]
@@ -8,9 +9,7 @@ pub struct BuilderContext {
     tokens: Vec<Token>,
     pub idx: usize,
     pub statements: Vec<Statement>,
-    // TODO: maybe make the error not a semantic error.
-    // Might  be overkill though
-    pub errors: Vec<SemanticError>,
+    pub errors: Vec<ParseError>,
 }
 
 impl BuilderContext {
@@ -74,11 +73,8 @@ impl BuilderContext {
     }
 
     /// Adds error and advances to next statement
-    pub fn handle_parse_error(&mut self, line: u32, explanation: String) {
-        self.errors.push(SemanticError::UnexpectedStatement {
-            line: line as u32,
-            explanation,
-        });
+    pub fn handle_parse_error(&mut self, error: ParseError) {
+        self.errors.push(error);
         self.advance_to_next_statement();
     }
 }

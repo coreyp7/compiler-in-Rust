@@ -1,5 +1,6 @@
 mod builder_context;
 mod function_table;
+mod parse_error;
 mod pure_builder;
 mod statement;
 
@@ -10,3 +11,4 @@ pub use pure_builder::{DataType, Value, ValueType};
 pub use statement::*; // all statement types
 
 pub use function_table::{FunctionSymbol, FunctionTable, Parameter};
+pub use parse_error::ParseError;
