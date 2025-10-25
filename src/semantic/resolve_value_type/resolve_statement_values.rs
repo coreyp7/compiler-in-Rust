@@ -73,11 +73,13 @@ pub fn resolve_variable_assignment_stmt_types(
         var_ass_stmt.var_data_type = var_def.data_type.clone();
     }
 
+    /* AST EXPR TESTING
     resolve_value(
         &mut var_ass_stmt.assigned_value,
         function_header_map,
         symbol_table,
     );
+    */
 }
 
 fn resolve_value(val: &mut Value, function_header_map: &FunctionTable, symbol_table: &SymbolTable) {

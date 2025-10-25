@@ -256,7 +256,8 @@ fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statemen
     }
     context.advance();
 
-    let (val, mut context) = parse_value(context);
+    //let (val, mut context) = parse_value(context);
+    let (expr, mut context) = parse_expression(context);
 
     // Expect semicolon
     expect_token!(
@@ -269,7 +270,8 @@ fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statemen
     let assignent_struct = Statement::VariableAssignment(VariableAssignmentStatement {
         var_name: identity_lexeme,
         var_data_type: DataType::Unknown, // unknown until semantic analysis
-        assigned_value: val,
+        //assigned_value: val,
+        assigned_expr: expr,
         line_var_was_declared_on: 0, // unknown until semantic analysis
         line_number,
     });

@@ -66,11 +66,14 @@ fn to_code_str_var_decl(var_decl: &VariableDeclarationStatement) -> String {
 }
 
 fn to_code_str_var_assignment(var_assign: &VariableAssignmentStatement) -> String {
+    String::new()
+    /* FOR AST EXPR TESTING
     format!(
         "{} = {};\n",
         var_assign.var_name,
         to_code_str_value(&var_assign.assigned_value)
     )
+    */
 }
 
 fn to_code_str_value(value: &Value) -> String {

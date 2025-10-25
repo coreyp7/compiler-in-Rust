@@ -137,6 +137,7 @@ fn analyze_variable_assignment(
             println!("some var def found for {}", var_ass.var_name);
             // Type check the variable with its assignment
 
+            /* FOR AST EXPR TESTING
             if var_def.data_type != var_ass.assigned_value.data_type {
                 state.errors.push(SemanticError::TypeMismatch {
                     expected: var_def.data_type.clone(),
@@ -144,6 +145,7 @@ fn analyze_variable_assignment(
                     line: var_ass.line_number,
                 });
             }
+            */
 
             // TODO: we also need to check for validity of all types of values here,
             // (variables, function calls, etc.).
@@ -157,12 +159,14 @@ fn analyze_variable_assignment(
             });
         }
     }
+    /* FOR AST EXPR TESTING
     state = validate_value(
         &var_ass.assigned_value,
         var_ass.line_number,
         state,
         function_table,
     );
+    */
 
     state
 }
