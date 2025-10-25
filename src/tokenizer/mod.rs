@@ -57,6 +57,7 @@ fn get_char_token_map() -> HashMap<char, TokenMatch> {
         ('(', Single(LeftParen)),
         (')', Single(RightParen)),
         (',', Single(Comma)),
+        (';', Single(Semicolon)),
         ('-', Double('>', Arrow)),
         ('/', Comment),
         ('=', Double('=', EqualEqual)),
@@ -78,6 +79,7 @@ fn get_single_char_fallback(ch: char) -> TokenType {
         '>' => TokenType::GreaterThan,
         '!' => TokenType::Bang,
         '/' => TokenType::Slash,
+        ';' => TokenType::Semicolon,
         _ => TokenType::UnsupportedSymbolError,
     }
 }

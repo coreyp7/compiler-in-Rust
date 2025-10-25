@@ -47,6 +47,7 @@ pub enum TokenType {
     DoubleBar,
     Bang,
     Colon,
+    Semicolon,
     UnsupportedSymbolError = 900,
     // Won't get through to the parser, just for processing in here.
     Space,
@@ -134,6 +135,7 @@ impl TokenType {
             TokenType::Comma => ",",
             TokenType::Arrow => "->",
             TokenType::EndFunction => "endFunction",
+            TokenType::Semicolon => ";",
         }
     }
 }
