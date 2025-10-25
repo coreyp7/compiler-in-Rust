@@ -45,9 +45,9 @@ impl BuilderContext {
      * beginning of the next statement (after the next semicolon).
      */
     pub fn advance_to_next_statement(&mut self) {
-        println!("entered advance_to_next_statement");
-        println!("idx: {}", &self.idx);
-        println!("curr: {:#?}", &self.get_curr());
+        //println!("entered advance_to_next_statement");
+        //println!("idx: {}", &self.idx);
+        //println!("curr: {:#?}", &self.get_curr());
         //wait_for_input();
         while !self.is_at_end() && self.get_curr().token_type != TokenType::Semicolon {
             self.advance();
@@ -55,6 +55,8 @@ impl BuilderContext {
         if !self.is_at_end() {
             self.advance();
         }
+
+        /*
         println!("left advance_to_next_statement: here's state of context now.");
         if !self.is_at_end() {
             println!("idx: {}", &self.idx);
@@ -62,6 +64,7 @@ impl BuilderContext {
         } else {
             println!("at EOF");
         }
+        */
     }
 
     pub fn peek_next(&self) -> Option<&Token> {

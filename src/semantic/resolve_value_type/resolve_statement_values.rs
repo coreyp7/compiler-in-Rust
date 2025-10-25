@@ -52,11 +52,14 @@ pub fn resolve_variable_declaration_types(
     // Check that the value_type is a function call
     // if function call: Set the assigned value data_type
     // using the function_header_map
+
+    /* TESTING AST RN
     resolve_value(
         &mut var_decl_stmt.assigned_value,
         function_header_map,
         symbol_table,
     );
+    */
 }
 
 pub fn resolve_variable_assignment_stmt_types(

@@ -1,6 +1,7 @@
 //use crate::comparison::Logical;
 use crate::ast::DataType;
 use crate::ast::Value;
+use crate::ast::comparison::Expression;
 
 /**
  * Contains 'Statement' enum, and all of the specific Statement structs
@@ -12,7 +13,8 @@ pub struct VariableDeclarationStatement {
     pub symbol_name: String,
     pub data_type: DataType,
     pub line_declared_on: u32,
-    pub assigned_value: Value,
+    //pub assigned_value: Value,
+    pub assigned_expr: Expression,
 }
 
 #[derive(Debug)]

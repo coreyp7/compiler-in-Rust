@@ -54,12 +54,15 @@ pub fn to_code_str(statement: &Statement) -> String {
 }
 
 fn to_code_str_var_decl(var_decl: &VariableDeclarationStatement) -> String {
+    String::new()
+    /* TESTING AST RN
     format!(
         "{} {} = {};\n",
         var_decl.data_type.to_string(),
         var_decl.symbol_name,
         to_code_str_value(&var_decl.assigned_value)
     )
+    */
 }
 
 fn to_code_str_var_assignment(var_assign: &VariableAssignmentStatement) -> String {

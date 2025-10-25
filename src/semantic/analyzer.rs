@@ -198,6 +198,8 @@ fn analyze_variable_declaration(
 
     // Now do type checking with resolved types
     // Check that the value assigned matches the declared type of the var.
+
+    /* NOTE: ignoring for ast testing rn
     if var_decl.data_type != var_decl.assigned_value.data_type {
         if !matches!(var_decl.assigned_value.data_type, DataType::Invalid) {
             state.errors.push(SemanticError::TypeMismatch {
@@ -215,6 +217,7 @@ fn analyze_variable_declaration(
         state,
         function_table,
     );
+    */
 
     state
 }

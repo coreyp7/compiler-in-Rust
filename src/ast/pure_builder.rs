@@ -2,11 +2,16 @@ use std::thread::Builder;
 
 use super::builder_context::BuilderContext;
 use super::parse_error::ParseError;
+use super::statement::*;
 use super::statement::{
     FunctionDeclarationStatement, ReturnStatement, Statement, VariableDeclarationStatement,
 };
 
-use crate::ast::VariableAssignmentStatement;
+use crate::ast::comparison::{
+    ComparisonOperator, ExpressionOperator, LogicalOperator, Term, TermOperator, Unary,
+    convert_token_type_to_expression_op, convert_token_type_to_term_op,
+};
+use crate::ast::{Expression, VariableAssignmentStatement};
 use crate::tokenizer::{Token, TokenType};
 
 /// Helper function to create an invalid statement - used when parsing fails
@@ -15,7 +20,8 @@ fn create_invalid_statement() -> Statement {
         symbol_name: String::new(),
         data_type: DataType::Invalid,
         line_declared_on: 0,
-        assigned_value: Value::invalid(),
+        //assigned_value: Value::invalid(),
+        assigned_expr: Expression::new(),
     })
 }
 
@@ -90,7 +96,6 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
             context.advance(); // move passed EOF token
             (None, context)
         }
-        //TokenType::Identity => (Some(stmt), ctx),
         _ => {
             // Unexpected token - report error and skip to next statement
             context.handle_parse_error(ParseError::UnexpectedToken {
@@ -101,25 +106,6 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
             (None, context)
         }
     };
-
-    // TODO: need to confirm that there's a semicolon at the end of this statement.
-    // Whatever statement was parsed, we should be left on the semicolon now.
-    // (Maybe this is naive so open to change later if you need to)
-    // Actually this should probably be done in each individual function huh?
-    // Maybe here we can just handle creating the
-
-    /*
-    if return_tuple.1.get_curr().token_type != TokenType::Semicolon {
-        // TODO throw a thing and handle
-        return_tuple
-            .1
-            .errors
-            .push(SemanticError::UnexpectedStatement {
-                line: return_tuple.1.get_curr().line_number,
-                explanation: "no semicolon found TODO: improve this err".to_string(),
-            })
-    }
-    */
 
     return_tuple
 }
@@ -158,7 +144,7 @@ fn parse_variable_declaration(mut context: BuilderContext) -> (Statement, Builde
     context.advance();
 
     // Parse the assigned value
-    let (value, mut context) = parse_value(context);
+    let (expr, mut context) = parse_expression(context);
 
     // Expect semicolon
     expect_token!(
@@ -173,10 +159,85 @@ fn parse_variable_declaration(mut context: BuilderContext) -> (Statement, Builde
         symbol_name,
         data_type,
         line_declared_on,
-        assigned_value: value,
+        //assigned_value: value,
+        assigned_expr: expr,
     });
 
     (statement, context)
+}
+
+fn parse_expression(mut context: BuilderContext) -> (Expression, BuilderContext) {
+    let mut expr = Expression::new();
+    let (term1, returned_context) = parse_term(context);
+    context = returned_context;
+    expr.terms.push(term1);
+
+    //while self.is_curr_token_expression_operator() {
+    while !context.is_at_end()
+        && matches!(
+            context.get_curr().token_type,
+            TokenType::Plus | TokenType::Minus
+        )
+    {
+        let op = convert_token_type_to_expression_op(context.get_curr().token_type.clone());
+        expr.operators.push(op);
+        context.advance();
+
+        let (term2, returned_context2) = parse_term(context);
+        context = returned_context2;
+        expr.terms.push(term2);
+    }
+
+    (expr, context)
+}
+
+fn parse_term(mut context: BuilderContext) -> (Term, BuilderContext) {
+    let mut term = Term::new();
+    let (unary1, returned_context) = parse_unary(context);
+    context = returned_context;
+    term.unarys.push(unary1);
+
+    while !context.is_at_end()
+        && matches!(
+            context.get_curr().token_type,
+            TokenType::Asterisk | TokenType::Slash
+        )
+    {
+        let op = convert_token_type_to_term_op(context.get_curr().token_type);
+        term.operations.push(op);
+        context.advance();
+
+        let (unary2, returned_context2) = parse_unary(context);
+        context = returned_context2;
+        term.unarys.push(unary2);
+    }
+
+    (term, context)
+}
+
+fn parse_unary(mut context: BuilderContext) -> (Unary, BuilderContext) {
+    let mut operation = None;
+
+    // Check for unary operators (+ or -)
+    if !context.is_at_end()
+        && matches!(
+            context.get_curr().token_type,
+            TokenType::Plus | TokenType::Minus
+        )
+    {
+        operation = Some(convert_token_type_to_expression_op(
+            context.get_curr().token_type,
+        ));
+        context.advance();
+    }
+
+    // Parse the primary value
+    let (primary, returned_context) = parse_value(context);
+    context = returned_context;
+
+    let unary = Unary { operation, primary };
+
+    (unary, context)
 }
 
 fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statement, BuilderContext) {
@@ -368,19 +429,6 @@ fn parse_value(mut context: BuilderContext) -> (Value, BuilderContext) {
             token.lexeme.clone(),
         ),
         TokenType::Identity => {
-            // For now, treat all identities as variable references
-            // Semantic analysis will determine if they're valid
-            /*
-            Value {
-                data_type: DataType::Unknown, // Will be determined in semantic analysis
-                value_type: ValueType::Variable,
-                raw_text: token.lexeme.clone(),
-            }
-            */
-            // TODO: update this to allow function calls.
-            // Indicate its a function call in the AST node somehow, then check
-            // for this in the semantic analysis and check appropriate table.
-
             /*
              * if just variable name (no parameters), treat as variable.
              * if identity name with parameters, treat as function.
@@ -462,9 +510,13 @@ fn parse_function_call_parameters(mut context: BuilderContext) -> (Vec<Value>, B
     }
 
     // Skip the closing paren if we found it
+    // This was causing problems when parsing values, leaving for posterity
+    // if this comes up again later
+    /*
     if !context.is_at_end() && context.get_curr().token_type == TokenType::RightParen {
         context.advance();
     }
+    */
 
     (passed_values, context)
 }
