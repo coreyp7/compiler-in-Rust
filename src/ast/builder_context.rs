@@ -78,12 +78,3 @@ impl BuilderContext {
         self.advance_to_next_statement();
     }
 }
-
-use std::io::{self, Write};
-
-fn wait_for_input() {
-    print!("Press Enter to continue...");
-    io::stdout().flush().unwrap();
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).unwrap();
-}
