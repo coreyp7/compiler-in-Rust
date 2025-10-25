@@ -6,7 +6,37 @@ use super::statement::{
 };
 
 use crate::ast::VariableAssignmentStatement;
+use crate::semantic::SemanticError;
 use crate::tokenizer::{Token, TokenType};
+
+/// Helper function to create an invalid statement - used when parsing fails
+fn create_invalid_statement() -> Statement {
+    Statement::VariableDeclaration(VariableDeclarationStatement {
+        symbol_name: String::new(),
+        data_type: DataType::Invalid,
+        line_declared_on: 0,
+        assigned_value: Value::invalid(),
+    })
+}
+
+/// Macro to handle expected token checking with error recovery
+/// TODO: can move into error module or something
+macro_rules! expect_token {
+    ($context:expr, $expected:pat, $error_msg:expr) => {
+        if $context.is_at_end() {
+            $context.handle_parse_error(0, format!("Unexpected end of file: {}", $error_msg));
+            return (create_invalid_statement(), $context);
+        }
+
+        if !matches!($context.get_curr().token_type, $expected) {
+            $context.handle_parse_error(
+                $context.get_curr().line_number as usize,
+                format!("{}, found '{}'", $error_msg, $context.get_curr().lexeme),
+            );
+            return (create_invalid_statement(), $context);
+        }
+    };
+}
 
 /// Build AST from tokens - pure structural parsing, no validation
 pub fn build_ast(tokens: Vec<Token>) -> BuilderContext {
@@ -31,7 +61,7 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
     }
 
     let token_type = context.get_curr().token_type;
-    match token_type {
+    let return_tuple = match token_type {
         TokenType::VarDeclaration => {
             let (stmt, ctx) = parse_variable_declaration(context);
             (Some(stmt), ctx)
@@ -48,13 +78,42 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
             let (stmt, ctx) = parse_identity_assignment_statement(context);
             (Some(stmt), ctx)
         }
-        //TokenType::Identity => (Some(stmt), ctx),
-        _ => {
-            // Skip unsupported statements for now
-            context.advance();
+        TokenType::EOF => {
+            println!("Reached EOF in parse_statement; congrats :)");
+            context.advance(); // move passed EOF token
             (None, context)
         }
+        //TokenType::Identity => (Some(stmt), ctx),
+        _ => {
+            // Unexpected token - report error and skip to next statement
+            context.handle_parse_error(
+                context.get_curr().line_number as usize,
+                format!("Unexpected token: '{}'", context.get_curr().lexeme),
+            );
+            (None, context)
+        }
+    };
+
+    // TODO: need to confirm that there's a semicolon at the end of this statement.
+    // Whatever statement was parsed, we should be left on the semicolon now.
+    // (Maybe this is naive so open to change later if you need to)
+    // Actually this should probably be done in each individual function huh?
+    // Maybe here we can just handle creating the
+
+    /*
+    if return_tuple.1.get_curr().token_type != TokenType::Semicolon {
+        // TODO throw a thing and handle
+        return_tuple
+            .1
+            .errors
+            .push(SemanticError::UnexpectedStatement {
+                line: return_tuple.1.get_curr().line_number,
+                explanation: "no semicolon found TODO: improve this err".to_string(),
+            })
     }
+    */
+
+    return_tuple
 }
 
 fn parse_variable_declaration(mut context: BuilderContext) -> (Statement, BuilderContext) {
@@ -62,41 +121,44 @@ fn parse_variable_declaration(mut context: BuilderContext) -> (Statement, Builde
     let data_type = match context.get_curr().lexeme.as_str() {
         "Number" => DataType::Number,
         "String" => DataType::String,
-        _ => DataType::Invalid,
+        _ => {
+            context.handle_parse_error(
+                context.get_curr().line_number as usize,
+                format!("Invalid data type: '{}'", context.get_curr().lexeme),
+            );
+            return (create_invalid_statement(), context);
+        }
     };
     context.advance();
 
     // Parse identifier
-    if context.is_at_end() || context.get_curr().token_type != TokenType::Identity {
-        // Return invalid statement for malformed declaration
-        let invalid_stmt = Statement::VariableDeclaration(VariableDeclarationStatement {
-            symbol_name: String::new(),
-            data_type: DataType::Invalid,
-            line_declared_on: 0,
-            assigned_value: Value::invalid(),
-        });
-        return (invalid_stmt, context);
-    }
-
+    expect_token!(
+        context,
+        TokenType::Identity,
+        "Expected variable name after data type"
+    );
     let symbol_name = context.get_curr().lexeme.clone();
     let line_declared_on = context.get_curr().line_number;
     context.advance();
 
     // Expect colon
-    if context.is_at_end() || context.get_curr().token_type != TokenType::Colon {
-        // Return invalid statement for malformed declaration
-        let invalid_stmt = Statement::VariableDeclaration(VariableDeclarationStatement {
-            symbol_name,
-            data_type: DataType::Invalid,
-            line_declared_on,
-            assigned_value: Value::invalid(),
-        });
-        return (invalid_stmt, context);
-    }
+    expect_token!(
+        context,
+        TokenType::Colon,
+        "Expected ':' after variable name"
+    );
     context.advance();
 
     // Parse the assigned value
-    let (value, context) = parse_value(context);
+    let (value, mut context) = parse_value(context);
+
+    // Expect semicolon
+    expect_token!(
+        context,
+        TokenType::Semicolon,
+        "Expected semicolon after variable declaration"
+    );
+    context.advance();
 
     // Create the variable declaration statement
     let statement = Statement::VariableDeclaration(VariableDeclarationStatement {
@@ -118,9 +180,25 @@ fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statemen
     context.advance();
 
     // TODO: confirm that this token is <= (assignment token)
+    // For now, just advance assuming it's an assignment operator
+    if context.is_at_end() {
+        context.handle_parse_error(
+            line_number as usize,
+            "Expected assignment operator after variable name".to_string(),
+        );
+        return (create_invalid_statement(), context);
+    }
     context.advance();
 
-    let (val, returned_context) = parse_value(context);
+    let (val, mut context) = parse_value(context);
+
+    // Expect semicolon
+    expect_token!(
+        context,
+        TokenType::Semicolon,
+        "Expected semicolon after assignment"
+    );
+    context.advance();
 
     let assignent_struct = Statement::VariableAssignment(VariableAssignmentStatement {
         var_name: identity_lexeme,
@@ -130,22 +208,19 @@ fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statemen
         line_number,
     });
 
-    ((assignent_struct), returned_context)
+    (assignent_struct, context)
 }
 
 fn parse_function_declaration(mut context: BuilderContext) -> (Statement, BuilderContext) {
+    let start_line = context.get_curr().line_number;
     context.advance(); // Skip "Function" keyword
 
-    if context.is_at_end() || context.get_curr().token_type != TokenType::Identity {
-        let invalid_stmt = Statement::FunctionDeclaration(FunctionDeclarationStatement {
-            function_name: String::new(),
-            line_declared_on: 0,
-            return_type: DataType::Invalid,
-            body: Vec::new(),
-        });
-        return (invalid_stmt, context);
-    }
-
+    // Expect function name
+    expect_token!(
+        context,
+        TokenType::Identity,
+        "Expected function name after 'Function'"
+    );
     let function_name = context.get_curr().lexeme.clone();
     let line_declared_on = context.get_curr().line_number;
     context.advance();
@@ -157,16 +232,39 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
     while !context.is_at_end() && context.get_curr().token_type != TokenType::Returns {
         context.advance();
     }
+
+    if context.is_at_end() {
+        context.handle_parse_error(
+            start_line as usize,
+            "Expected 'Returns' keyword in function declaration".to_string(),
+        );
+        return (create_invalid_statement(), context);
+    }
+
     // At returns now, go forward and get datatype specified for return type.
     context.advance();
-    let return_type_lexeme: &str = &context.get_curr().lexeme;
-    let mut return_type: DataType = DataType::Invalid;
-    match return_type_lexeme {
-        "Number" => return_type = DataType::Number,
-        "String" => return_type = DataType::String,
-        "Void" => return_type = DataType::Void,
-        _ => (),
+
+    if context.is_at_end() {
+        context.handle_parse_error(
+            start_line as usize,
+            "Expected return type after 'Returns'".to_string(),
+        );
+        return (create_invalid_statement(), context);
     }
+
+    let return_type_lexeme: &str = &context.get_curr().lexeme;
+    let return_type = match return_type_lexeme {
+        "Number" => DataType::Number,
+        "String" => DataType::String,
+        "Void" => DataType::Void,
+        _ => {
+            context.handle_parse_error(
+                context.get_curr().line_number as usize,
+                format!("Invalid return type: '{}'", return_type_lexeme),
+            );
+            return (create_invalid_statement(), context);
+        }
+    };
 
     if !context.is_at_end() {
         context.advance(); // Skip colon
@@ -190,10 +288,17 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
         }
     }
 
-    // Skip EndFunction token
-    if !context.is_at_end() {
-        context.advance();
+    // Expect EndFunction token
+    if context.is_at_end() {
+        context.handle_parse_error(
+            start_line as usize,
+            "Expected 'EndFunction' to close function declaration".to_string(),
+        );
+        return (create_invalid_statement(), context);
     }
+
+    // Skip EndFunction token
+    context.advance();
 
     // Return the complete function declaration with body
     let statement = Statement::FunctionDeclaration(FunctionDeclarationStatement {
@@ -212,11 +317,17 @@ fn parse_return_statement(mut context: BuilderContext) -> (Statement, BuilderCon
 
     // What types of things can be returned?
     // A value I suppose.
-    let (val, returned_context) = parse_value(context);
-    context = returned_context;
+    let (val, mut context) = parse_value(context);
+
+    // Expect semicolon
+    expect_token!(
+        context,
+        TokenType::Semicolon,
+        "Expected semicolon after return statement"
+    );
+    context.advance();
 
     // For now, just create a simple return statement
-    // TODO: Parse the return value
     let statement = Statement::Return(ReturnStatement {
         line_declared_on,
         return_value: Some(val),
@@ -318,14 +429,28 @@ fn parse_function_call_parameters(mut context: BuilderContext) -> (Vec<Value>, B
 
     let mut passed_values: Vec<Value> = Vec::new();
 
-    while context.get_curr().token_type != TokenType::RightParen {
+    while !context.is_at_end() && context.get_curr().token_type != TokenType::RightParen {
         let (value, ctx) = parse_value(context);
         context = ctx;
         passed_values.push(value);
 
+        if context.is_at_end() {
+            // Missing closing paren - but we'll let the calling function handle this
+            break;
+        }
+
         if context.get_curr().token_type == TokenType::Comma {
             context.advance();
+        } else if context.get_curr().token_type != TokenType::RightParen {
+            // Expected comma or closing paren
+            // For now, just break out and let the calling function handle the error
+            break;
         }
+    }
+
+    // Skip the closing paren if we found it
+    if !context.is_at_end() && context.get_curr().token_type == TokenType::RightParen {
+        context.advance();
     }
 
     (passed_values, context)

@@ -53,6 +53,14 @@ fn main() -> std::io::Result<()> {
         debug_print_vec(&ast_context.statements, "Ast output:");
     }
 
+    if !ast_context.errors.is_empty() {
+        semantic::print_failures_message(ast_context.errors.len());
+        for error in &ast_context.errors {
+            error.print_error();
+        }
+        return Ok(());
+    }
+
     // Third pass: semantic analysis.
     // (There is also some type resolution done in here, since the semantic analyzer
     // keeps track of scope of available symbols/functions, so was easier to make as
