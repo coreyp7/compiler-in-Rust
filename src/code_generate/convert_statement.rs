@@ -82,7 +82,7 @@ fn to_code_str_value(value: &Value) -> String {
             code_str.push_str("(");
             if let Some(params) = &value.param_values {
                 for (idx, param) in params.iter().enumerate() {
-                    code_str.push_str(&param.raw_text);
+                    code_str.push_str(&to_code_str_expr(param));
                     if idx < params.len() - 1 {
                         code_str.push_str(", ");
                     }

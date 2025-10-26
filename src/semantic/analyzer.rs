@@ -304,19 +304,17 @@ fn analyze_function_call(
                 });
             }
 
-            // Validate each parameter recursively and check types
-            for (i, param_value) in param_values.iter().enumerate() {
-                state = validate_value(param_value, line, state, function_table);
-
-                // Type check parameter if it exists in function definition
+            // Validate each parameter expression and check types
+            for (i, param_expr) in param_values.iter().enumerate() {
+                // Type check the entire expression against the expected parameter type
                 if let Some(expected_param) = func_def.parameters.get(i) {
-                    if param_value.data_type != expected_param.data_type {
-                        state.errors.push(SemanticError::TypeMismatch {
-                            expected: expected_param.data_type.clone(),
-                            found: param_value.data_type.clone(),
-                            line,
-                        });
-                    }
+                    state = check_expression_types(
+                        param_expr,
+                        &expected_param.data_type,
+                        line,
+                        state,
+                        function_table,
+                    );
                 }
             }
         } else if !func_def.parameters.is_empty() {
@@ -355,14 +353,10 @@ fn resolve_value_type(
             }
         }
         ValueType::FunctionCall => {
-            // First resolve parameter types if they exist
-            if let Some(ref mut param_values) = value.param_values {
-                for param_value in param_values {
-                    state = resolve_value_type(param_value, state, function_table);
-                }
-            }
-
-            // Then resolve the function's return type
+            // For function calls, the parameter expressions will be type-checked
+            // separately by check_expression_types in analyze_function_call
+            
+            // Resolve the function's return type
             if let Some(func_def) = function_table.get_func_def_using_str(&value.raw_text) {
                 value.data_type = func_def.return_type.clone();
             }

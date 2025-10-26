@@ -485,17 +485,17 @@ fn parse_value(mut context: BuilderContext) -> (Value, BuilderContext) {
     (value, context)
 }
 
-// Called when a function call is found, gathers all values specified in a function
+// Called when a function call is found, gathers all expressions specified in a function
 // calls parameters.
-fn parse_function_call_parameters(mut context: BuilderContext) -> (Vec<Value>, BuilderContext) {
-    // so it'll be value comma value etc....
+fn parse_function_call_parameters(mut context: BuilderContext) -> (Vec<Expression>, BuilderContext) {
+    // so it'll be expression comma expression etc....
 
-    let mut passed_values: Vec<Value> = Vec::new();
+    let mut passed_expressions: Vec<Expression> = Vec::new();
 
     while !context.is_at_end() && context.get_curr().token_type != TokenType::RightParen {
-        let (value, ctx) = parse_value(context);
+        let (expr, ctx) = parse_expression(context);
         context = ctx;
-        passed_values.push(value);
+        passed_expressions.push(expr);
 
         if context.is_at_end() {
             // Missing closing paren - but we'll let the calling function handle this
@@ -520,7 +520,7 @@ fn parse_function_call_parameters(mut context: BuilderContext) -> (Vec<Value>, B
     }
     */
 
-    (passed_values, context)
+    (passed_expressions, context)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -547,9 +547,9 @@ pub struct Value {
     pub data_type: DataType,
     pub value_type: ValueType,
     pub raw_text: String, // The raw text from the source, for reference
-    // Only exists if value_type = FunctionCall; we need to record the values
+    // Only exists if value_type = FunctionCall; we need to record the expressions
     // being passed in as params.
-    pub param_values: Option<Vec<Value>>,
+    pub param_values: Option<Vec<Expression>>,
 }
 
 impl Value {
@@ -566,7 +566,7 @@ impl Value {
         data_type: DataType,
         value_type: ValueType,
         raw_text: String,
-        param_values: Vec<Value>,
+        param_values: Vec<Expression>,
     ) -> Self {
         Value {
             data_type,

@@ -125,17 +125,9 @@ fn resolve_value(val: &mut Value, function_header_map: &FunctionTable, symbol_ta
             match func_call_decl_op {
                 Some(func_decl) => {
                     val.data_type = func_decl.return_type.clone();
-                    // TODO: NOTE: This assumes all the passed in values are variables.
-                    // This isn't generic at all, and if some value that isn't a variable
-                    // is here, it won't be handled correctly.
-                    // This needs to be resolved.
-                    if let Some(params) = val.param_values.as_mut() {
-                        for param in params {
-                            if let Some(param_var_def) = symbol_table.get(&param.raw_text) {
-                                param.data_type = param_var_def.data_type.clone();
-                            }
-                        }
-                    }
+                    // NOTE: Parameters are now expressions, not values, so their type
+                    // resolution is handled by check_expression_types in the semantic analyzer
+                    // rather than here.
                 }
                 None => {
                     // TODO: when would this error even happen? I suppose if they're

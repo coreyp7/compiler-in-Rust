@@ -63,7 +63,7 @@ pub enum ComparisonOperator {
 }
 
 // Either + or -
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Expression {
     pub terms: Vec<Term>,
     pub operators: Vec<ExpressionOperator>,
@@ -78,14 +78,14 @@ impl Expression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExpressionOperator {
     Plus,
     Minus,
     invalidop,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Term {
     pub unarys: Vec<Unary>,
     pub operations: Vec<TermOperator>,
@@ -100,14 +100,14 @@ impl Term {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TermOperator {
     Multiply,
     Divide,
     invalidop, // TODO: these should be changed to no op
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Unary {
     pub operation: Option<ExpressionOperator>,
     pub primary: Value,
