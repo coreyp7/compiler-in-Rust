@@ -1,6 +1,43 @@
+/*
+ * Value Resolution Functions for AST Expressions
+ *
+ * This module provides a comprehensive set of functions to resolve value types
+ * within complex expression structures. The hierarchy is:
+ *
+ * Logical
+ *   └── Comparison(s)
+ *       └── Expression(s)
+ *           └── Term(s)
+ *               └── Unary(s)
+ *                   └── Value (primary)
+ *
+ * Usage Example:
+ * ```rust
+ * // For a simple expression
+ * resolve_expression_values(&mut expression, &function_table, &symbol_table);
+ *
+ * // For a complex logical expression
+ * resolve_logical_values(&mut logical_expr, &function_table, &symbol_table);
+ *
+ * // For recursive value resolution (handles nested function calls)
+ * resolve_value_recursively(&mut value, &function_table, &symbol_table);
+ * ```
+ *
+ * All functions use the base `resolve_value` function which handles:
+ * - Function calls (resolves return types from FunctionTable)
+ * - Variables (resolves types from SymbolTable)
+ * - Inline values (numbers, strings, etc.)
+ * - Expressions (marked as Expression type)
+ */
+
+use crate::ast::Comparison;
 use crate::ast::DataType;
+use crate::ast::Expression;
 use crate::ast::FunctionTable;
+use crate::ast::Logical;
 use crate::ast::Statement;
+use crate::ast::Term;
+use crate::ast::Unary;
 use crate::ast::Value;
 use crate::ast::ValueType;
 use crate::ast::VariableAssignmentStatement;
@@ -53,13 +90,11 @@ pub fn resolve_variable_declaration_types(
     // if function call: Set the assigned value data_type
     // using the function_header_map
 
-    /* TESTING AST RN
-    resolve_value(
-        &mut var_decl_stmt.assigned_value,
+    resolve_expression_values(
+        &mut var_decl_stmt.assigned_expr,
         function_header_map,
         symbol_table,
     );
-    */
 }
 
 pub fn resolve_variable_assignment_stmt_types(
@@ -73,13 +108,11 @@ pub fn resolve_variable_assignment_stmt_types(
         var_ass_stmt.var_data_type = var_def.data_type.clone();
     }
 
-    /* AST EXPR TESTING
-    resolve_value(
-        &mut var_ass_stmt.assigned_value,
+    resolve_expression_values(
+        &mut var_ass_stmt.assigned_expr,
         function_header_map,
         symbol_table,
     );
-    */
 }
 
 fn resolve_value(val: &mut Value, function_header_map: &FunctionTable, symbol_table: &SymbolTable) {
@@ -129,6 +162,109 @@ fn resolve_value(val: &mut Value, function_header_map: &FunctionTable, symbol_ta
         | ValueType::Invalid => {
             // These don't need type resolution from function table or symbol table
         }
+    }
+}
+
+/// Resolves all values within an Expression structure
+pub fn resolve_expression_values(
+    expression: &mut Expression,
+    function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
+    // Resolve values in all terms within the expression
+    for term in &mut expression.terms {
+        resolve_term_values(term, function_header_map, symbol_table);
+    }
+}
+
+/// Resolves all values within a Term structure  
+pub fn resolve_term_values(
+    term: &mut Term,
+    function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
+    // Resolve values in all unary operations within the term
+    for unary in &mut term.unarys {
+        resolve_unary_values(unary, function_header_map, symbol_table);
+    }
+}
+
+/// Resolves all values within a Unary structure
+pub fn resolve_unary_values(
+    unary: &mut Unary,
+    function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
+    // Resolve the primary value in the unary operation
+    resolve_value(&mut unary.primary, function_header_map, symbol_table);
+}
+
+/// Resolves all values recursively within a Value that might contain expressions
+/// This handles cases where a Value might have nested expressions or complex structures
+pub fn resolve_value_recursively(
+    val: &mut Value,
+    function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
+    // The resolve_value function already handles parameter resolution internally
+    // so we just need to call it - no need to duplicate that logic here
+    resolve_value(val, function_header_map, symbol_table);
+}
+
+/// Convenience function to resolve all values in a collection of expressions
+pub fn resolve_values_in_expressions(
+    expressions: &mut Vec<Expression>,
+    function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
+    for expression in expressions {
+        resolve_expression_values(expression, function_header_map, symbol_table);
+    }
+}
+
+/// Convenience function to resolve all values in a collection of terms
+pub fn resolve_values_in_terms(
+    terms: &mut Vec<Term>,
+    function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
+    for term in terms {
+        resolve_term_values(term, function_header_map, symbol_table);
+    }
+}
+
+/// Convenience function to resolve all values in a collection of unary operations
+pub fn resolve_values_in_unarys(
+    unarys: &mut Vec<Unary>,
+    function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
+    for unary in unarys {
+        resolve_unary_values(unary, function_header_map, symbol_table);
+    }
+}
+
+/// Resolves all values within a Logical structure
+pub fn resolve_logical_values(
+    logical: &mut Logical,
+    function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
+    // Resolve values in all comparisons within the logical expression
+    for comparison in &mut logical.comparisons {
+        resolve_comparison_values(comparison, function_header_map, symbol_table);
+    }
+}
+
+/// Resolves all values within a Comparison structure  
+pub fn resolve_comparison_values(
+    comparison: &mut Comparison,
+    function_header_map: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
+    // Resolve values in all expressions within the comparison
+    for expression in &mut comparison.expressions {
+        resolve_expression_values(expression, function_header_map, symbol_table);
     }
 }
 
