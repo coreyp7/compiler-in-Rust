@@ -3,6 +3,7 @@ use crate::ast::{
     DataType, FunctionDeclarationStatement, Statement, Value, ValueType,
     VariableAssignmentStatement, VariableDeclarationStatement,
 };
+use crate::ast::{Expression, Term, Unary};
 use crate::semantic::SemanticError;
 use crate::semantic::resolve_value_type::resolve_variable_assignment_stmt_types;
 use crate::semantic::resolve_value_type::resolve_variable_declaration_types;
@@ -135,21 +136,15 @@ fn analyze_variable_assignment(
     match var_op {
         Some(var_def) => {
             println!("some var def found for {}", var_ass.var_name);
-            // Type check the variable with its assignment
-
-            /* FOR AST EXPR TESTING
-            if var_def.data_type != var_ass.assigned_value.data_type {
-                state.errors.push(SemanticError::TypeMismatch {
-                    expected: var_def.data_type.clone(),
-                    found: var_ass.assigned_value.data_type.clone(),
-                    line: var_ass.line_number,
-                });
-            }
-            */
-
-            // TODO: we also need to check for validity of all types of values here,
-            // (variables, function calls, etc.).
-            // isn't there a function I wrote for this?
+            // Type check the expression with its assignment
+            let expected_type = var_def.data_type.clone();
+            state = check_expression_types(
+                &var_ass.assigned_expr,
+                &expected_type,
+                var_ass.line_number,
+                state,
+                function_table,
+            );
         }
         None => {
             println!("NONE found for {}", var_ass.var_name);
@@ -159,14 +154,6 @@ fn analyze_variable_assignment(
             });
         }
     }
-    /* FOR AST EXPR TESTING
-    state = validate_value(
-        &var_ass.assigned_value,
-        var_ass.line_number,
-        state,
-        function_table,
-    );
-    */
 
     state
 }
@@ -200,28 +187,15 @@ fn analyze_variable_declaration(
         state.errors.push(error);
     }
 
-    // Now do type checking with resolved types
-    // Check that the value assigned matches the declared type of the var.
-
-    /* NOTE: ignoring for ast testing rn
-    if var_decl.data_type != var_decl.assigned_value.data_type {
-        if !matches!(var_decl.assigned_value.data_type, DataType::Invalid) {
-            state.errors.push(SemanticError::TypeMismatch {
-                expected: var_decl.data_type.clone(),
-                found: var_decl.assigned_value.data_type.clone(),
-                line: var_decl.line_declared_on,
-            });
-        }
-    }
-
-    // Validate the assigned value
-    state = validate_value(
-        &var_decl.assigned_value,
+    // Now do comprehensive type checking of the expression
+    // Check that the expression assigned matches the declared type of the variable
+    state = check_expression_types(
+        &var_decl.assigned_expr,
+        &var_decl.data_type,
         var_decl.line_declared_on,
         state,
         function_table,
     );
-    */
 
     state
 }
@@ -473,4 +447,102 @@ fn add_variable_to_current_scope(
             redeclaration_line: line,
         })
     }
+}
+
+/// Comprehensive type checking for expressions
+/// This function navigates the entire expression grammar hierarchy to validate all types
+///
+/// The expression hierarchy in the grammar is:
+/// Expression -> Term -> Unary -> Value
+///
+/// This function:
+/// 1. Checks each term in the expression
+/// 2. For each term, checks each unary expression
+/// 3. For each unary, validates the primary value type
+/// 4. Reports type mismatches when values don't match expected types
+/// 5. Validates that variables and functions exist and are accessible
+///
+/// Similar to the original commented code at line 141, but handles the full expression grammar
+fn check_expression_types(
+    expr: &Expression,
+    expected_type: &DataType,
+    line: u32,
+    state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
+    let mut state = state;
+
+    // For now, we'll check each term in the expression
+    // In a more complete implementation, we'd need to validate that
+    // all terms are compatible with the operations being performed
+    for term in &expr.terms {
+        state = check_term_types(term, expected_type, line, state, function_table);
+    }
+
+    // TODO: Check that the operators make sense with the data types
+    // For example, you can't add strings and numbers in most type systems
+
+    state
+}
+
+/// Check types for a term (multiplication/division level)
+fn check_term_types(
+    term: &Term,
+    expected_type: &DataType,
+    line: u32,
+    state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
+    let mut state = state;
+
+    for unary in &term.unarys {
+        state = check_unary_types(unary, expected_type, line, state, function_table);
+    }
+
+    state
+}
+
+/// Check types for a unary expression (with optional unary operator)
+fn check_unary_types(
+    unary: &Unary,
+    expected_type: &DataType,
+    line: u32,
+    state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
+    let mut state = state;
+
+    // Check the primary value
+    state = check_value_type(&unary.primary, expected_type, line, state, function_table);
+
+    state
+}
+
+/// Check that a value matches the expected type
+/// This is the core type checking function that validates individual values
+fn check_value_type(
+    value: &Value,
+    expected_type: &DataType,
+    line: u32,
+    state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
+    let mut state = state;
+
+    // First validate the value itself (check if variables/functions exist)
+    state = validate_value(value, line, state, function_table);
+
+    // Then check type compatibility - this is similar to the original code at line 141
+    // but now works with the resolved type system
+    if value.data_type != *expected_type
+        && !matches!(value.data_type, DataType::Unknown | DataType::Invalid)
+    {
+        state.errors.push(SemanticError::TypeMismatch {
+            expected: expected_type.clone(),
+            found: value.data_type.clone(),
+            line,
+        });
+    }
+
+    state
 }
