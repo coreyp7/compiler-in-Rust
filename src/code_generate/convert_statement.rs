@@ -1,3 +1,5 @@
+use crate::ast::{Comparison, Expression, Term, Unary};
+use crate::ast::{ComparisonOperator, ExpressionOperator, LogicalOperator, TermOperator};
 use crate::ast::{
     DataType, ReturnStatement, Value, VariableAssignmentStatement, VariableDeclarationStatement,
 };
@@ -54,26 +56,22 @@ pub fn to_code_str(statement: &Statement) -> String {
 }
 
 fn to_code_str_var_decl(var_decl: &VariableDeclarationStatement) -> String {
-    String::new()
-    /* TESTING AST RN
     format!(
         "{} {} = {};\n",
         var_decl.data_type.to_string(),
         var_decl.symbol_name,
-        to_code_str_value(&var_decl.assigned_value)
+        //to_code_str_value(&var_decl.assigned_value)
+        to_code_str_expr(&var_decl.assigned_expr)
     )
-    */
 }
 
 fn to_code_str_var_assignment(var_assign: &VariableAssignmentStatement) -> String {
-    String::new()
-    /* FOR AST EXPR TESTING
     format!(
         "{} = {};\n",
         var_assign.var_name,
-        to_code_str_value(&var_assign.assigned_value)
+        //to_code_str_value(&var_assign.assigned_value)
+        to_code_str_expr(&var_assign.assigned_expr)
     )
-    */
 }
 
 fn to_code_str_value(value: &Value) -> String {
@@ -159,4 +157,145 @@ pub fn convert_function_header_to_code_str(function_def: &FunctionSymbol) -> Str
     code_str.push_str(")");
 
     code_str
+}
+
+pub fn to_code_str_expr(expr: &Expression) -> String {
+    let mut code_str = String::new();
+
+    // Handle the first term
+    if !expr.terms.is_empty() {
+        code_str.push_str(&to_code_str_term(&expr.terms[0]));
+
+        // Handle subsequent terms with operators
+        for (idx, term) in expr.terms.iter().skip(1).enumerate() {
+            if idx < expr.operators.len() {
+                code_str.push_str(&format!(
+                    " {} ",
+                    expression_operator_to_str(&expr.operators[idx])
+                ));
+            }
+            code_str.push_str(&to_code_str_term(term));
+        }
+    }
+
+    code_str
+}
+
+fn to_code_str_term(term: &Term) -> String {
+    let mut code_str = String::new();
+
+    // Handle the first unary
+    if !term.unarys.is_empty() {
+        code_str.push_str(&to_code_str_unary(&term.unarys[0]));
+
+        // Handle subsequent unarys with operations
+        for (idx, unary) in term.unarys.iter().skip(1).enumerate() {
+            if idx < term.operations.len() {
+                code_str.push_str(&format!(
+                    " {} ",
+                    term_operator_to_str(&term.operations[idx])
+                ));
+            }
+            code_str.push_str(&to_code_str_unary(unary));
+        }
+    }
+
+    code_str
+}
+
+fn to_code_str_unary(unary: &Unary) -> String {
+    let mut code_str = String::new();
+
+    // Handle unary operator if present
+    if let Some(ref operation) = unary.operation {
+        code_str.push_str(&expression_operator_to_str(operation));
+    }
+
+    // Handle the primary value
+    code_str.push_str(&to_code_str_value(&unary.primary));
+
+    code_str
+}
+
+pub fn to_code_str_comparison(comparison: &Comparison) -> String {
+    let mut code_str = String::new();
+
+    // Handle the first expression
+    if !comparison.expressions.is_empty() {
+        code_str.push_str(&to_code_str_expr(&comparison.expressions[0]));
+
+        // Handle subsequent expressions with operators
+        for (idx, expr) in comparison.expressions.iter().skip(1).enumerate() {
+            if idx < comparison.operators.len() {
+                code_str.push_str(&format!(
+                    " {} ",
+                    comparison_operator_to_str(&comparison.operators[idx])
+                ));
+            }
+            code_str.push_str(&to_code_str_expr(expr));
+        }
+    }
+
+    code_str
+}
+
+pub fn to_code_str_logical(logical: &crate::ast::Logical) -> String {
+    let mut code_str = String::new();
+
+    // Handle the first comparison
+    if !logical.comparisons.is_empty() {
+        code_str.push_str(&to_code_str_comparison(&logical.comparisons[0]));
+
+        // Handle subsequent comparisons with logical operators
+        for (idx, comparison) in logical.comparisons.iter().skip(1).enumerate() {
+            if idx < logical.operators.len() {
+                code_str.push_str(&format!(
+                    " {} ",
+                    logical_operator_to_str(&logical.operators[idx])
+                ));
+            }
+            code_str.push_str(&to_code_str_comparison(comparison));
+        }
+    }
+
+    code_str
+}
+
+// Helper functions to convert operators to string representations
+
+fn expression_operator_to_str(op: &ExpressionOperator) -> &'static str {
+    match op {
+        ExpressionOperator::Plus => "+",
+        ExpressionOperator::Minus => "-",
+        ExpressionOperator::invalidop => "/* invalid op */",
+    }
+}
+
+fn term_operator_to_str(op: &TermOperator) -> &'static str {
+    match op {
+        TermOperator::Multiply => "*",
+        TermOperator::Divide => "/",
+        TermOperator::invalidop => "/* invalid op */",
+    }
+}
+
+fn comparison_operator_to_str(op: &ComparisonOperator) -> &'static str {
+    match op {
+        ComparisonOperator::equalequal => "==",
+        ComparisonOperator::notequal => "!=",
+        ComparisonOperator::lessthan => "<",
+        ComparisonOperator::lessthanequalto => "<=",
+        ComparisonOperator::greaterthan => ">",
+        ComparisonOperator::greaterthanequalto => ">=",
+        ComparisonOperator::invalidop => "/* invalid op */",
+    }
+}
+
+fn logical_operator_to_str(op: &LogicalOperator) -> &'static str {
+    match op {
+        LogicalOperator::And => "&&",
+        LogicalOperator::Or => "||",
+        LogicalOperator::Not => "!",
+        LogicalOperator::invalidop => "/* invalid op */",
+    }
 }

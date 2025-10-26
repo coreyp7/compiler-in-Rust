@@ -11,6 +11,9 @@ pub use pure_builder::{DataType, Value, ValueType};
 
 pub use statement::*; // all statement types
 
-pub use comparison::{Comparison, Expression, Logical, Term, Unary};
+pub use comparison::{
+    Comparison, ComparisonOperator, Expression, ExpressionOperator, Logical, LogicalOperator, Term,
+    TermOperator, Unary,
+};
 pub use function_table::{FunctionSymbol, FunctionTable, Parameter};
 pub use parse_error::ParseError;

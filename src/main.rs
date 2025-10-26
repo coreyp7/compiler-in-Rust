@@ -86,7 +86,6 @@ fn main() -> std::io::Result<()> {
     } else {
         semantic::print_success_message();
     }
-    return Ok(());
 
     // Generate c code str with ast
     let code = generate_code_str(&ast_context.statements, &function_header_map);
