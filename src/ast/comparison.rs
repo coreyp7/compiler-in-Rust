@@ -1,4 +1,4 @@
-use crate::ast::Value;
+use crate::ast::{DataType, Value};
 use crate::tokenizer::TokenType;
 
 /**
@@ -67,6 +67,7 @@ pub enum ComparisonOperator {
 pub struct Expression {
     pub terms: Vec<Term>,
     pub operators: Vec<ExpressionOperator>,
+    pub datatype: DataType,
 }
 
 impl Expression {
@@ -74,6 +75,7 @@ impl Expression {
         Expression {
             terms: Vec::new(),
             operators: Vec::new(),
+            datatype: DataType::Unknown,
         }
     }
 }

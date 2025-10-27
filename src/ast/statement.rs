@@ -42,9 +42,16 @@ pub struct ReturnStatement {
 }
 
 #[derive(Debug)]
+pub struct PrintStatement {
+    pub line_declared_on: u32,
+    pub expression: Expression,
+}
+
+#[derive(Debug)]
 pub enum Statement {
     VariableDeclaration(VariableDeclarationStatement),
     VariableAssignment(VariableAssignmentStatement),
     FunctionDeclaration(FunctionDeclarationStatement),
     Return(ReturnStatement),
+    Print(PrintStatement),
 }

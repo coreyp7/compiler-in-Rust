@@ -1,7 +1,8 @@
 use crate::ast::{Comparison, Expression, Term, Unary};
 use crate::ast::{ComparisonOperator, ExpressionOperator, LogicalOperator, TermOperator};
 use crate::ast::{
-    DataType, ReturnStatement, Value, VariableAssignmentStatement, VariableDeclarationStatement,
+    DataType, PrintStatement, ReturnStatement, Value, VariableAssignmentStatement,
+    VariableDeclarationStatement,
 };
 use crate::ast::{FunctionDeclarationStatement, FunctionSymbol, Statement, ValueType};
 use std::fmt;
@@ -51,6 +52,7 @@ pub fn to_code_str(statement: &Statement) -> String {
         Statement::VariableDeclaration(var_decl_st) => to_code_str_var_decl(var_decl_st),
         Statement::VariableAssignment(var_assign_st) => to_code_str_var_assignment(var_assign_st),
         Statement::Return(return_statement) => to_code_str_return(return_statement),
+        Statement::Print(print_statement) => to_code_str_print(print_statement),
         _ => "".to_string(),
     }
 }
@@ -298,4 +300,14 @@ fn logical_operator_to_str(op: &LogicalOperator) -> &'static str {
         LogicalOperator::Not => "!",
         LogicalOperator::invalidop => "/* invalid op */",
     }
+}
+
+fn to_code_str_print(print_stmt: &crate::ast::PrintStatement) -> String {
+    let expr_str = to_code_str_expr(&print_stmt.expression);
+
+    // TODO: The data type the expr evaluates to should be resolved by now, and
+    // we can look at it and adjust the printf statement accordingly.
+
+    // right now we just use a c macro
+    format!("plank_print({});\n", expr_str)
 }

@@ -1,10 +1,11 @@
 use crate::ast::FunctionTable;
 use crate::ast::{
-    DataType, FunctionDeclarationStatement, Statement, Value, ValueType,
+    DataType, FunctionDeclarationStatement, PrintStatement, Statement, Value, ValueType,
     VariableAssignmentStatement, VariableDeclarationStatement,
 };
 use crate::ast::{Expression, Term, Unary};
 use crate::semantic::SemanticError;
+use crate::semantic::resolve_value_type::resolve_expression_values;
 use crate::semantic::resolve_value_type::resolve_variable_assignment_stmt_types;
 use crate::semantic::resolve_value_type::resolve_variable_declaration_types;
 use crate::symbol_table::SymbolTable;
@@ -83,23 +84,28 @@ fn analyze_statement(
                 }
                 */
 
-                // If scope is null, we're in global scope, which means a return shouldn't exist.
-                // Handle it appropriately.
-                if let Some(curr_func_id) = state.context_stack.last().unwrap().scope {
-                    let curr_func_def = function_table.get_using_id(curr_func_id).unwrap();
-                    if return_value.data_type != curr_func_def.return_type {
+                let current_analysis_context = state.context_stack.last().unwrap();
+                let current_function_context = current_analysis_context.scope.unwrap();
+                let current_function = function_table.get_using_id(current_function_context);
+                if let Some(current_function) = current_function {
+                    if current_function.return_type != return_value.data_type {
+                        // If return type doesn't match the function return type, create an error.
+                        // TODO: need to change return statements to have expressions.
                         state.errors.push(SemanticError::ReturnTypeIncorrect {
-                            func_def: curr_func_def.clone(),
+                            func_def: current_function.clone(),
                             line: return_stmt.line_declared_on,
                         })
                     }
                 } else {
                     state.errors.push(SemanticError::UnexpectedStatement {
                         line: return_stmt.line_declared_on,
-                        explanation: "This return statement is not in a function.".to_string(),
+                        explanation: "Return statement found outside of function".to_string(),
                     })
                 }
             }
+        }
+        Statement::Print(print_stmt) => {
+            state = analyze_print_statement(print_stmt, state, function_table);
         }
         _ => (),
     }
@@ -231,6 +237,23 @@ fn analyze_function_declaration(
     state
 }
 
+/// Analyze print statement
+fn analyze_print_statement(
+    print_stmt: &mut PrintStatement,
+    state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
+    let current_symbol_table = &state.context_stack.last().unwrap().symbol_table;
+
+    resolve_expression_values(
+        &mut print_stmt.expression,
+        function_table,
+        current_symbol_table,
+    );
+
+    state
+}
+
 // Validate that a value reference is semantically correct
 fn validate_value(
     value: &Value,
@@ -355,7 +378,7 @@ fn resolve_value_type(
         ValueType::FunctionCall => {
             // For function calls, the parameter expressions will be type-checked
             // separately by check_expression_types in analyze_function_call
-            
+
             // Resolve the function's return type
             if let Some(func_def) = function_table.get_func_def_using_str(&value.raw_text) {
                 value.data_type = func_def.return_type.clone();

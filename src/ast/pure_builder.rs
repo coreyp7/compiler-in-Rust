@@ -4,7 +4,8 @@ use super::builder_context::BuilderContext;
 use super::parse_error::ParseError;
 use super::statement::*;
 use super::statement::{
-    FunctionDeclarationStatement, ReturnStatement, Statement, VariableDeclarationStatement,
+    FunctionDeclarationStatement, PrintStatement, ReturnStatement, Statement,
+    VariableDeclarationStatement,
 };
 
 use crate::ast::comparison::{
@@ -85,6 +86,10 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
         }
         TokenType::Return => {
             let (stmt, ctx) = parse_return_statement(context);
+            (Some(stmt), ctx)
+        }
+        TokenType::Print => {
+            let (stmt, ctx) = parse_print_statement(context);
             (Some(stmt), ctx)
         }
         TokenType::Identity => {
@@ -412,6 +417,28 @@ fn parse_return_statement(mut context: BuilderContext) -> (Statement, BuilderCon
     (statement, context)
 }
 
+fn parse_print_statement(mut context: BuilderContext) -> (Statement, BuilderContext) {
+    let line_declared_on = context.get_curr().line_number;
+
+    context.advance(); // skip print
+
+    let (expr, mut context) = parse_expression(context);
+
+    expect_token!(
+        context,
+        TokenType::Semicolon,
+        "Expected semicolon after print statement"
+    );
+    context.advance();
+
+    let statement = Statement::Print(PrintStatement {
+        line_declared_on,
+        expression: expr,
+    });
+
+    (statement, context)
+}
+
 // Parse a value expression - no validation, just structure
 fn parse_value(mut context: BuilderContext) -> (Value, BuilderContext) {
     if context.is_at_end() {
@@ -487,7 +514,9 @@ fn parse_value(mut context: BuilderContext) -> (Value, BuilderContext) {
 
 // Called when a function call is found, gathers all expressions specified in a function
 // calls parameters.
-fn parse_function_call_parameters(mut context: BuilderContext) -> (Vec<Expression>, BuilderContext) {
+fn parse_function_call_parameters(
+    mut context: BuilderContext,
+) -> (Vec<Expression>, BuilderContext) {
     // so it'll be expression comma expression etc....
 
     let mut passed_expressions: Vec<Expression> = Vec::new();

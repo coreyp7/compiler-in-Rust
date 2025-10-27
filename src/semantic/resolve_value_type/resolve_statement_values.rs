@@ -191,122 +191,12 @@ pub fn resolve_unary_values(
     resolve_value(&mut unary.primary, function_header_map, symbol_table);
 }
 
-/// Resolves all values recursively within a Value that might contain expressions
-/// This handles cases where a Value might have nested expressions or complex structures
-pub fn resolve_value_recursively(
-    val: &mut Value,
+fn type_check_expression(
+    expr: &mut Expression,
     function_header_map: &FunctionTable,
     symbol_table: &SymbolTable,
 ) {
-    // The resolve_value function already handles parameter resolution internally
-    // so we just need to call it - no need to duplicate that logic here
-    resolve_value(val, function_header_map, symbol_table);
+    // Call function to get Vec of Values from term
+    let values: Vec<&Value> = Vec::new();
+    //for term in expr.terms {}
 }
-
-/// Convenience function to resolve all values in a collection of expressions
-pub fn resolve_values_in_expressions(
-    expressions: &mut Vec<Expression>,
-    function_header_map: &FunctionTable,
-    symbol_table: &SymbolTable,
-) {
-    for expression in expressions {
-        resolve_expression_values(expression, function_header_map, symbol_table);
-    }
-}
-
-/// Convenience function to resolve all values in a collection of terms
-pub fn resolve_values_in_terms(
-    terms: &mut Vec<Term>,
-    function_header_map: &FunctionTable,
-    symbol_table: &SymbolTable,
-) {
-    for term in terms {
-        resolve_term_values(term, function_header_map, symbol_table);
-    }
-}
-
-/// Convenience function to resolve all values in a collection of unary operations
-pub fn resolve_values_in_unarys(
-    unarys: &mut Vec<Unary>,
-    function_header_map: &FunctionTable,
-    symbol_table: &SymbolTable,
-) {
-    for unary in unarys {
-        resolve_unary_values(unary, function_header_map, symbol_table);
-    }
-}
-
-/// Resolves all values within a Logical structure
-pub fn resolve_logical_values(
-    logical: &mut Logical,
-    function_header_map: &FunctionTable,
-    symbol_table: &SymbolTable,
-) {
-    // Resolve values in all comparisons within the logical expression
-    for comparison in &mut logical.comparisons {
-        resolve_comparison_values(comparison, function_header_map, symbol_table);
-    }
-}
-
-/// Resolves all values within a Comparison structure  
-pub fn resolve_comparison_values(
-    comparison: &mut Comparison,
-    function_header_map: &FunctionTable,
-    symbol_table: &SymbolTable,
-) {
-    // Resolve values in all expressions within the comparison
-    for expression in &mut comparison.expressions {
-        resolve_expression_values(expression, function_header_map, symbol_table);
-    }
-}
-
-// Validate that a value reference is semantically correct
-/*
-fn validate_value(
-    value: &Value,
-    line: u32,
-    state: AnalysisState,
-    function_table: &FunctionTable,
-) -> AnalysisState {
-    let mut state = state;
-    let current_context = state.context_stack.last().unwrap();
-
-    match value.value_type {
-        ValueType::Variable => {
-            if !current_context.symbol_table.contains_name(&value.raw_text) {
-                state.errors.push(SemanticError::VariableNotDeclared {
-                    name: value.raw_text.clone(),
-                    line,
-                });
-            }
-        }
-        ValueType::FunctionCall => {
-            if function_table
-                .get_id_with_function_name(&value.raw_text)
-                .is_none()
-            {
-                state.errors.push(SemanticError::FunctionNotDeclared {
-                    name: value.raw_text.clone(),
-                    line,
-                });
-            } else {
-                state = analyze_function_call(value, line, state, function_table);
-            }
-        }
-        ValueType::InlineNumber | ValueType::InlineString => {
-            // Inline values don't need validation
-        }
-        ValueType::Expression => {
-            // Expression validation would be more complex
-        }
-        ValueType::Invalid => {
-            state.errors.push(SemanticError::InvalidValueReference {
-                name: value.raw_text.clone(),
-                line,
-            });
-        }
-    }
-
-    state
-}
-    */
