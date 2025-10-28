@@ -8,15 +8,14 @@ use crate::semantic::SemanticError;
 use crate::semantic::resolve_value_type::resolve_expression_values;
 use crate::semantic::resolve_value_type::resolve_variable_assignment_stmt_types;
 use crate::semantic::resolve_value_type::resolve_variable_declaration_types;
+use crate::semantic::type_check::type_check_expression;
 use crate::symbol_table::SymbolTable;
 
-/// Semantic analyzer context for managing scope
 pub struct SemanticContext {
     pub symbol_table: SymbolTable,
     pub scope: Option<u8>, // Function scope if in function, None if global
 }
 
-/// Analysis state passed through functions
 pub struct AnalysisState {
     pub context_stack: Vec<SemanticContext>,
     pub errors: Vec<SemanticError>,
@@ -37,7 +36,7 @@ impl AnalysisState {
     }
 }
 
-// Main analysis entry point
+// Start of analysis phase
 pub fn analyze_statements(
     statements: &mut [Statement],
     function_table: &FunctionTable,
@@ -51,7 +50,6 @@ pub fn analyze_statements(
     state.errors
 }
 
-/// Analyze a single statement
 fn analyze_statement(
     statement: &mut Statement,
     state: AnalysisState,
@@ -144,7 +142,7 @@ fn analyze_variable_assignment(
             println!("some var def found for {}", var_ass.var_name);
             // Type check the expression with its assignment
             let expected_type = var_def.data_type.clone();
-            state = check_expression_types(
+            state = type_check_expression(
                 &var_ass.assigned_expr,
                 &expected_type,
                 var_ass.line_number,
@@ -164,7 +162,6 @@ fn analyze_variable_assignment(
     state
 }
 
-/// Analyze variable declaration for semantic correctness
 fn analyze_variable_declaration(
     var_decl: &mut VariableDeclarationStatement,
     state: AnalysisState,
@@ -173,7 +170,6 @@ fn analyze_variable_declaration(
     let mut state = state;
 
     // Not done in AST, so we need to do it here.
-    //state = resolve_value_type(&mut var_decl.assigned_value, state, function_table);
     resolve_variable_declaration_types(
         var_decl,
         function_table,
@@ -183,7 +179,6 @@ fn analyze_variable_declaration(
     println!("Updated statement in ast:");
     println!("{:#?}", var_decl);
 
-    // First, try to add the variable to the current scope
     if let Err(error) = add_variable_to_current_scope(
         &var_decl.symbol_name,
         &var_decl.data_type,
@@ -193,9 +188,9 @@ fn analyze_variable_declaration(
         state.errors.push(error);
     }
 
-    // Now do comprehensive type checking of the expression
-    // Check that the expression assigned matches the declared type of the variable
-    state = check_expression_types(
+    // Now do comprehensive type checking of the expression.
+    // Check that the expression assigned matches the declared type of the variable.
+    state = type_check_expression(
         &var_decl.assigned_expr,
         &var_decl.data_type,
         var_decl.line_declared_on,
@@ -254,8 +249,9 @@ fn analyze_print_statement(
     state
 }
 
-// Validate that a value reference is semantically correct
-fn validate_value(
+// This is only called in type_check rn (since value is so far down the
+// expression hierarchy)
+pub fn analyze_value(
     value: &Value,
     line: u32,
     state: AnalysisState,
@@ -331,7 +327,7 @@ fn analyze_function_call(
             for (i, param_expr) in param_values.iter().enumerate() {
                 // Type check the entire expression against the expected parameter type
                 if let Some(expected_param) = func_def.parameters.get(i) {
-                    state = check_expression_types(
+                    state = type_check_expression(
                         param_expr,
                         &expected_param.data_type,
                         line,
@@ -466,100 +462,30 @@ fn add_variable_to_current_scope(
     }
 }
 
-/// Comprehensive type checking for expressions
-/// This function navigates the entire expression grammar hierarchy to validate all types
-///
-/// The expression hierarchy in the grammar is:
-/// Expression -> Term -> Unary -> Value
-///
-/// This function:
-/// 1. Checks each term in the expression
-/// 2. For each term, checks each unary expression
-/// 3. For each unary, validates the primary value type
-/// 4. Reports type mismatches when values don't match expected types
-/// 5. Validates that variables and functions exist and are accessible
-///
-/// Similar to the original commented code at line 141, but handles the full expression grammar
-fn check_expression_types(
+fn add_errors_if_operations_in_expr_are_invalid(
     expr: &Expression,
-    expected_type: &DataType,
-    line: u32,
     state: AnalysisState,
     function_table: &FunctionTable,
-) -> AnalysisState {
-    let mut state = state;
+) {
+    // We've already figured out what the type of the result of this expression
+    // will be, so we just need to ensure that the operations present abide by
+    // the rules of the types in Plank.
+    // Number -> can use anything
+    // String -> can use '+' only
+    // What if a number is added to a number then added to a string?
+    // Then an operation is okay I presume between the number and number, just
+    // need to make sure that between the string and the number is only '+'.
 
-    // For now, we'll check each term in the expression
-    // In a more complete implementation, we'd need to validate that
-    // all terms are compatible with the operations being performed
-    for term in &expr.terms {
-        state = check_term_types(term, expected_type, line, state, function_table);
-    }
-
-    // TODO: Check that the operators make sense with the data types
-    // For example, you can't add strings and numbers in most type systems
-
-    state
-}
-
-/// Check types for a term (multiplication/division level)
-fn check_term_types(
-    term: &Term,
-    expected_type: &DataType,
-    line: u32,
-    state: AnalysisState,
-    function_table: &FunctionTable,
-) -> AnalysisState {
-    let mut state = state;
-
-    for unary in &term.unarys {
-        state = check_unary_types(unary, expected_type, line, state, function_table);
-    }
-
-    state
-}
-
-/// Check types for a unary expression (with optional unary operator)
-fn check_unary_types(
-    unary: &Unary,
-    expected_type: &DataType,
-    line: u32,
-    state: AnalysisState,
-    function_table: &FunctionTable,
-) -> AnalysisState {
-    let mut state = state;
-
-    // Check the primary value
-    state = check_value_type(&unary.primary, expected_type, line, state, function_table);
-
-    state
-}
-
-/// Check that a value matches the expected type
-/// This is the core type checking function that validates individual values
-fn check_value_type(
-    value: &Value,
-    expected_type: &DataType,
-    line: u32,
-    state: AnalysisState,
-    function_table: &FunctionTable,
-) -> AnalysisState {
-    let mut state = state;
-
-    // First validate the value itself (check if variables/functions exist)
-    state = validate_value(value, line, state, function_table);
-
-    // Then check type compatibility - this is similar to the original code at line 141
-    // but now works with the resolved type system
-    if value.data_type != *expected_type
-        && !matches!(value.data_type, DataType::Unknown | DataType::Invalid)
-    {
-        state.errors.push(SemanticError::TypeMismatch {
-            expected: expected_type.clone(),
-            found: value.data_type.clone(),
-            line,
-        });
-    }
-
-    state
+    // Plan; make two giant Vectors for
+    // Values
+    // Operations
+    // In order. So we can loop through, and depending on the operation between
+    // left and right values, we can allow certain operations.
+    // This is non trivial right now though, because we have many different structs
+    // for all of the Operators, so that only certain ones can be assigned to certain
+    // structs.
+    // What's a solution for this?
+    // Could have them all under a common enum or something? Then we can process them
+    // semi-generically.
+    //let (values, operations)
 }
