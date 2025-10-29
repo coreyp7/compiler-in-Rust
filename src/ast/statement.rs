@@ -1,7 +1,7 @@
 //use crate::comparison::Logical;
 use crate::ast::DataType;
 use crate::ast::Value;
-use crate::ast::comparison::Expression;
+use crate::ast::value_hierarchy::Expression;
 
 /**
  * Contains 'Statement' enum, and all of the specific Statement structs

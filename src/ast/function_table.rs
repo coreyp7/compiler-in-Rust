@@ -1,4 +1,4 @@
-use super::pure_builder::DataType;
+use super::value_hierarchy::DataType;
 use std::collections::{HashMap, hash_map::Values};
 
 // Function-related structures

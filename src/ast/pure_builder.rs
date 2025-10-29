@@ -1,18 +1,15 @@
-use std::thread::Builder;
-
 use super::builder_context::BuilderContext;
 use super::parse_error::ParseError;
-use super::statement::*;
 use super::statement::{
     FunctionDeclarationStatement, PrintStatement, ReturnStatement, Statement,
     VariableDeclarationStatement,
 };
 
-use crate::ast::comparison::{
-    ComparisonOperator, ExpressionOperator, LogicalOperator, Term, TermOperator, Unary,
-    convert_token_type_to_expression_op, convert_token_type_to_term_op,
+use crate::ast::VariableAssignmentStatement;
+use crate::ast::value_hierarchy::{
+    DataType, Expression, Term, Unary, Value, ValueType, convert_token_type_to_expression_op,
+    convert_token_type_to_term_op,
 };
-use crate::ast::{Expression, VariableAssignmentStatement};
 use crate::tokenizer::{Token, TokenType};
 
 /// Helper function to create an invalid statement - used when parsing fails
@@ -550,62 +547,4 @@ fn parse_function_call_parameters(
     */
 
     (passed_expressions, context)
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum DataType {
-    Number,
-    String,
-    Void,
-    Unknown, // Used when type needs to be inferred
-    Invalid,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum ValueType {
-    FunctionCall,
-    Expression,
-    InlineNumber,
-    InlineString,
-    Variable,
-    Invalid,
-}
-
-#[derive(Debug, Clone)]
-pub struct Value {
-    pub data_type: DataType,
-    pub value_type: ValueType,
-    pub raw_text: String, // The raw text from the source, for reference
-    // Only exists if value_type = FunctionCall; we need to record the expressions
-    // being passed in as params.
-    pub param_values: Option<Vec<Expression>>,
-}
-
-impl Value {
-    pub fn new(data_type: DataType, value_type: ValueType, raw_text: String) -> Self {
-        Value {
-            data_type,
-            value_type,
-            raw_text,
-            param_values: None,
-        }
-    }
-
-    pub fn new_with_params(
-        data_type: DataType,
-        value_type: ValueType,
-        raw_text: String,
-        param_values: Vec<Expression>,
-    ) -> Self {
-        Value {
-            data_type,
-            value_type,
-            raw_text,
-            param_values: Some(param_values),
-        }
-    }
-
-    pub fn invalid() -> Self {
-        Value::new(DataType::Invalid, ValueType::Invalid, String::new())
-    }
 }

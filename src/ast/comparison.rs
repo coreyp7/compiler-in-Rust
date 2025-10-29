@@ -1,4 +1,4 @@
-use crate::ast::{DataType, Value};
+use crate::ast::value_hierarchy::Expression;
 use crate::tokenizer::TokenType;
 
 /**
@@ -62,59 +62,6 @@ pub enum ComparisonOperator {
     invalidop,
 }
 
-// Either + or -
-#[derive(Debug, Clone)]
-pub struct Expression {
-    pub terms: Vec<Term>,
-    pub operators: Vec<ExpressionOperator>,
-    pub datatype: DataType,
-}
-
-impl Expression {
-    pub fn new() -> Expression {
-        Expression {
-            terms: Vec::new(),
-            operators: Vec::new(),
-            datatype: DataType::Unknown,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum ExpressionOperator {
-    Plus,
-    Minus,
-    invalidop,
-}
-
-#[derive(Debug, Clone)]
-pub struct Term {
-    pub unarys: Vec<Unary>,
-    pub operations: Vec<TermOperator>,
-}
-
-impl Term {
-    pub fn new() -> Term {
-        Term {
-            unarys: Vec::new(),
-            operations: Vec::new(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum TermOperator {
-    Multiply,
-    Divide,
-    invalidop, // TODO: these should be changed to no op
-}
-
-#[derive(Debug, Clone)]
-pub struct Unary {
-    pub operation: Option<ExpressionOperator>,
-    pub primary: Value,
-}
-
 /*
 #[derive(Debug)]
 pub enum Primary {
@@ -139,22 +86,6 @@ pub fn convert_token_type_to_comparison_op(token_type: TokenType) -> ComparisonO
         TokenType::GreaterThan => ComparisonOperator::greaterthan,
         TokenType::GreaterThanEqualTo => ComparisonOperator::greaterthanequalto,
         _ => ComparisonOperator::invalidop,
-    }
-}
-
-pub fn convert_token_type_to_expression_op(token_type: TokenType) -> ExpressionOperator {
-    match token_type {
-        TokenType::Plus => ExpressionOperator::Plus,
-        TokenType::Minus => ExpressionOperator::Minus,
-        _ => ExpressionOperator::invalidop,
-    }
-}
-
-pub fn convert_token_type_to_term_op(token_type: TokenType) -> TermOperator {
-    match token_type {
-        TokenType::Asterisk => TermOperator::Multiply,
-        TokenType::Slash => TermOperator::Divide,
-        _ => TermOperator::invalidop,
     }
 }
 

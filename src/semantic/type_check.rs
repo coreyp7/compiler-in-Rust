@@ -1,8 +1,6 @@
 use crate::ast::DataType;
 use crate::ast::FunctionTable;
 use crate::ast::Value;
-// TODO: we need to reorganize all this shit. Its a mess.
-// Value and Expression hierarchy should prolly be in single module.
 use crate::ast::{Expression, Term, Unary};
 use crate::semantic::SemanticError;
 use crate::semantic::analyzer::AnalysisState;

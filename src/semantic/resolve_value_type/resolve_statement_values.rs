@@ -30,11 +30,6 @@
  * - Expressions (marked as Expression type)
  */
 
-use crate::ast::Comparison;
-use crate::ast::DataType;
-use crate::ast::Expression;
-use crate::ast::FunctionTable;
-use crate::ast::Logical;
 use crate::ast::Statement;
 use crate::ast::Term;
 use crate::ast::Unary;
@@ -42,6 +37,7 @@ use crate::ast::Value;
 use crate::ast::ValueType;
 use crate::ast::VariableAssignmentStatement;
 use crate::ast::VariableDeclarationStatement;
+use crate::ast::{Comparison, DataType, Expression, FunctionTable, Logical};
 use crate::symbol_table::SymbolTable;
 
 pub fn resolve_all_value_types_in_ast(
