@@ -9,7 +9,7 @@ use crate::semantic::resolve_value_type::resolve_expression_values;
 use crate::semantic::resolve_value_type::resolve_variable_assignment_stmt_types;
 use crate::semantic::resolve_value_type::resolve_variable_declaration_types;
 use crate::semantic::type_check::type_check_expression;
-use crate::symbol_table::SymbolTable;
+use crate::symbol_table::{self, SymbolTable};
 
 pub struct SemanticContext {
     pub symbol_table: SymbolTable,
@@ -67,30 +67,31 @@ fn analyze_statement(
             state = analyze_function_declaration(func_decl, state, function_table);
         }
         Statement::Return(return_stmt) => {
-            if let Some(ref mut return_value) = return_stmt.return_value {
-                state = resolve_value_type(return_value, state, function_table);
-                // TODO: if incorrect return statement not in function, this will crash.
-                // NEED TO HANDLE IF THIS IS THE CASE.
-                /*
-                let curr_func_id = state.context_stack.last().unwrap().scope.unwrap();
-                let curr_func_def = function_table.get_using_id(curr_func_id).unwrap();
-                if return_value.data_type != curr_func_def.return_type {
-                    state.errors.push(SemanticError::ReturnTypeIncorrect {
-                        func_def: curr_func_def.clone(),
-                        line: return_stmt.line_declared_on,
-                    })
-                }
-                */
-
+            if let Some(ref mut return_expr) = return_stmt.return_value {
+                resolve_expression_values(
+                    return_expr,
+                    function_table,
+                    &state.context_stack.last().unwrap().symbol_table, // TODO: make a helper function for this LOL
+                );
                 let current_analysis_context = state.context_stack.last().unwrap();
                 let current_function_context = current_analysis_context.scope.unwrap();
                 let current_function = function_table.get_using_id(current_function_context);
                 if let Some(current_function) = current_function {
-                    if current_function.return_type != return_value.data_type {
+                    if return_expr.datatype == DataType::Invalid {
+                        // This probably means that the expression cannot evaluate to a
+                        // single type, since they're adding different types together.
+                        // Could improve in future to be more grandular and specific.
+                        // (This is set in resolve_expression_values, which is unintuitive)
+                        state.errors.push(SemanticError::ExpressionInvalid {
+                            line: return_stmt.line_declared_on,
+                            expected_type: current_function.return_type.clone(),
+                        })
+                    } else if current_function.return_type != return_expr.datatype {
                         // If return type doesn't match the function return type, create an error.
                         // TODO: need to change return statements to have expressions.
                         state.errors.push(SemanticError::ReturnTypeIncorrect {
                             func_def: current_function.clone(),
+                            got_type: return_expr.datatype.clone(),
                             line: return_stmt.line_declared_on,
                         })
                     }

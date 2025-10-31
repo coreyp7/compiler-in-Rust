@@ -395,7 +395,8 @@ fn parse_return_statement(mut context: BuilderContext) -> (Statement, BuilderCon
 
     // What types of things can be returned?
     // A value I suppose.
-    let (val, mut context) = parse_value(context);
+    //let (val, mut context) = parse_value(context);
+    let (expr, mut context) = parse_expression(context);
 
     // Expect semicolon
     expect_token!(
@@ -408,7 +409,7 @@ fn parse_return_statement(mut context: BuilderContext) -> (Statement, BuilderCon
     // For now, just create a simple return statement
     let statement = Statement::Return(ReturnStatement {
         line_declared_on,
-        return_value: Some(val),
+        return_value: Some(expr),
     });
 
     (statement, context)

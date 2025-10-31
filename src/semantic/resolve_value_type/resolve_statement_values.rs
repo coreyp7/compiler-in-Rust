@@ -85,7 +85,6 @@ pub fn resolve_variable_declaration_types(
     // Check that the value_type is a function call
     // if function call: Set the assigned value data_type
     // using the function_header_map
-
     resolve_expression_values(
         &mut var_decl_stmt.assigned_expr,
         function_header_map,
@@ -153,16 +152,43 @@ fn resolve_value(val: &mut Value, function_header_map: &FunctionTable, symbol_ta
     }
 }
 
-/// Resolves all values within an Expression structure
+/// Also will resolve the type of the expression
+/// (based off of first value found)
+/// TODO: rename it to describe the above comment in the name of the func
 pub fn resolve_expression_values(
     expression: &mut Expression,
     function_header_map: &FunctionTable,
     symbol_table: &SymbolTable,
 ) {
-    // Resolve values in all terms within the expression
     for term in &mut expression.terms {
         resolve_term_values(term, function_header_map, symbol_table);
     }
+
+    // Resolve the datatype of the expression itself.
+    // Set it to invalid if there's mixing of types.
+    // In future I can modify to allow.
+    expression.datatype = get_first_value_of_entire_expr(expression).data_type.clone();
+    let values_of_expr: Vec<&Value> = Vec::new();
+    let unary_idx = 1;
+    let mut is_expr_err = false;
+    for term in &expression.terms {
+        for unary in &term.unarys {
+            if unary.primary.data_type != expression.datatype {
+                //is_expr_err = true;
+
+                // Set datatype to invalid to indicate the expression couldn't be
+                // evaluated to a single type.
+                expression.datatype = DataType::Invalid;
+            }
+        }
+    }
+}
+
+/// This might be sketchy but leaving for now.
+/// Can change to an Option later to be more thorough, but there shouldn't
+/// ever be 0 elements in any of these vecs.
+pub fn get_first_value_of_entire_expr(expr: &Expression) -> &Value {
+    &expr.terms[0].unarys[0].primary
 }
 
 /// Resolves all values within a Term structure  

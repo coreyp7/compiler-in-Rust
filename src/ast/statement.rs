@@ -38,7 +38,7 @@ pub struct FunctionDeclarationStatement {
 #[derive(Debug)]
 pub struct ReturnStatement {
     pub line_declared_on: u32,
-    pub return_value: Option<Value>,
+    pub return_value: Option<Expression>,
 }
 
 #[derive(Debug)]

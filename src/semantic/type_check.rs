@@ -22,9 +22,6 @@ pub fn type_check_expression(
         state = type_check_term(term, expected_type, line, state, function_table);
     }
 
-    // TODO: Check that the operators make sense with the data types
-    // For example, you can't add strings and numbers in most type systems
-
     state
 }
 

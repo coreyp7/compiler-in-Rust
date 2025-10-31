@@ -109,9 +109,9 @@ fn to_code_str_value(value: &Value) -> String {
 fn to_code_str_return(return_stmt: &ReturnStatement) -> String {
     //"RETURN NOT IMPL YET\n".to_string()
     let mut code_str = String::new();
-    let return_value_option = &return_stmt.return_value;
-    match return_value_option {
-        Some(value) => code_str.push_str(&format!("return {};\n", value.to_string())),
+    let return_expr_option = &return_stmt.return_value;
+    match return_expr_option {
+        Some(expr) => code_str.push_str(&format!("return {};\n", to_code_str_expr(expr))),
         None => {
             // TODO add handling
         }

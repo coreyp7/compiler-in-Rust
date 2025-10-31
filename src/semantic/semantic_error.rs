@@ -32,12 +32,17 @@ pub enum SemanticError {
     },
     ReturnTypeIncorrect {
         func_def: FunctionSymbol,
+        got_type: DataType,
         line: u32,
     },
     IncorrectParameters {
         parameters_expected: usize,
         parameters_provided: usize,
         line: u32,
+    },
+    ExpressionInvalid {
+        line: u32,
+        expected_type: DataType,
     },
     /// First created this for when returns are found outside of functions.
     /// Helpful for more generic errors thatr we can just write a sentence for.
@@ -185,7 +190,11 @@ impl SemanticError {
                     parameters_provided.to_string().red().bold()
                 );
             }
-            SemanticError::ReturnTypeIncorrect { func_def, line } => {
+            SemanticError::ReturnTypeIncorrect {
+                func_def,
+                got_type,
+                line,
+            } => {
                 error_header("Incorrect return type", *line);
                 eprintln!(
                     "  {} Return statement in function '{}' is of incorrect type.",
@@ -193,10 +202,27 @@ impl SemanticError {
                     func_def.identifier
                 );
                 eprintln!(
-                    "  {} '{}' declared on line {}",
+                    "  {} '{}' declared on line {}. Expected {}, got {:#?}.",
                     error_line_end(),
                     func_def.identifier,
-                    func_def.line_declared_on
+                    func_def.line_declared_on,
+                    func_def.return_type,
+                    got_type
+                );
+            }
+            SemanticError::ExpressionInvalid {
+                line,
+                expected_type,
+            } => {
+                error_header("Expression type is invalid", *line);
+                eprintln!(
+                    "  {} Expression evaluates to invalid type. Are you adding different types together?",
+                    error_line_start(),
+                );
+                eprintln!(
+                    "  {} Was expecting type '{:#?}'",
+                    error_line_end(),
+                    expected_type
                 );
             }
             SemanticError::UnexpectedStatement { line, explanation } => {
