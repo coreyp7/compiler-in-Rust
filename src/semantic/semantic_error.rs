@@ -42,6 +42,10 @@ pub enum SemanticError {
     },
     ExpressionInvalid {
         line: u32,
+    },
+    // To be more helpful to the user, have a catered one for return stmts
+    ExpressionInvalidExpectingSpecificType {
+        line: u32,
         expected_type: DataType,
     },
     /// First created this for when returns are found outside of functions.
@@ -210,7 +214,7 @@ impl SemanticError {
                     got_type
                 );
             }
-            SemanticError::ExpressionInvalid {
+            SemanticError::ExpressionInvalidExpectingSpecificType {
                 line,
                 expected_type,
             } => {
@@ -223,6 +227,13 @@ impl SemanticError {
                     "  {} Was expecting type '{:#?}'",
                     error_line_end(),
                     expected_type
+                );
+            }
+            SemanticError::ExpressionInvalid { line } => {
+                error_header("Expression type is invalid", *line);
+                eprintln!(
+                    "  {} Expression evaluates to invalid type. Are you adding different types together?",
+                    error_line_start(),
                 );
             }
             SemanticError::UnexpectedStatement { line, explanation } => {

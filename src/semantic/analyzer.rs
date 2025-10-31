@@ -202,7 +202,7 @@ fn analyze_function_declaration(
 /// Analyze print statement
 fn analyze_print_statement(
     print_stmt: &mut PrintStatement,
-    state: AnalysisState,
+    mut state: AnalysisState,
     function_table: &FunctionTable,
 ) -> AnalysisState {
     let current_symbol_table = &state.context_stack.last().unwrap().symbol_table;
@@ -212,6 +212,12 @@ fn analyze_print_statement(
         function_table,
         current_symbol_table,
     );
+
+    if print_stmt.expression.datatype == DataType::Invalid {
+        state.errors.push(SemanticError::ExpressionInvalid {
+            line: print_stmt.line_declared_on,
+        })
+    }
 
     state
 }
@@ -336,10 +342,12 @@ fn analyze_return_stmt(
                 // single type, since they're adding different types together.
                 // Could improve in future to be more grandular and specific.
                 // (This is set in resolve_expression_values, which is unintuitive)
-                state.errors.push(SemanticError::ExpressionInvalid {
-                    line: return_stmt.line_declared_on,
-                    expected_type: current_function.return_type.clone(),
-                })
+                state
+                    .errors
+                    .push(SemanticError::ExpressionInvalidExpectingSpecificType {
+                        line: return_stmt.line_declared_on,
+                        expected_type: current_function.return_type.clone(),
+                    })
             } else if current_function.return_type != return_expr.datatype {
                 // If return type doesn't match the function return type, create an error.
                 // TODO: need to change return statements to have expressions.
