@@ -1,9 +1,9 @@
-use crate::ast::FunctionTable;
 use crate::ast::{
     DataType, FunctionDeclarationStatement, PrintStatement, Statement, Value, ValueType,
     VariableAssignmentStatement, VariableDeclarationStatement,
 };
 use crate::ast::{Expression, Term, Unary};
+use crate::ast::{FunctionTable, ReturnStatement};
 use crate::semantic::SemanticError;
 use crate::semantic::resolve_value_type::resolve_expression_values;
 use crate::semantic::resolve_value_type::resolve_variable_assignment_stmt_types;
@@ -67,41 +67,7 @@ fn analyze_statement(
             state = analyze_function_declaration(func_decl, state, function_table);
         }
         Statement::Return(return_stmt) => {
-            if let Some(ref mut return_expr) = return_stmt.return_value {
-                resolve_expression_values(
-                    return_expr,
-                    function_table,
-                    &state.context_stack.last().unwrap().symbol_table, // TODO: make a helper function for this LOL
-                );
-                let current_analysis_context = state.context_stack.last().unwrap();
-                let current_function_context = current_analysis_context.scope.unwrap();
-                let current_function = function_table.get_using_id(current_function_context);
-                if let Some(current_function) = current_function {
-                    if return_expr.datatype == DataType::Invalid {
-                        // This probably means that the expression cannot evaluate to a
-                        // single type, since they're adding different types together.
-                        // Could improve in future to be more grandular and specific.
-                        // (This is set in resolve_expression_values, which is unintuitive)
-                        state.errors.push(SemanticError::ExpressionInvalid {
-                            line: return_stmt.line_declared_on,
-                            expected_type: current_function.return_type.clone(),
-                        })
-                    } else if current_function.return_type != return_expr.datatype {
-                        // If return type doesn't match the function return type, create an error.
-                        // TODO: need to change return statements to have expressions.
-                        state.errors.push(SemanticError::ReturnTypeIncorrect {
-                            func_def: current_function.clone(),
-                            got_type: return_expr.datatype.clone(),
-                            line: return_stmt.line_declared_on,
-                        })
-                    }
-                } else {
-                    state.errors.push(SemanticError::UnexpectedStatement {
-                        line: return_stmt.line_declared_on,
-                        explanation: "Return statement found outside of function".to_string(),
-                    })
-                }
-            }
+            state = analyze_return_stmt(return_stmt, state, function_table);
         }
         Statement::Print(print_stmt) => {
             state = analyze_print_statement(print_stmt, state, function_table);
@@ -344,6 +310,50 @@ fn analyze_function_call(
                 parameters_provided: 0,
                 line,
             });
+        }
+    }
+
+    state
+}
+
+fn analyze_return_stmt(
+    return_stmt: &mut ReturnStatement,
+    mut state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
+    if let Some(ref mut return_expr) = return_stmt.return_value {
+        resolve_expression_values(
+            return_expr,
+            function_table,
+            &state.context_stack.last().unwrap().symbol_table, // TODO: make a helper function for this LOL
+        );
+        let current_analysis_context = state.context_stack.last().unwrap();
+        let current_function_context = current_analysis_context.scope.unwrap();
+        let current_function = function_table.get_using_id(current_function_context);
+        if let Some(current_function) = current_function {
+            if return_expr.datatype == DataType::Invalid {
+                // This probably means that the expression cannot evaluate to a
+                // single type, since they're adding different types together.
+                // Could improve in future to be more grandular and specific.
+                // (This is set in resolve_expression_values, which is unintuitive)
+                state.errors.push(SemanticError::ExpressionInvalid {
+                    line: return_stmt.line_declared_on,
+                    expected_type: current_function.return_type.clone(),
+                })
+            } else if current_function.return_type != return_expr.datatype {
+                // If return type doesn't match the function return type, create an error.
+                // TODO: need to change return statements to have expressions.
+                state.errors.push(SemanticError::ReturnTypeIncorrect {
+                    func_def: current_function.clone(),
+                    got_type: return_expr.datatype.clone(),
+                    line: return_stmt.line_declared_on,
+                })
+            }
+        } else {
+            state.errors.push(SemanticError::UnexpectedStatement {
+                line: return_stmt.line_declared_on,
+                explanation: "Return statement found outside of function".to_string(),
+            })
         }
     }
 
