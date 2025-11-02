@@ -334,7 +334,7 @@ fn analyze_return_stmt(
             function_table,
             &state.context_stack.last().unwrap().symbol_table, // TODO: make a helper function for this LOL
         );
-        state = ensure_return_type_matches_function(state, function_table, return_expr);
+        state = ensure_return_type_matches_function(state, function_table, &return_stmt);
     } else {
         state.errors.push(SemanticError::UnexpectedStatement {
             line: return_stmt.line_declared_on,
@@ -354,25 +354,12 @@ fn ensure_return_type_matches_function(
     let current_function_context = current_analysis_context.scope.unwrap();
     let current_function = function_table.get_using_id(current_function_context);
 
-    if return_stmt.return_value.unwrap().datatype == DataType::Void {}
-
-    if return_stmt.return_value.unwrap().datatype == DataType::Invalid {
-        // This probably means that the expression cannot evaluate to a
-        // single type, since they're adding different types together.
-        // Could improve in future to be more grandular and specific.
-        // (This is set in resolve_expression_values, which is unintuitive)
-        // This assumes the expresison has been resolved already.
-        state
-            .errors
-            .push(SemanticError::ExpressionInvalidExpectingSpecificType {
-                line: return_stmt.line_declared_on,
-                expected_type: current_function.return_type.clone(),
-            });
-    }
+    //if return_stmt.return_value.unwrap().datatype == DataType::Void {}
 
     if let Some(current_function) = current_function {
-        if &return_stmt.return_value.unwrap().datatype == DataType::Invalid {
-            // This probably means that the expression cannot evaluate to a
+        let return_stmt_value_type = &return_stmt.return_value.as_ref().unwrap().datatype;
+        if return_stmt_value_type == &DataType::Invalid {
+            // This should mean that the expression cannot evaluate to a
             // single type, since they're adding different types together.
             // Could improve in future to be more grandular and specific.
             // (This is set in resolve_expression_values, which is unintuitive)
@@ -382,19 +369,13 @@ fn ensure_return_type_matches_function(
                     line: return_stmt.line_declared_on,
                     expected_type: current_function.return_type.clone(),
                 });
+        } else if &current_function.return_type != return_stmt_value_type {
+            state.errors.push(SemanticError::ReturnTypeIncorrect {
+                func_def: current_function.clone(),
+                got_type: return_stmt_value_type.clone(),
+                line: return_stmt.line_declared_on,
+            });
         }
-        /*
-            else if current_function.return_type != return_expr.datatype {
-                // If return type doesn't match the function return type, create an error.
-                // TODO: need to change return statements to have expressions.
-                state.errors.push(SemanticError::ReturnTypeIncorrect {
-                    func_def: current_function.clone(),
-                    got_type: return_expr.datatype.clone(),
-                    line: return_stmt.line_declared_on,
-                });
-            }
-            state
-        */
     }
     state
 }
