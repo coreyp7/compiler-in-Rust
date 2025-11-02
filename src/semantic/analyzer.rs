@@ -327,44 +327,75 @@ fn analyze_return_stmt(
     mut state: AnalysisState,
     function_table: &FunctionTable,
 ) -> AnalysisState {
+    // TODO: check if return type is void or something
     if let Some(ref mut return_expr) = return_stmt.return_value {
         resolve_expression_values(
             return_expr,
             function_table,
             &state.context_stack.last().unwrap().symbol_table, // TODO: make a helper function for this LOL
         );
-        let current_analysis_context = state.context_stack.last().unwrap();
-        let current_function_context = current_analysis_context.scope.unwrap();
-        let current_function = function_table.get_using_id(current_function_context);
-        if let Some(current_function) = current_function {
-            if return_expr.datatype == DataType::Invalid {
-                // This probably means that the expression cannot evaluate to a
-                // single type, since they're adding different types together.
-                // Could improve in future to be more grandular and specific.
-                // (This is set in resolve_expression_values, which is unintuitive)
-                state
-                    .errors
-                    .push(SemanticError::ExpressionInvalidExpectingSpecificType {
-                        line: return_stmt.line_declared_on,
-                        expected_type: current_function.return_type.clone(),
-                    })
-            } else if current_function.return_type != return_expr.datatype {
+        state = ensure_return_type_matches_function(state, function_table, return_expr);
+    } else {
+        state.errors.push(SemanticError::UnexpectedStatement {
+            line: return_stmt.line_declared_on,
+            explanation: "Return statement found outside of function".to_string(),
+        })
+    }
+
+    state
+}
+
+fn ensure_return_type_matches_function(
+    mut state: AnalysisState,
+    function_table: &FunctionTable,
+    return_stmt: &ReturnStatement,
+) -> AnalysisState {
+    let current_analysis_context = state.context_stack.last().unwrap();
+    let current_function_context = current_analysis_context.scope.unwrap();
+    let current_function = function_table.get_using_id(current_function_context);
+
+    if return_stmt.return_value.unwrap().datatype == DataType::Void {}
+
+    if return_stmt.return_value.unwrap().datatype == DataType::Invalid {
+        // This probably means that the expression cannot evaluate to a
+        // single type, since they're adding different types together.
+        // Could improve in future to be more grandular and specific.
+        // (This is set in resolve_expression_values, which is unintuitive)
+        // This assumes the expresison has been resolved already.
+        state
+            .errors
+            .push(SemanticError::ExpressionInvalidExpectingSpecificType {
+                line: return_stmt.line_declared_on,
+                expected_type: current_function.return_type.clone(),
+            });
+    }
+
+    if let Some(current_function) = current_function {
+        if &return_stmt.return_value.unwrap().datatype == DataType::Invalid {
+            // This probably means that the expression cannot evaluate to a
+            // single type, since they're adding different types together.
+            // Could improve in future to be more grandular and specific.
+            // (This is set in resolve_expression_values, which is unintuitive)
+            state
+                .errors
+                .push(SemanticError::ExpressionInvalidExpectingSpecificType {
+                    line: return_stmt.line_declared_on,
+                    expected_type: current_function.return_type.clone(),
+                });
+        }
+        /*
+            else if current_function.return_type != return_expr.datatype {
                 // If return type doesn't match the function return type, create an error.
                 // TODO: need to change return statements to have expressions.
                 state.errors.push(SemanticError::ReturnTypeIncorrect {
                     func_def: current_function.clone(),
                     got_type: return_expr.datatype.clone(),
                     line: return_stmt.line_declared_on,
-                })
+                });
             }
-        } else {
-            state.errors.push(SemanticError::UnexpectedStatement {
-                line: return_stmt.line_declared_on,
-                explanation: "Return statement found outside of function".to_string(),
-            })
-        }
+            state
+        */
     }
-
     state
 }
 
@@ -479,32 +510,4 @@ fn add_variable_to_current_scope(
             redeclaration_line: line,
         })
     }
-}
-
-fn add_errors_if_operations_in_expr_are_invalid(
-    expr: &Expression,
-    state: AnalysisState,
-    function_table: &FunctionTable,
-) {
-    // We've already figured out what the type of the result of this expression
-    // will be, so we just need to ensure that the operations present abide by
-    // the rules of the types in Plank.
-    // Number -> can use anything
-    // String -> can use '+' only
-    // What if a number is added to a number then added to a string?
-    // Then an operation is okay I presume between the number and number, just
-    // need to make sure that between the string and the number is only '+'.
-
-    // Plan; make two giant Vectors for
-    // Values
-    // Operations
-    // In order. So we can loop through, and depending on the operation between
-    // left and right values, we can allow certain operations.
-    // This is non trivial right now though, because we have many different structs
-    // for all of the Operators, so that only certain ones can be assigned to certain
-    // structs.
-    // What's a solution for this?
-    // Could have them all under a common enum or something? Then we can process them
-    // semi-generically.
-    //let (values, operations)
 }
