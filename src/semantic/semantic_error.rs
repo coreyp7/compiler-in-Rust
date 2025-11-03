@@ -206,10 +206,8 @@ impl SemanticError {
                     func_def.identifier
                 );
                 eprintln!(
-                    "  {} '{}' declared on line {}. Expected {}, got {:#?}.",
+                    "  {} Expected a {:#?}, got a {:#?}.",
                     error_line_end(),
-                    func_def.identifier,
-                    func_def.line_declared_on,
                     func_def.return_type,
                     got_type
                 );
