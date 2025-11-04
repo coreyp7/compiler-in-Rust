@@ -47,6 +47,9 @@ pub enum ParseError {
     UnterminatedIfStatement {
         line: u32,
     },
+    UnterminatedWhileStatement {
+        line: u32,
+    },
 }
 
 impl ParseError {
@@ -63,6 +66,7 @@ impl ParseError {
             ParseError::MissingDelimiter { line, .. } => *line,
             ParseError::UnterminatedFunctionDeclaration { line, .. } => *line,
             ParseError::UnterminatedIfStatement { line } => *line,
+            ParseError::UnterminatedWhileStatement { line } => *line,
         }
     }
 
@@ -194,6 +198,13 @@ impl ParseError {
                 error_header("Unterminated if statement", *line);
                 eprintln!(
                     "  {} If statement is missing closing 'EndIf'",
+                    error_line_start()
+                );
+            }
+            ParseError::UnterminatedWhileStatement { line } => {
+                error_header("Unterminated while statement", *line);
+                eprintln!(
+                    "  {} While statement is missing closing 'EndWhile'",
                     error_line_start()
                 );
             }

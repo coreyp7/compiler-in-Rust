@@ -56,6 +56,13 @@ pub struct IfStatement {
 }
 
 #[derive(Debug)]
+pub struct WhileStatement {
+    pub line_declared_on: u32,
+    pub condition: Logical,
+    pub body: Vec<Statement>,
+}
+
+#[derive(Debug)]
 pub enum Statement {
     VariableDeclaration(VariableDeclarationStatement),
     VariableAssignment(VariableAssignmentStatement),
@@ -63,4 +70,5 @@ pub enum Statement {
     Return(ReturnStatement),
     Print(PrintStatement),
     If(IfStatement),
+    While(WhileStatement),
 }

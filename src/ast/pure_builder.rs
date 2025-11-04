@@ -2,7 +2,7 @@ use super::builder_context::BuilderContext;
 use super::parse_error::ParseError;
 use super::statement::{
     FunctionDeclarationStatement, IfStatement, PrintStatement, ReturnStatement, Statement,
-    VariableDeclarationStatement,
+    VariableDeclarationStatement, WhileStatement,
 };
 
 use crate::ast::VariableAssignmentStatement;
@@ -96,6 +96,10 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
         }
         TokenType::If => {
             let (stmt, ctx) = parse_if_stmt(context);
+            (Some(stmt), ctx)
+        }
+        TokenType::While => {
+            let (stmt, ctx) = parse_while_stmt(context);
             (Some(stmt), ctx)
         }
         TokenType::EOF => {
@@ -711,6 +715,60 @@ fn parse_if_stmt(mut context: BuilderContext) -> (Statement, BuilderContext) {
         } else {
             None
         },
+    });
+
+    (statement, context)
+}
+
+fn parse_while_stmt(mut context: BuilderContext) -> (Statement, BuilderContext) {
+    let start_line = context.get_curr().line_number;
+    context.advance(); // Skip while
+
+    expect_token!(context, TokenType::LeftParen, "Expected '(' after 'while'");
+    context.advance();
+
+    let (condition_logical, mut context) = parse_logical(context);
+
+    expect_token!(
+        context,
+        TokenType::RightParen,
+        "Expected ')' after while condition"
+    );
+    context.advance();
+
+    expect_token!(
+        context,
+        TokenType::Colon,
+        "Expected ':' after while condition"
+    );
+    context.advance();
+
+    let mut body = Vec::new();
+    while !context.is_at_end() && context.get_curr().token_type != TokenType::EndWhile {
+        let start_idx = context.idx;
+        let (stmt, returned_context) = parse_statement(context);
+        context = returned_context;
+
+        if let Some(statement) = stmt {
+            body.push(statement);
+        }
+
+        if context.idx == start_idx {
+            context.advance();
+        }
+    }
+
+    if context.is_at_end() {
+        context.handle_parse_error(ParseError::UnterminatedWhileStatement { line: start_line });
+        return (create_invalid_statement(), context);
+    }
+
+    context.advance();
+
+    let statement = Statement::While(WhileStatement {
+        line_declared_on: start_line,
+        condition: condition_logical,
+        body,
     });
 
     (statement, context)
