@@ -1,7 +1,7 @@
 //use crate::comparison::Logical;
 use crate::ast::DataType;
 use crate::ast::Value;
-use crate::ast::value_hierarchy::Expression;
+use crate::ast::value_hierarchy::{Expression, Logical};
 
 /**
  * Contains 'Statement' enum, and all of the specific Statement structs
@@ -48,10 +48,19 @@ pub struct PrintStatement {
 }
 
 #[derive(Debug)]
+pub struct IfStatement {
+    pub line_declared_on: u32,
+    pub condition: Logical,
+    pub if_body: Vec<Statement>,
+    pub else_body: Option<Vec<Statement>>,
+}
+
+#[derive(Debug)]
 pub enum Statement {
     VariableDeclaration(VariableDeclarationStatement),
     VariableAssignment(VariableAssignmentStatement),
     FunctionDeclaration(FunctionDeclarationStatement),
     Return(ReturnStatement),
     Print(PrintStatement),
+    If(IfStatement),
 }

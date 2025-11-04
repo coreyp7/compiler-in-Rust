@@ -354,8 +354,6 @@ fn ensure_return_type_matches_function(
     let current_function_context = current_analysis_context.scope.unwrap();
     let current_function = function_table.get_using_id(current_function_context);
 
-    //if return_stmt.return_value.unwrap().datatype == DataType::Void {}
-
     if let Some(current_function) = current_function {
         let return_stmt_value_type = &return_stmt.return_value.as_ref().unwrap().datatype;
         if return_stmt_value_type == &DataType::Invalid {

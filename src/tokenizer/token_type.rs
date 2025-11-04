@@ -20,6 +20,7 @@ pub enum TokenType {
     Let,
     If,
     Then,
+    Else,
     EndIf,
     While,
     Do,
@@ -79,6 +80,7 @@ impl FromStr for TokenType {
             "return" => Ok(TokenType::Return),
             "returns" => Ok(TokenType::Returns),
             "endFunction" => Ok(TokenType::EndFunction),
+            "else" => Ok(TokenType::Else),
             _ => Err(()),
         }
     }
@@ -106,6 +108,7 @@ impl TokenType {
             TokenType::Let => "let",
             TokenType::If => "if",
             TokenType::Then => "then",
+            TokenType::Else => "else",
             TokenType::EndIf => "endIf",
             TokenType::While => "while",
             TokenType::Do => "do",

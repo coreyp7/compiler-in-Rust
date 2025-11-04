@@ -1,14 +1,15 @@
 use super::builder_context::BuilderContext;
 use super::parse_error::ParseError;
 use super::statement::{
-    FunctionDeclarationStatement, PrintStatement, ReturnStatement, Statement,
+    FunctionDeclarationStatement, IfStatement, PrintStatement, ReturnStatement, Statement,
     VariableDeclarationStatement,
 };
 
 use crate::ast::VariableAssignmentStatement;
 use crate::ast::value_hierarchy::{
-    DataType, Expression, Term, Unary, Value, ValueType, convert_token_type_to_expression_op,
-    convert_token_type_to_term_op,
+    Comparison, DataType, Expression, Logical, Term, Unary, Value, ValueType,
+    convert_token_type_to_comparison_op, convert_token_type_to_expression_op,
+    convert_token_type_to_logical_op, convert_token_type_to_term_op,
 };
 use crate::tokenizer::{Token, TokenType};
 
@@ -91,6 +92,10 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
         }
         TokenType::Identity => {
             let (stmt, ctx) = parse_identity_assignment_statement(context);
+            (Some(stmt), ctx)
+        }
+        TokenType::If => {
+            let (stmt, ctx) = parse_if_stmt(context);
             (Some(stmt), ctx)
         }
         TokenType::EOF => {
@@ -240,6 +245,84 @@ fn parse_unary(mut context: BuilderContext) -> (Unary, BuilderContext) {
     let unary = Unary { operation, primary };
 
     (unary, context)
+}
+
+fn parse_logical(mut context: BuilderContext) -> (Logical, BuilderContext) {
+    let mut logical = Logical::new();
+
+    let (comparison1, returned_context) = parse_comparison(context);
+    context = returned_context;
+    logical.comparisons.push(comparison1);
+
+    while !context.is_at_end()
+        && matches!(
+            context.get_curr().token_type,
+            TokenType::DoubleAmpersand | TokenType::DoubleBar
+        )
+    {
+        let op = convert_token_type_to_logical_op(context.get_curr().token_type);
+        logical.operators.push(op);
+        context.advance();
+
+        let (comparison2, returned_context2) = parse_comparison(context);
+        context = returned_context2;
+        logical.comparisons.push(comparison2);
+    }
+
+    (logical, context)
+}
+
+fn parse_comparison(mut context: BuilderContext) -> (Comparison, BuilderContext) {
+    let mut comparison = Comparison::new();
+
+    let (expr1, returned_context) = parse_expression(context);
+    context = returned_context;
+    comparison.expressions.push(expr1);
+
+    if context.is_at_end()
+        || !matches!(
+            context.get_curr().token_type,
+            TokenType::EqualEqual
+                | TokenType::NotEqual
+                | TokenType::LessThan
+                | TokenType::LessThanEqualTo
+                | TokenType::GreaterThan
+                | TokenType::GreaterThanEqualTo
+        )
+    {
+        context.handle_parse_error(ParseError::UnexpectedToken {
+            line: context.get_curr().line_number,
+            expected: "comparison operator (==, !=, <, <=, >, >=)".to_string(),
+            found: if context.is_at_end() {
+                "end of file".to_string()
+            } else {
+                context.get_curr().lexeme.clone()
+            },
+        });
+        return (comparison, context);
+    }
+
+    while !context.is_at_end()
+        && matches!(
+            context.get_curr().token_type,
+            TokenType::EqualEqual
+                | TokenType::NotEqual
+                | TokenType::LessThan
+                | TokenType::LessThanEqualTo
+                | TokenType::GreaterThan
+                | TokenType::GreaterThanEqualTo
+        )
+    {
+        let op = convert_token_type_to_comparison_op(context.get_curr().token_type);
+        comparison.operators.push(op);
+        context.advance();
+
+        let (expr2, returned_context2) = parse_expression(context);
+        context = returned_context2;
+        comparison.expressions.push(expr2);
+    }
+
+    (comparison, context)
 }
 
 fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statement, BuilderContext) {
@@ -548,4 +631,87 @@ fn parse_function_call_parameters(
     */
 
     (passed_expressions, context)
+}
+
+fn parse_if_stmt(mut context: BuilderContext) -> (Statement, BuilderContext) {
+    let start_line = context.get_curr().line_number;
+    context.advance(); // Skip "if" keyword
+
+    expect_token!(context, TokenType::LeftParen, "Expected '(' after 'if'");
+    context.advance();
+
+    let (condition_logical, mut context) = parse_logical(context);
+
+    expect_token!(
+        context,
+        TokenType::RightParen,
+        "Expected ')' after if condition"
+    );
+    context.advance();
+
+    expect_token!(context, TokenType::Colon, "Expected ':' after if condition");
+    context.advance();
+
+    let mut if_body = Vec::new();
+    while !context.is_at_end()
+        && context.get_curr().token_type != TokenType::Else
+        && context.get_curr().token_type != TokenType::EndIf
+    {
+        let start_idx = context.idx;
+        let (stmt, returned_context) = parse_statement(context);
+        context = returned_context;
+
+        if let Some(statement) = stmt {
+            if_body.push(statement);
+        }
+
+        // Prevent infinite loop if parse_statement doesn't advance
+        if context.idx == start_idx {
+            context.advance();
+        }
+    }
+
+    let mut else_body = Vec::new();
+    if !context.is_at_end() && context.get_curr().token_type == TokenType::Else {
+        context.advance(); // Skip "else" keyword
+
+        expect_token!(context, TokenType::Colon, "Expected ':' after 'else'");
+        context.advance();
+
+        while !context.is_at_end() && context.get_curr().token_type != TokenType::EndIf {
+            let start_idx = context.idx;
+            let (stmt, returned_context) = parse_statement(context);
+            context = returned_context;
+
+            if let Some(statement) = stmt {
+                else_body.push(statement);
+            }
+
+            // Prevent infinite loop
+            if context.idx == start_idx {
+                context.advance();
+            }
+        }
+    }
+
+    if context.is_at_end() {
+        context.handle_parse_error(ParseError::UnterminatedIfStatement { line: start_line });
+        return (create_invalid_statement(), context);
+    }
+
+    // Skip EndIf token
+    context.advance();
+
+    let statement = Statement::If(IfStatement {
+        line_declared_on: start_line,
+        condition: condition_logical,
+        if_body,
+        else_body: if !else_body.is_empty() {
+            Some(else_body)
+        } else {
+            None
+        },
+    });
+
+    (statement, context)
 }

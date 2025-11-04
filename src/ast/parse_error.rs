@@ -44,6 +44,9 @@ pub enum ParseError {
         line: u32,
         function_name: String,
     },
+    UnterminatedIfStatement {
+        line: u32,
+    },
 }
 
 impl ParseError {
@@ -59,6 +62,7 @@ impl ParseError {
             ParseError::MissingColon { line, .. } => *line,
             ParseError::MissingDelimiter { line, .. } => *line,
             ParseError::UnterminatedFunctionDeclaration { line, .. } => *line,
+            ParseError::UnterminatedIfStatement { line } => *line,
         }
     }
 
@@ -184,6 +188,13 @@ impl ParseError {
                     "  {} Function {} is missing closing 'EndFunction'",
                     error_line_start(),
                     format_name(function_name)
+                );
+            }
+            ParseError::UnterminatedIfStatement { line } => {
+                error_header("Unterminated if statement", *line);
+                eprintln!(
+                    "  {} If statement is missing closing 'EndIf'",
+                    error_line_start()
                 );
             }
         }
