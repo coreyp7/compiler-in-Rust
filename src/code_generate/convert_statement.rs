@@ -1,8 +1,8 @@
 use crate::ast::{Comparison, Expression, Term, Unary};
 use crate::ast::{ComparisonOperator, ExpressionOperator, LogicalOperator, TermOperator};
 use crate::ast::{
-    DataType, PrintStatement, ReturnStatement, Value, VariableAssignmentStatement,
-    VariableDeclarationStatement,
+    DataType, IfStatement, PrintStatement, ReturnStatement, Value, VariableAssignmentStatement,
+    VariableDeclarationStatement, WhileStatement,
 };
 use crate::ast::{FunctionDeclarationStatement, FunctionSymbol, Statement, ValueType};
 use std::fmt;
@@ -44,7 +44,7 @@ impl fmt::Display for Value {
 
 pub fn to_code_str(statement: &Statement) -> String {
     match statement {
-        Statement::FunctionDeclaration(func_decl_st) => {
+        Statement::FunctionDeclaration(_) => {
             // This case is handled outside of the function, and this should never
             // be reached. returning empty string.
             String::new()
@@ -53,7 +53,8 @@ pub fn to_code_str(statement: &Statement) -> String {
         Statement::VariableAssignment(var_assign_st) => to_code_str_var_assignment(var_assign_st),
         Statement::Return(return_statement) => to_code_str_return(return_statement),
         Statement::Print(print_statement) => to_code_str_print(print_statement),
-        _ => "".to_string(),
+        Statement::If(if_statement) => to_code_str_if(if_statement),
+        Statement::While(while_statement) => to_code_str_while(while_statement),
     }
 }
 
@@ -302,7 +303,7 @@ fn logical_operator_to_str(op: &LogicalOperator) -> &'static str {
     }
 }
 
-fn to_code_str_print(print_stmt: &crate::ast::PrintStatement) -> String {
+fn to_code_str_print(print_stmt: &PrintStatement) -> String {
     let expr_str = to_code_str_expr(&print_stmt.expression);
 
     // TODO: The data type the expr evaluates to should be resolved by now, and
@@ -310,4 +311,42 @@ fn to_code_str_print(print_stmt: &crate::ast::PrintStatement) -> String {
 
     // right now we just use a c macro
     format!("plank_print({});\n", expr_str)
+}
+
+fn to_code_str_if(if_stmt: &IfStatement) -> String {
+    let mut code_str = String::new();
+
+    let condition_str = to_code_str_logical(&if_stmt.condition);
+    code_str.push_str(&format!("if ({}) {{\n", condition_str));
+
+    for statement in &if_stmt.if_body {
+        code_str.push_str("   ");
+        code_str.push_str(&to_code_str(statement));
+    }
+
+    if let Some(else_body) = &if_stmt.else_body {
+        code_str.push_str("} else {\n");
+        for statement in else_body {
+            code_str.push_str("   ");
+            code_str.push_str(&to_code_str(statement));
+        }
+    }
+
+    code_str.push_str("}\n");
+    code_str
+}
+
+fn to_code_str_while(while_stmt: &WhileStatement) -> String {
+    let mut code_str = String::new();
+
+    let condition_str = to_code_str_logical(&while_stmt.condition);
+    code_str.push_str(&format!("while ({}) {{\n", condition_str));
+
+    for statement in &while_stmt.body {
+        code_str.push_str("   ");
+        code_str.push_str(&to_code_str(statement));
+    }
+
+    code_str.push_str("}\n");
+    code_str
 }
