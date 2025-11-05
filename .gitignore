@@ -1,6 +1,5 @@
 /target
 *.swp
 *.exe
-*.plank
 *.c
 docs

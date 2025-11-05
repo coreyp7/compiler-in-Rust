@@ -1,3 +1,3 @@
 #!/bin/bash
 cargo build
-./compile.sh -i ./test_file.plank -o . --debug
+./compile.sh -i ./example.plank -o . --debug
