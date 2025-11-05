@@ -1,3 +1,4 @@
+use crate::ast::value_hierarchy::Expression;
 use crate::tokenizer::TokenType;
 
 /**
@@ -41,6 +42,15 @@ pub struct Comparison {
     pub operators: Vec<ComparisonOperator>,
 }
 
+impl Comparison {
+    pub fn new() -> Comparison {
+        Comparison {
+            expressions: Vec::new(),
+            operators: Vec::new(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum ComparisonOperator {
     equalequal,
@@ -52,39 +62,7 @@ pub enum ComparisonOperator {
     invalidop,
 }
 
-// Either + or -
-#[derive(Debug)]
-pub struct Expression {
-    pub terms: Vec<Term>,
-    pub operators: Vec<ExpressionOperator>,
-}
-
-#[derive(Debug)]
-pub enum ExpressionOperator {
-    Plus,
-    Minus,
-    invalidop,
-}
-
-#[derive(Debug)]
-pub struct Term {
-    pub unarys: Vec<Unary>,
-    pub operations: Vec<TermOperator>,
-}
-
-#[derive(Debug)]
-pub enum TermOperator {
-    Multiply,
-    Divide,
-    invalidop, // TODO: these should be changed to no op
-}
-
-#[derive(Debug)]
-pub struct Unary {
-    pub operation: Option<ExpressionOperator>,
-    pub primary: Primary,
-}
-
+/*
 #[derive(Debug)]
 pub enum Primary {
     Number {
@@ -97,7 +75,7 @@ pub enum Primary {
         detail: String,
     },
 }
-
+*/
 // Conversion functions
 pub fn convert_token_type_to_comparison_op(token_type: TokenType) -> ComparisonOperator {
     match token_type {
@@ -108,22 +86,6 @@ pub fn convert_token_type_to_comparison_op(token_type: TokenType) -> ComparisonO
         TokenType::GreaterThan => ComparisonOperator::greaterthan,
         TokenType::GreaterThanEqualTo => ComparisonOperator::greaterthanequalto,
         _ => ComparisonOperator::invalidop,
-    }
-}
-
-pub fn convert_token_type_to_expression_op(token_type: TokenType) -> ExpressionOperator {
-    match token_type {
-        TokenType::Plus => ExpressionOperator::Plus,
-        TokenType::Minus => ExpressionOperator::Minus,
-        _ => ExpressionOperator::invalidop,
-    }
-}
-
-pub fn convert_token_type_to_term_op(token_type: TokenType) -> TermOperator {
-    match token_type {
-        TokenType::Asterisk => TermOperator::Multiply,
-        TokenType::Slash => TermOperator::Divide,
-        _ => TermOperator::invalidop,
     }
 }
 

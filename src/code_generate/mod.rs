@@ -1,0 +1,75 @@
+mod convert_statement;
+
+use crate::ast::{FunctionDeclarationStatement, FunctionSymbol, FunctionTable, Statement};
+pub use convert_statement::{
+    convert_function_header_to_code_str, to_code_str, to_code_str_func_decl_stmt,
+};
+
+/**
+ * Converts an AST into c code equivalent (in the form of a string).
+ */
+pub fn generate_code_str(ast_vec: &Vec<Statement>, function_defs: &FunctionTable) -> String {
+    let mut code_str = String::new();
+
+    code_str.push_str("#include <stdio.h>\n");
+    code_str.push_str("#include <stdlib.h>\n");
+    code_str.push_str("#include <string.h>\n");
+    code_str.push_str("\n");
+
+    // TODO: this is temporary, would like to have full expression validation
+    // in analyzer so we can append strings to numbers, ensure only appropriate
+    // operations are being done, etc.
+    // String expressions can be added with Numbers or Strings, but cannot have any other operations
+    // associated with them (-, *, /).
+    // Number expressions can have any operations associated with them.
+    code_str.push_str("// Plank print functions - handle both integers and strings\n");
+    code_str.push_str("#define plank_print_no_newline(x) _Generic((x), \\\n");
+    code_str.push_str("    int: printf(\"%d\", x), \\\n");
+    code_str.push_str("    char*: printf(\"%s\", x), \\\n");
+    code_str.push_str("    default: printf(\"Unknown type\"))\n");
+    code_str.push_str("\n");
+    code_str.push_str("#define plank_println(x) _Generic((x), \\\n");
+    code_str.push_str("    int: printf(\"%d\\n\", x), \\\n");
+    code_str.push_str("    char*: printf(\"%s\\n\", x), \\\n");
+    code_str.push_str("    default: printf(\"Unknown type\\n\"))\n");
+    code_str.push_str("\n");
+
+    // user function c headers
+    for function_def in function_defs.get_all_defs() {
+        code_str.push_str(&convert_function_header_to_code_str(function_def));
+        code_str.push_str(";\n");
+    }
+    code_str.push_str("\n");
+
+    code_str.push_str("int main() {\n");
+
+    let mut func_declaration_statements: Vec<&FunctionDeclarationStatement> = Vec::new();
+
+    for statement in ast_vec {
+        match statement {
+            // Function declarations are put below main in the c file, so just
+            // save it for later. (function header already defined above main)
+            Statement::FunctionDeclaration(func_decl_statement) => {
+                func_declaration_statements.push(func_decl_statement);
+            }
+            _ => {
+                code_str.push_str(&to_code_str(statement));
+            }
+        }
+    }
+
+    code_str.push_str("return 0;\n");
+    code_str.push_str("}\n");
+
+    for func_decl in func_declaration_statements {
+        let function_def = function_defs.get_func_def_using_str(&func_decl.function_name);
+        match function_def {
+            Some(def) => code_str.push_str(&to_code_str_func_decl_stmt(func_decl, def)),
+            None => {
+                // TODO: this should never be reached right
+            }
+        }
+    }
+
+    code_str
+}

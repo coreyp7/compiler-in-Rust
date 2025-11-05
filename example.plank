@@ -1,0 +1,29 @@
+
+println "hello, plank";
+
+Number favoriteNumber: 7;
+Number secondFavNumber: 3;
+String name: "juandissimo";
+
+
+
+Number i: 0;
+while (i != favoriteNumber):
+    print i;
+    println " is not our fav number, going to increment.";
+
+    i <= i + 1;
+
+    if (i == favoriteNumber):
+        print "Finally! ";
+        print i;
+        println " is my favorite number.";
+    else:
+        if (i == secondFavNumber):
+            print secondFavNumber;
+            println " is also a cool number, but not my favorite.";
+        endIf
+    endIf
+endWhile
+
+println "What a pragmatic example of plank.";

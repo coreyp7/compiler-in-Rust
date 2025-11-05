@@ -1,25 +1,27 @@
-use colored::Colorize;
+use colored::*;
 use std::env;
 use std::fs::File;
 use std::io::Write;
 
 mod tokenizer;
 use tokenizer::Token;
-use tokenizer::Tokenizer;
-
+use tokenizer::tokenize_file;
 mod ast;
-use ast::AstBuilder;
+use ast::Statement;
+use ast::build_ast;
 
-mod error;
-use error::{ErrMsg, print_all_errors};
+mod symbol_table;
+use symbol_table::SymbolTable;
 
-mod statement;
-use statement::Statement;
+mod first_pass;
+use first_pass::gather_declarations;
 
-mod code_generator;
-use code_generator::generate_code_str;
+mod semantic;
+use semantic::analyze_statements;
+use semantic::resolve_all_value_types_in_ast;
 
-mod comparison;
+mod code_generate;
+use code_generate::generate_code_str;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -29,44 +31,64 @@ fn main() -> std::io::Result<()> {
     //let src_path: String = String::from("./example.plank"); // for testing without compiling
 
     // TODO: add error handler for reading the file
-    let mut f = File::open(src_path)?;
+    let mut plank_src_file = File::open(src_path)?;
 
-    let mut tokenizer = Tokenizer::new();
-    let tokens: Vec<Token> = tokenizer.tokenize_file(&mut f);
+    let tokens: Vec<Token> = tokenize_file(&mut plank_src_file);
     if debug {
-        debug_print_tokens(&tokens);
+        debug_print_vec(&tokens, "Tokenizer output:");
     }
 
-    // build ast with tokens
-    let mut ast_builder = AstBuilder::new(tokens);
-    let ast_vec = ast_builder.generate_ast();
-    let ast_errors = ast_builder.get_error_vec();
-
+    // First pass: gather all function declarations. Allows file to do
+    // forward declarations.
+    let function_header_map = gather_declarations(&tokens);
     if debug {
-        debug_print_ast(&ast_vec);
-        debug_print_errors_and_var_map(&ast_errors, &ast_builder);
+        println!("---Function header map---");
+        println!("{:#?}", function_header_map);
+        println!("---Function header map end---");
     }
 
-    if !ast_errors.is_empty() {
-        print_all_errors(&ast_errors);
-        let error_str = "Failed:".red().bold();
-        if ast_errors.len() == 1 {
-            println!(
-                "{} Could not compile plank file due to {} previous error.",
-                error_str, 1
-            );
-        } else {
-            println!(
-                "{} Could not compile plank file due to {} previous errors.",
-                error_str,
-                ast_errors.len()
-            );
+    // Second pass: generate AST given token list
+    let mut ast_context = build_ast(tokens);
+    if debug {
+        debug_print_vec(&ast_context.statements, "Ast output:");
+    }
+
+    if !ast_context.errors.is_empty() {
+        semantic::print_failures_message(ast_context.errors.len());
+        for error in &ast_context.errors {
+            error.print_error();
         }
         return Ok(());
     }
 
-    // generate c code str with ast
-    let code: String = generate_code_str(&ast_vec);
+    // Third pass: semantic analysis.
+    // (There is also some type resolution done in here, since the semantic analyzer
+    // keeps track of scope of available symbols/functions, so was easier to make as
+    // a part of the same step)
+    let semantic_errors = analyze_statements(&mut ast_context.statements, &function_header_map);
+    if debug {
+        debug_print_vec(
+            &ast_context.statements,
+            "AST (Post type resolution / semantic analysis",
+        );
+    }
+
+    //if debug {
+    //println!("semantic errors:\n{:#?}", semantic_errors);
+    //}
+
+    if !semantic_errors.is_empty() {
+        semantic::print_failures_message(semantic_errors.len());
+        for error in &semantic_errors {
+            error.print_error();
+        }
+        return Ok(());
+    } else {
+        semantic::print_success_message();
+    }
+
+    // Generate c code str with ast
+    let code = generate_code_str(&ast_context.statements, &function_header_map);
     if debug {
         debug_print_generated_code(&code);
     }
@@ -80,35 +102,23 @@ fn main() -> std::io::Result<()> {
 }
 
 // Debug helper functions
-fn debug_print_tokens(tokens: &[Token]) {
-    println!("Tokenizer output: -----------------------------------");
-    for token in tokens {
-        println!("{:?}", token);
+fn debug_print_vec<T: std::fmt::Debug>(items: &[T], label: &str) {
+    println!("{} -----------------------------------", label);
+    for item in items {
+        println!("{:#?}", item);
+        println!("|");
     }
-    println!("Tokenizer output: -----------------------------------");
-}
-
-fn debug_print_ast(ast_vec: &[Statement]) {
-    println!("Ast output: -----------------------------------");
-    for node in ast_vec {
-        println!("{:#?}", node);
-    }
-    println!("Ast output: -----------------------------------");
-}
-
-fn debug_print_errors_and_var_map(ast_errors: &[ErrMsg], ast_builder: &AstBuilder) {
-    println!("Ast ERRORS: -----------------------------------");
-    for err in ast_errors {
-        println!("{:#?}", err);
-    }
-    println!("Ast ERRORS: -----------------------------------");
-    println!("Ast map: -----------------------------------");
-    println!("{:#?}", ast_builder.var_map);
-    println!("Ast map: -----------------------------------");
+    println!("{} -----------------------------------", label);
 }
 
 fn debug_print_generated_code(code: &str) {
-    println!("code generated: -----------------------------------");
-    println!("{}", code);
-    println!("code generated: -----------------------------------");
+    println!(
+        "{}",
+        "code generated: -----------------------------------".yellow()
+    );
+    println!("{}", code.green());
+    println!(
+        "{}",
+        "code generated: -----------------------------------".yellow()
+    );
 }

@@ -6,10 +6,12 @@ If you'd like to use this wonderful language, feel free.
 ```
 /! Here's an example Plank program.
 /! It prints hello 25 times; then plank afterwards.
-Number i: 0
-while i < 25 then
-    print "hello, "
-    update i <= i + 1
+Number i: 0;
+while (i < 25):
+    print "hello ";
+    print i;
+    println "!";
+    i <= i + 1;
 endWhile
 print "plank"
 ```
