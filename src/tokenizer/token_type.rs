@@ -16,6 +16,7 @@ pub enum TokenType {
     UpdateKeyword, // assigning to variables
     Goto,
     Print,
+    Println,
     Input,
     Let,
     If,
@@ -66,6 +67,7 @@ impl FromStr for TokenType {
             "label" => Ok(TokenType::Label),
             "goto" => Ok(TokenType::Goto),
             "print" => Ok(TokenType::Print),
+            "println" => Ok(TokenType::Println),
             "input" => Ok(TokenType::Input),
             "let" => Ok(TokenType::Let),
             "if" => Ok(TokenType::If),
@@ -104,6 +106,7 @@ impl TokenType {
             TokenType::FunctionDeclaration => "FunctionDeclaration",
             TokenType::Goto => "goto",
             TokenType::Print => "print",
+            TokenType::Println => "println",
             TokenType::Input => "input",
             TokenType::Let => "let",
             TokenType::If => "if",

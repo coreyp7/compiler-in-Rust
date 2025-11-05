@@ -22,8 +22,13 @@ pub fn generate_code_str(ast_vec: &Vec<Statement>, function_defs: &FunctionTable
     // String expressions can be added with Numbers or Strings, but cannot have any other operations
     // associated with them (-, *, /).
     // Number expressions can have any operations associated with them.
-    code_str.push_str("// Plank print function - handles both integers and strings\n");
-    code_str.push_str("#define plank_print(x) _Generic((x), \\\n");
+    code_str.push_str("// Plank print functions - handle both integers and strings\n");
+    code_str.push_str("#define plank_print_no_newline(x) _Generic((x), \\\n");
+    code_str.push_str("    int: printf(\"%d\", x), \\\n");
+    code_str.push_str("    char*: printf(\"%s\", x), \\\n");
+    code_str.push_str("    default: printf(\"Unknown type\"))\n");
+    code_str.push_str("\n");
+    code_str.push_str("#define plank_println(x) _Generic((x), \\\n");
     code_str.push_str("    int: printf(\"%d\\n\", x), \\\n");
     code_str.push_str("    char*: printf(\"%s\\n\", x), \\\n");
     code_str.push_str("    default: printf(\"Unknown type\\n\"))\n");

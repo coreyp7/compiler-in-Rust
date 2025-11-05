@@ -1,8 +1,8 @@
 use super::builder_context::BuilderContext;
 use super::parse_error::ParseError;
 use super::statement::{
-    FunctionDeclarationStatement, IfStatement, PrintStatement, ReturnStatement, Statement,
-    VariableDeclarationStatement, WhileStatement,
+    FunctionDeclarationStatement, IfStatement, PrintStatement, PrintlnStatement, ReturnStatement,
+    Statement, VariableDeclarationStatement, WhileStatement,
 };
 
 use crate::ast::VariableAssignmentStatement;
@@ -88,6 +88,10 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
         }
         TokenType::Print => {
             let (stmt, ctx) = parse_print_statement(context);
+            (Some(stmt), ctx)
+        }
+        TokenType::Println => {
+            let (stmt, ctx) = parse_println_statement(context);
             (Some(stmt), ctx)
         }
         TokenType::Identity => {
@@ -517,6 +521,28 @@ fn parse_print_statement(mut context: BuilderContext) -> (Statement, BuilderCont
     context.advance();
 
     let statement = Statement::Print(PrintStatement {
+        line_declared_on,
+        expression: expr,
+    });
+
+    (statement, context)
+}
+
+fn parse_println_statement(mut context: BuilderContext) -> (Statement, BuilderContext) {
+    let line_declared_on = context.get_curr().line_number;
+
+    context.advance(); // skip println
+
+    let (expr, mut context) = parse_expression(context);
+
+    expect_token!(
+        context,
+        TokenType::Semicolon,
+        "Expected semicolon after println statement"
+    );
+    context.advance();
+
+    let statement = Statement::Println(PrintlnStatement {
         line_declared_on,
         expression: expr,
     });

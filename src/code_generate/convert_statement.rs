@@ -1,8 +1,8 @@
 use crate::ast::{Comparison, Expression, Term, Unary};
 use crate::ast::{ComparisonOperator, ExpressionOperator, LogicalOperator, TermOperator};
 use crate::ast::{
-    DataType, IfStatement, PrintStatement, ReturnStatement, Value, VariableAssignmentStatement,
-    VariableDeclarationStatement, WhileStatement,
+    DataType, IfStatement, PrintStatement, PrintlnStatement, ReturnStatement, Value,
+    VariableAssignmentStatement, VariableDeclarationStatement, WhileStatement,
 };
 use crate::ast::{FunctionDeclarationStatement, FunctionSymbol, Statement, ValueType};
 use std::fmt;
@@ -53,6 +53,7 @@ pub fn to_code_str(statement: &Statement) -> String {
         Statement::VariableAssignment(var_assign_st) => to_code_str_var_assignment(var_assign_st),
         Statement::Return(return_statement) => to_code_str_return(return_statement),
         Statement::Print(print_statement) => to_code_str_print(print_statement),
+        Statement::Println(println_statement) => to_code_str_println(println_statement),
         Statement::If(if_statement) => to_code_str_if(if_statement),
         Statement::While(while_statement) => to_code_str_while(while_statement),
     }
@@ -309,8 +310,18 @@ fn to_code_str_print(print_stmt: &PrintStatement) -> String {
     // TODO: The data type the expr evaluates to should be resolved by now, and
     // we can look at it and adjust the printf statement accordingly.
 
-    // right now we just use a c macro
-    format!("plank_print({});\n", expr_str)
+    // right now we just use a c macro (no newline version)
+    format!("plank_print_no_newline({});\n", expr_str)
+}
+
+fn to_code_str_println(println_stmt: &PrintlnStatement) -> String {
+    let expr_str = to_code_str_expr(&println_stmt.expression);
+
+    // TODO: The data type the expr evaluates to should be resolved by now, and
+    // we can look at it and adjust the printf statement accordingly.
+
+    // right now we just use a c macro (with newline version)
+    format!("plank_println({});\n", expr_str)
 }
 
 fn to_code_str_if(if_stmt: &IfStatement) -> String {

@@ -48,6 +48,12 @@ pub struct PrintStatement {
 }
 
 #[derive(Debug)]
+pub struct PrintlnStatement {
+    pub line_declared_on: u32,
+    pub expression: Expression,
+}
+
+#[derive(Debug)]
 pub struct IfStatement {
     pub line_declared_on: u32,
     pub condition: Logical,
@@ -69,6 +75,7 @@ pub enum Statement {
     FunctionDeclaration(FunctionDeclarationStatement),
     Return(ReturnStatement),
     Print(PrintStatement),
+    Println(PrintlnStatement),
     If(IfStatement),
     While(WhileStatement),
 }
