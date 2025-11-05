@@ -10,7 +10,6 @@ println speech;
 function celebrate () returns String: 
     return "hello, plank";
 endFunction
-
 ```
 
 ## Requirements
@@ -26,11 +25,11 @@ endFunction
 To compile a .plank file, run compile.sh with the following args:
 | Argument | Description |
 | ----------- | ----------- |
-| -i (--src) | Your Plank source code |
+| -i (--src) | Your plank source code |
 | -o (--output) | Directory to output executable in |
 | -s (--setup) | Compiles the Plank compiler in the repo you cloned (not needed after initial setup)|
 
-## A Plank example: Finding our favorite number
+## A plank example: Finding our favorite number
 ```
 println "hello, plank";
 
