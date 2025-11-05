@@ -1,6 +1,6 @@
 use crate::ast::{
     DataType, FunctionDeclarationStatement, IfStatement, PrintStatement, Statement, Value,
-    ValueType, VariableAssignmentStatement, VariableDeclarationStatement,
+    ValueType, VariableAssignmentStatement, VariableDeclarationStatement, WhileStatement,
 };
 use crate::ast::{Expression, Logical, Term, Unary};
 use crate::ast::{FunctionTable, ReturnStatement};
@@ -75,6 +75,9 @@ fn analyze_statement(
         }
         Statement::If(if_stmt) => {
             state = analyze_if_stmt(if_stmt, state, function_table);
+        }
+        Statement::While(while_stmt) => {
+            state = analyze_while_stmt(while_stmt, state, function_table);
         }
         _ => (),
     }
@@ -351,6 +354,32 @@ fn analyze_return_stmt(
 
 fn analyze_if_stmt(
     stmt: &mut IfStatement,
+    mut state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
+    // need to go through the logical of the if statement, and resolve all expressions.
+    // We still need to ensure that the types are legit
+    let symbol_table = &state.context_stack.last().unwrap().symbol_table; // TODO: make a helper function for this LOL
+    resolve_logical(&mut stmt.condition, function_table, symbol_table);
+
+    // what needs to be checked?
+    // Well, maybe the Logical should be checked to ensure that the types are correct.
+    // There's a function that does this kind of thing for expressions ...
+    // look for it and mimick behavior
+    state = add_type_check_errors_for_logical(
+        state,
+        &mut stmt.condition,
+        function_table,
+        stmt.line_declared_on,
+    );
+
+    state
+}
+
+/// RN this is pretty identical to if stmt, but don't feel like taking the effort
+/// to make generic. Its whatever
+fn analyze_while_stmt(
+    stmt: &mut WhileStatement,
     mut state: AnalysisState,
     function_table: &FunctionTable,
 ) -> AnalysisState {
