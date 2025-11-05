@@ -1,37 +1,15 @@
 #!/bin/bash
 
+# TODO: update this 
 #plankCompilerPath="plank_compiler"
-#plankCompilerPath="./target/release/compiler"
-plankCompilerPath="./target/debug/compiler"
+plankCompilerPath="./target/release/compiler"
+#plankCompilerPath="./target/debug/compiler"
 exitEarly=0
 setup=0
 debug=0
-nocompile=0
-helloplanksimple="print \"hello, plank\""
-helloplank=$"
-/! Declaring a variable.
-Number num: 14
-Number another: 1
+isSafeToCompile=0
 
-/! Assigning to a variable.
-update num <= 5
-
-/! If conditional branch
-if num > another then
-    /! Here's how to print to console.
-    print \"Welcome to plank. This is an example program.\"
-endIf
-
-/! Here's an example while loop
-while num >= another do
-    update another <= another + 1
-    if num > another then
-        print \"hello, \"
-    endIf
-endWhile
-
-print \"world!\"
-"
+example_file_path="./example.plank"
 
 # Obtain args from user
 while [ "${1:-}" != '' ]; do
@@ -50,8 +28,8 @@ while [ "${1:-}" != '' ]; do
         '-d' | '--debug')
         debug=1
         ;;
-        '-n' | '--nocompile')
-        nocompile=1
+        '-n' | '--isSafeToCompile')
+        isSafeToCompile=1
         ;;
     esac
     shift
@@ -64,15 +42,12 @@ if [ $setup -eq 1 ]; then
     cargo build --quiet --release
     
     # Ensure it was built correctly.
-    if [ ! -f './target/release/compiler' ]; then
+    if [ ! -f $plankCompilerPath ]; then
         echo "SETUP: Building compiler has failed; aborting."
     else
         echo "SETUP: Have successfully built Plank compiler."
-        touch ./hello_world.plank
-        echo "$helloplanksimple" > hello_world.plank
-        echo "SETUP: Example file 'hello_world.plank' has been created in current directory."
-        echo "SETUP: This file will be compiled into an executable in the current dir, named 'plank_program.exe'."
-        src=hello_world.plank
+        echo "SETUP: Compiling the 'example.plank' file into an executable as an example."
+        src=example.plank
         outputDir=.
     fi
 fi
@@ -114,16 +89,15 @@ else
     $plankCompilerPath $src $outputDir
 fi
 
-# Ensure that the source code file was created
+# Ensure that the c source code file was created
 cCodeFile="$outputDir/main.c"
 if [ ! -f $cCodeFile ]; then
     # This means there were errors when compiling.
-    # The info will be printed from the rust script.
+    # The errors will be printed from Rust. 
     exit
 fi
 
-#echo "Created C code :D"
-if [ $nocompile -eq 1 ]; then
+if [ $isSafeToCompile -eq 1 ]; then
     echo "not compiling; process done"
     exit
 fi
