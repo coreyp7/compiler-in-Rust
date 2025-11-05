@@ -154,7 +154,10 @@ fn resolve_value(val: &mut Value, function_header_map: &FunctionTable, symbol_ta
 
 /// Also will resolve the type of the expression
 /// (based off of first value found)
-/// TODO: rename it to describe the above comment in the name of the func
+/// After you call this: ensure that the expression's datatype isn't Invalid.
+/// If it is, there's some incorrect type operations happening here.
+/// NOTE: for now string operations are non existent; if any strings are being
+/// operated together, mark as invalid.
 pub fn resolve_expression_values(
     expression: &mut Expression,
     function_header_map: &FunctionTable,
@@ -168,9 +171,6 @@ pub fn resolve_expression_values(
     // Set it to invalid if there's mixing of types.
     // In future I can modify to allow.
     expression.datatype = get_first_value_of_entire_expr(expression).data_type.clone();
-    let values_of_expr: Vec<&Value> = Vec::new();
-    let unary_idx = 1;
-    let mut is_expr_err = false;
     for term in &expression.terms {
         for unary in &term.unarys {
             if unary.primary.data_type != expression.datatype {

@@ -1,10 +1,39 @@
 use crate::ast::DataType;
 use crate::ast::FunctionTable;
 use crate::ast::Value;
-use crate::ast::{Expression, Term, Unary};
+use crate::ast::{Expression, Logical, Term, Unary};
 use crate::semantic::SemanticError;
 use crate::semantic::analyzer::AnalysisState;
 use crate::semantic::analyzer::analyze_value;
+use crate::symbol_table;
+
+pub fn add_type_check_errors_for_logical(
+    mut state: AnalysisState,
+    logical: &Logical,
+    function_table: &FunctionTable,
+    line_number: u32,
+) -> AnalysisState {
+    for comparison in &logical.comparisons {
+        for expr in &comparison.expressions {
+            if expr.datatype == DataType::Invalid {
+                state
+                    .errors
+                    .push(SemanticError::ExpressionInvalid { line: line_number })
+            } else if expr.datatype == DataType::String {
+                // NOTE: this should be temporary, and improved in the future.
+                state.errors.push(SemanticError::UnexpectedStatement {
+                    line: line_number,
+                    explanation: "You cannot compare Strings.".to_string(),
+                });
+            }
+
+            //NOTE: can only ever be number right now
+            state =
+                type_check_expression(&expr, &DataType::Number, line_number, state, function_table);
+        }
+    }
+    state
+}
 
 // Current highest level is expression, so only this will be public for now.
 pub fn type_check_expression(

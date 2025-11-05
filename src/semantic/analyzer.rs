@@ -1,13 +1,14 @@
 use crate::ast::{
-    DataType, FunctionDeclarationStatement, PrintStatement, Statement, Value, ValueType,
-    VariableAssignmentStatement, VariableDeclarationStatement,
+    DataType, FunctionDeclarationStatement, IfStatement, PrintStatement, Statement, Value,
+    ValueType, VariableAssignmentStatement, VariableDeclarationStatement,
 };
-use crate::ast::{Expression, Term, Unary};
+use crate::ast::{Expression, Logical, Term, Unary};
 use crate::ast::{FunctionTable, ReturnStatement};
 use crate::semantic::SemanticError;
 use crate::semantic::resolve_value_type::resolve_expression_values;
 use crate::semantic::resolve_value_type::resolve_variable_assignment_stmt_types;
 use crate::semantic::resolve_value_type::resolve_variable_declaration_types;
+use crate::semantic::type_check::add_type_check_errors_for_logical;
 use crate::semantic::type_check::type_check_expression;
 use crate::symbol_table::{self, SymbolTable};
 
@@ -71,6 +72,9 @@ fn analyze_statement(
         }
         Statement::Print(print_stmt) => {
             state = analyze_print_statement(print_stmt, state, function_table);
+        }
+        Statement::If(if_stmt) => {
+            state = analyze_if_stmt(if_stmt, state, function_table);
         }
         _ => (),
     }
@@ -343,6 +347,43 @@ fn analyze_return_stmt(
     }
 
     state
+}
+
+fn analyze_if_stmt(
+    stmt: &mut IfStatement,
+    mut state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
+    // need to go through the logical of the if statement, and resolve all expressions.
+    // We still need to ensure that the types are legit
+    let symbol_table = &state.context_stack.last().unwrap().symbol_table; // TODO: make a helper function for this LOL
+    resolve_logical(&mut stmt.condition, function_table, symbol_table);
+
+    // what needs to be checked?
+    // Well, maybe the Logical should be checked to ensure that the types are correct.
+    // There's a function that does this kind of thing for expressions ...
+    // look for it and mimick behavior
+    state = add_type_check_errors_for_logical(
+        state,
+        &mut stmt.condition,
+        function_table,
+        stmt.line_declared_on,
+    );
+
+    state
+}
+
+fn resolve_logical(
+    logical: &mut Logical,
+    function_table: &FunctionTable,
+    symbol_table: &SymbolTable,
+) {
+    // Resolve all expressions inside this logical.
+    for comparison in logical.comparisons.iter_mut() {
+        for expr in comparison.expressions.iter_mut() {
+            resolve_expression_values(expr, function_table, symbol_table);
+        }
+    }
 }
 
 fn ensure_return_type_matches_function(
