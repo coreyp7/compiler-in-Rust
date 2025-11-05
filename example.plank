@@ -2,10 +2,8 @@
 println "hello, plank";
 
 Number favoriteNumber: 7;
-Number secondFavNumber: 3;
+Number secondFavNumber: favoriteNumber - 3;
 String name: "juandissimo";
-
-
 
 Number i: 0;
 while (i != favoriteNumber):
@@ -22,8 +20,14 @@ while (i != favoriteNumber):
         if (i == secondFavNumber):
             print secondFavNumber;
             println " is also a cool number, but not my favorite.";
+            print "Adding them together results in the number ";
+            println add(favoriteNumber, secondFavNumber);
         endIf
     endIf
 endWhile
 
 println "What a pragmatic example of plank.";
+
+function add (Number numOne, Number numTwo) returns Number:
+    return numOne + numTwo;
+endFunction

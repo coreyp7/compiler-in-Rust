@@ -4,16 +4,13 @@ I wrote my first lanugage programming lanugage (compiler) so I could learn Rust.
 The language is named plank.
 If you'd like to use this wonderful language, feel free. 
 ```
-/! Here's an example Plank program.
-/! It prints hello 25 times; then plank afterwards.
-Number i: 0;
-while (i < 25):
-    print "hello ";
-    print i;
-    println "!";
-    i <= i + 1;
-endWhile
-print "plank"
+String speech: celebrate();
+println speech;
+
+function celebrate () returns String: 
+    return "hello, plank";
+endFunction
+
 ```
 
 ## Requirements
@@ -33,33 +30,38 @@ To compile a .plank file, run compile.sh with the following args:
 | -o (--output) | Directory to output executable in |
 | -s (--setup) | Compiles the Plank compiler in the repo you cloned (not needed after initial setup)|
 
-## An Uncouth Programming Language "Specification"
+## A Plank example: Finding our favorite number
 ```
-/! Here's how you comment your code.
+println "hello, plank";
 
-/! Declaring a variable.
-Number num: 14
-Number another: 1
+Number favoriteNumber: 7;
+Number secondFavNumber: favoriteNumber - 3;
+String name: "juandissimo";
 
-/! Assigning to a variable.
-update num <= 26
+Number i: 0;
+while (i != favoriteNumber):
+    print i;
+    println " is not our fav number, going to increment.";
 
-/! If conditional branch
-if num > another then
-    /! Here's how to print to console.
-    print "wow! num is greater than that other variable"
-endIf
+    i <= i + 1;
 
-/! Here's an example while loop
-while num >= another do
-    update another <= another + 1
-    if num > another then
-        print "still smaller"
+    if (i == favoriteNumber):
+        print "Finally! ";
+        print i;
+        println " is my favorite number.";
+    else:
+        if (i == secondFavNumber):
+            print secondFavNumber;
+            println " is also a cool number, but not my favorite.";
+            print "Adding them together results in the number ";
+            println add(favoriteNumber, secondFavNumber);
+        endIf
     endIf
 endWhile
 
-print "now greater!"
-```
+println "What a pragmatic example of plank.";
 
-## Other notes:
-There's a more complicated build on 'feature/add-functions' for a more complicated compiler with limited function implementation. 
+function add (Number numOne, Number numTwo) returns Number:
+    return numOne + numTwo;
+endFunction
+```
