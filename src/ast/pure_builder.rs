@@ -107,7 +107,6 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
             (Some(stmt), ctx)
         }
         TokenType::EOF => {
-            println!("Reached EOF in parse_statement; congrats :)");
             context.advance(); // move passed EOF token
             (None, context)
         }

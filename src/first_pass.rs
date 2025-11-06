@@ -54,9 +54,9 @@ fn parse_function_declaration(tokens: &[Token], mut idx: usize) -> (FunctionHead
         params = parameters;
         idx = new_idx;
     } else {
-        println!(
-            "The current token isn't what we expect for params. TODO: return early with err or something"
-        );
+        //println!(
+        //"The current token isn't what we expect for params. TODO: return early with err or something"
+        //);
         //println!("{:#?}", tokens[idx]);
     }
 
@@ -89,7 +89,7 @@ fn parse_function_parameters(tokens: &[Token], mut idx: usize) -> (Vec<Parameter
 
     while idx < tokens.len() && tokens[idx].token_type != TokenType::RightParen {
         if tokens[idx].token_type != TokenType::VarDeclaration {
-            println!("Why isn't the next token a var declaration? Not good.");
+            //println!("Why isn't the next token a var declaration? Not good.");
             idx += 1;
             continue;
         }

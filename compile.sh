@@ -2,7 +2,9 @@
 
 # TODO: update this 
 #plankCompilerPath="plank_compiler"
+releaseDir="./target/release"
 plankCompilerPath="./target/release/compiler"
+warningsFile="${releaseDir}/warnings.txt"
 #plankCompilerPath="./target/debug/compiler"
 exitEarly=0
 setup=0
@@ -39,7 +41,8 @@ if [ $setup -eq 1 ]; then
     echo "SETUP: Setup flag specified; going to build compiler and setup current directory for Plank compiler."
 
     # TODO: need to clean up code so there's no warnings anymore
-    cargo build --quiet --release
+    touch $warningsFile
+    cargo build --quiet --release &> $warningsFile
     
     # Ensure it was built correctly.
     if [ ! -f $plankCompilerPath ]; then

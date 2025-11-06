@@ -130,7 +130,7 @@ fn resolve_value(val: &mut Value, function_header_map: &FunctionTable, symbol_ta
                     // Thus, leaving it unknown could indicate that the function
                     // dne. But isn't that handled in semantic analyzer anyway?
                     // So maybe we don't need to do anything here. Test this.
-                    println!("NONE was found when trying to set the return type :(");
+                    //println!("NONE was found when trying to set the return type :(");
                 }
             }
         }

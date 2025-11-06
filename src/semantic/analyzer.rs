@@ -99,8 +99,8 @@ fn analyze_variable_assignment(
         &state.context_stack.last().unwrap().symbol_table,
     );
 
-    println!("Updated statement in ast:");
-    println!("{:#?}", var_ass);
+    //println!("Updated statement in ast:");
+    //println!("{:#?}", var_ass);
 
     // Check the variable being assigned to exists in this scope
     // TODO: helper functions for this shit needs to be made lol
@@ -113,7 +113,7 @@ fn analyze_variable_assignment(
 
     match var_op {
         Some(var_def) => {
-            println!("some var def found for {}", var_ass.var_name);
+            //println!("some var def found for {}", var_ass.var_name);
             // Type check the expression with its assignment
             let expected_type = var_def.data_type.clone();
             state = type_check_expression(
@@ -125,7 +125,7 @@ fn analyze_variable_assignment(
             );
         }
         None => {
-            println!("NONE found for {}", var_ass.var_name);
+            //println!("NONE found for {}", var_ass.var_name);
             state.errors.push(SemanticError::VariableNotDeclared {
                 name: var_ass.var_name.clone(),
                 line: var_ass.line_number,
@@ -150,8 +150,8 @@ fn analyze_variable_declaration(
         &state.context_stack.last().unwrap().symbol_table,
     );
 
-    println!("Updated statement in ast:");
-    println!("{:#?}", var_decl);
+    //println!("Updated statement in ast:");
+    //println!("{:#?}", var_decl);
 
     if let Err(error) = add_variable_to_current_scope(
         &var_decl.symbol_name,

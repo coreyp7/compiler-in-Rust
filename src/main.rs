@@ -27,7 +27,13 @@ fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
     let src_path = &args[1];
     let output_path = &args[2];
-    let debug = args.len() > 3 && (args[3] == "--debug");
+    let mut debug = false;
+    for arg in &args {
+        if arg == "--debug" {
+            debug = true;
+        }
+    }
+    //let debug = args.len() > 3 && (args[3] == "--debug");
     //let src_path: String = String::from("./example.plank"); // for testing without compiling
 
     // TODO: add error handler for reading the file
