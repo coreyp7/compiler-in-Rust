@@ -95,8 +95,6 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
             (Some(stmt), ctx)
         }
         TokenType::Identity => {
-            // TODO: figure out if this is a function call, or an identity assignment.
-            // Dispatch accordingly.
             if is_token_beginning_of_a_raw_function_call(&context) {
                 let (stmt, ctx) = parse_raw_function_call_stmt(context);
                 (Some(stmt), ctx)

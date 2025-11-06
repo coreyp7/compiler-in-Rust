@@ -68,6 +68,9 @@ pub struct WhileStatement {
     pub body: Vec<Statement>,
 }
 
+/// This is pretty much a wrapper struct so you can just call a function without
+/// assigning it to anything. Thus, its just a Value, since Values encompass
+/// function calls.
 #[derive(Debug)]
 pub struct RawFunctionCallStatement {
     pub line: u32,

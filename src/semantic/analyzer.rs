@@ -1,6 +1,7 @@
 use crate::ast::{
-    DataType, FunctionDeclarationStatement, IfStatement, PrintStatement, Statement, Value,
-    ValueType, VariableAssignmentStatement, VariableDeclarationStatement, WhileStatement,
+    DataType, FunctionDeclarationStatement, IfStatement, PrintStatement, RawFunctionCallStatement,
+    Statement, Value, ValueType, VariableAssignmentStatement, VariableDeclarationStatement,
+    WhileStatement,
 };
 use crate::ast::{Expression, Logical, Term, Unary};
 use crate::ast::{FunctionTable, ReturnStatement};
@@ -78,6 +79,9 @@ fn analyze_statement(
         }
         Statement::While(while_stmt) => {
             state = analyze_while_stmt(while_stmt, state, function_table);
+        }
+        Statement::RawFunctionCall(func_stmt) => {
+            state = analyze_raw_func_call(func_stmt, state, function_table);
         }
         _ => (),
     }
@@ -283,6 +287,8 @@ pub fn analyze_value(
 }
 
 /// Analyze function call parameters and validate them
+/// NOTE IM pretty sure you need to resolve all the values before
+/// you call this
 fn analyze_function_call(
     value: &Value,
     line: u32,
@@ -559,4 +565,16 @@ fn add_variable_to_current_scope(
             redeclaration_line: line,
         })
     }
+}
+
+fn analyze_raw_func_call(
+    stmt: &mut RawFunctionCallStatement,
+    mut state: AnalysisState,
+    function_table: &FunctionTable,
+) -> AnalysisState {
+    state = resolve_value_type(&mut stmt.value, state, function_table);
+
+    state = analyze_function_call(&stmt.value, stmt.line, state, function_table);
+
+    state
 }
