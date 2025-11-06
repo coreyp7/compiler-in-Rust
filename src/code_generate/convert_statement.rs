@@ -56,6 +56,7 @@ pub fn to_code_str(statement: &Statement) -> String {
         Statement::Println(println_statement) => to_code_str_println(println_statement),
         Statement::If(if_statement) => to_code_str_if(if_statement),
         Statement::While(while_statement) => to_code_str_while(while_statement),
+        _ => "not implemented yet\n".to_string(),
     }
 }
 

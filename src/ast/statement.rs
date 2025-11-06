@@ -69,10 +69,17 @@ pub struct WhileStatement {
 }
 
 #[derive(Debug)]
+pub struct RawFunctionCallStatement {
+    pub line: u32,
+    pub value: Value,
+}
+
+#[derive(Debug)]
 pub enum Statement {
     VariableDeclaration(VariableDeclarationStatement),
     VariableAssignment(VariableAssignmentStatement),
     FunctionDeclaration(FunctionDeclarationStatement),
+    RawFunctionCall(RawFunctionCallStatement),
     Return(ReturnStatement),
     Print(PrintStatement),
     Println(PrintlnStatement),

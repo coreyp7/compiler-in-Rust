@@ -95,7 +95,7 @@ fn format_type_error(data_type: &DataType) -> ColoredString {
 }
 
 pub fn print_success_message() {
-    let message = format!("Semantic analysis passed successfully! ✓").green();
+    let message = format!("Semantic analysis passed successfully!").green();
     println!("{}", message);
 }
 pub fn print_failures_message(error_count: usize) {

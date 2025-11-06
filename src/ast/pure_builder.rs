@@ -5,12 +5,12 @@ use super::statement::{
     Statement, VariableDeclarationStatement, WhileStatement,
 };
 
-use crate::ast::VariableAssignmentStatement;
 use crate::ast::value_hierarchy::{
     Comparison, DataType, Expression, Logical, Term, Unary, Value, ValueType,
     convert_token_type_to_comparison_op, convert_token_type_to_expression_op,
     convert_token_type_to_logical_op, convert_token_type_to_term_op,
 };
+use crate::ast::{RawFunctionCallStatement, VariableAssignmentStatement};
 use crate::tokenizer::{Token, TokenType};
 
 /// Helper function to create an invalid statement - used when parsing fails
@@ -95,8 +95,15 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
             (Some(stmt), ctx)
         }
         TokenType::Identity => {
-            let (stmt, ctx) = parse_identity_assignment_statement(context);
-            (Some(stmt), ctx)
+            // TODO: figure out if this is a function call, or an identity assignment.
+            // Dispatch accordingly.
+            if is_token_beginning_of_a_raw_function_call(&context) {
+                let (stmt, ctx) = parse_raw_function_call_stmt(context);
+                (Some(stmt), ctx)
+            } else {
+                let (stmt, ctx) = parse_identity_assignment_statement(context);
+                (Some(stmt), ctx)
+            }
         }
         TokenType::If => {
             let (stmt, ctx) = parse_if_stmt(context);
@@ -797,4 +804,43 @@ fn parse_while_stmt(mut context: BuilderContext) -> (Statement, BuilderContext) 
     });
 
     (statement, context)
+}
+
+fn is_token_beginning_of_a_raw_function_call(ctxt: &BuilderContext) -> bool {
+    match ctxt.peek_next() {
+        Some(token) => {
+            if token.token_type == TokenType::LeftParen {
+                return true;
+            }
+            false
+        }
+        None => false,
+    }
+}
+
+fn parse_raw_function_call_stmt(mut context: BuilderContext) -> (Statement, BuilderContext) {
+    let line_num = context.get_curr().line_number;
+    // pretty sure we can just call the parse primary thing and it'll just work.
+    let (value, returned_context) = parse_value(context);
+    context = returned_context;
+
+    if &value.value_type != &ValueType::FunctionCall {
+        // this should never happen but might just be worth having an error for
+    }
+
+    // The analyzer will figure out whether this shit is legit, so just pack it
+    // up and add it.
+    let stmt = Statement::RawFunctionCall(RawFunctionCallStatement {
+        line: line_num,
+        value: value,
+    });
+
+    expect_token!(
+        context,
+        TokenType::Semicolon,
+        "Expected semicolon at end of line"
+    );
+    context.advance(); //should be on next statement now
+
+    (stmt, context)
 }
