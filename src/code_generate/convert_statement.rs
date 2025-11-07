@@ -1,4 +1,4 @@
-use crate::ast::{Comparison, Expression, Term, Unary};
+use crate::ast::{Comparison, Expression, RawFunctionCallStatement, Term, Unary};
 use crate::ast::{ComparisonOperator, ExpressionOperator, LogicalOperator, TermOperator};
 use crate::ast::{
     DataType, IfStatement, PrintStatement, PrintlnStatement, ReturnStatement, Value,
@@ -56,7 +56,7 @@ pub fn to_code_str(statement: &Statement) -> String {
         Statement::Println(println_statement) => to_code_str_println(println_statement),
         Statement::If(if_statement) => to_code_str_if(if_statement),
         Statement::While(while_statement) => to_code_str_while(while_statement),
-        _ => "not implemented yet\n".to_string(),
+        Statement::RawFunctionCall(stmt) => to_code_str_raw_function_call(stmt),
     }
 }
 
@@ -83,34 +83,43 @@ fn to_code_str_value(value: &Value) -> String {
     let mut code_str = String::new();
     match value.value_type {
         ValueType::FunctionCall => {
-            code_str.push_str(&value.raw_text);
-            code_str.push_str("(");
-            if let Some(params) = &value.param_values {
-                for (idx, param) in params.iter().enumerate() {
-                    code_str.push_str(&to_code_str_expr(param));
-                    if idx < params.len() - 1 {
-                        code_str.push_str(", ");
-                    }
-                }
-            }
-            code_str.push_str(")");
+            // Use the dedicated function call converter
+            to_code_str_function_call(value)
         }
         ValueType::InlineNumber | ValueType::Variable => {
             code_str.push_str(&value.raw_text);
+            code_str
         }
         ValueType::InlineString => {
             code_str.push_str("\"");
             code_str.push_str(&value.raw_text);
             code_str.push_str("\"");
+            code_str
         }
-        _ => (),
+        _ => code_str,
+    }
+}
+
+fn to_code_str_function_call(value: &Value) -> String {
+    let mut code_str = String::new();
+
+    code_str.push_str(&value.raw_text);
+    code_str.push_str("(");
+
+    if let Some(params) = &value.param_values {
+        for (idx, param) in params.iter().enumerate() {
+            code_str.push_str(&to_code_str_expr(param));
+            if idx < params.len() - 1 {
+                code_str.push_str(", ");
+            }
+        }
     }
 
+    code_str.push_str(")");
     code_str
 }
 
 fn to_code_str_return(return_stmt: &ReturnStatement) -> String {
-    //"RETURN NOT IMPL YET\n".to_string()
     let mut code_str = String::new();
     let return_expr_option = &return_stmt.return_value;
     match return_expr_option {
@@ -360,5 +369,11 @@ fn to_code_str_while(while_stmt: &WhileStatement) -> String {
     }
 
     code_str.push_str("}\n");
+    code_str
+}
+
+fn to_code_str_raw_function_call(stmt: &RawFunctionCallStatement) -> String {
+    let mut code_str = to_code_str_function_call(&stmt.value);
+    code_str.push_str(";\n");
     code_str
 }
