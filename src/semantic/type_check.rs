@@ -1,3 +1,4 @@
+use crate::ast::Comparison;
 use crate::ast::DataType;
 use crate::ast::FunctionTable;
 use crate::ast::Value;
@@ -5,16 +6,23 @@ use crate::ast::{Expression, Logical, Term, Unary};
 use crate::semantic::SemanticError;
 use crate::semantic::analyzer::AnalysisState;
 use crate::semantic::analyzer::analyze_value;
+use crate::semantic::type_check;
 use crate::symbol_table;
+
+/// NOTE: all of these functions assume that you have resolved the values of all
+/// of the passed in structs.
+/// These functions WILL NOT resolve any unknown values.
 
 pub fn add_type_check_errors_for_logical(
     mut state: AnalysisState,
-    logical: &Logical,
+    logical: &mut Logical,
     function_table: &FunctionTable,
     line_number: u32,
 ) -> AnalysisState {
+    /*
     for comparison in &logical.comparisons {
         for expr in &comparison.expressions {
+            /*
             if expr.datatype == DataType::Invalid {
                 state
                     .errors
@@ -26,15 +34,53 @@ pub fn add_type_check_errors_for_logical(
                     explanation: "You cannot compare Strings.".to_string(),
                 });
             }
+            */
 
             //NOTE: can only ever be number right now
-            state =
-                type_check_expression(&expr, &DataType::Number, line_number, state, function_table);
+            //state = type_check_expression(&expr, &DataType::Number, line_number, state, function_table);
         }
+    }first_expr_datatype
+    */
+    for comparison in logical.comparisons.iter_mut() {
+        state = type_check_comparison(state, comparison, function_table, line_number);
+        // TODO: ensure that each comparison is valid and actually resolves to
+        // a boolean. (where we'd add a boolean type)
     }
+
     state
 }
 
+pub fn type_check_comparison(
+    mut state: AnalysisState,
+    comparison: &mut Comparison,
+    function_table: &FunctionTable,
+    line_number: u32,
+) -> AnalysisState {
+    // We need to check the types of the expressions being compared, and ensure
+    // that they all match.
+    // All we need to worry about is what's in this comparison.
+    let first_expresion_datatype = &comparison.expressions[0].datatype; // ALERT: little risky
+    for expr in comparison.expressions.iter() {
+        // get the data type of the expression and ensure they all match.
+        // the semantics of comparing strings and shit can be done later.
+        if &expr.datatype != first_expresion_datatype {
+            // add error that this comparison is invalid.
+            // edit the comparison so it's data type is invalid
+            // TODO: may want to update the comparison to have a datatype associated with it
+            // in the struct. This'll prolly have to be done.
+            state.errors.push(SemanticError::ComparisonInvalid {
+                line: line_number,
+                first_expr_datatype: first_expresion_datatype.clone(),
+                got: expr.datatype.clone(),
+            })
+        }
+    }
+
+    state
+}
+
+// TODO: rename/recontextualize that this is specifically for variables, NOT
+// in an if/while conditional.
 // Current highest level is expression, so only this will be public for now.
 pub fn type_check_expression(
     expr: &Expression,

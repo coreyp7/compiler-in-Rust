@@ -54,6 +54,11 @@ pub enum SemanticError {
         line: u32,
         explanation: String,
     },
+    ComparisonInvalid {
+        line: u32,
+        first_expr_datatype: DataType,
+        got: DataType,
+    },
 }
 
 // Helper functions for formatting error messages
@@ -237,6 +242,23 @@ impl SemanticError {
             SemanticError::UnexpectedStatement { line, explanation } => {
                 error_header("Unexpected statement found", *line);
                 eprintln!("  {} {}", error_line_start(), explanation);
+            }
+            SemanticError::ComparisonInvalid {
+                line,
+                first_expr_datatype,
+                got,
+            } => {
+                error_header("Comparison invalid", *line);
+                eprintln!(
+                    "  {} First expression in comparison is a '{:#?}'",
+                    error_line_start(),
+                    first_expr_datatype
+                );
+                eprintln!(
+                    "  {} Instead got expresion of type '{:#?}'",
+                    error_line_end(),
+                    got
+                );
             }
         }
     }
