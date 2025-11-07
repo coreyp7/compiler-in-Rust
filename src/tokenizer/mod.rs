@@ -144,7 +144,7 @@ fn create_token_from_lexume(
                 So, they are both processed in here, and then we figure out
                 later if this token is a keyword instead of an Identity.
                 */
-                if curr_char.is_alphabetic() == false {
+                if curr_char.is_alphabetic() == false && curr_char != '_' {
                     end_of_string_idx = Some(str_byte_buffer - 1);
                     str_byte_buffer = line_bytes.len();
                 } else if str_byte_buffer == line_bytes.len() - 1 {
