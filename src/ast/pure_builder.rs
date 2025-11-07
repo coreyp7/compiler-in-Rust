@@ -423,6 +423,7 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
         "Number" => DataType::Number,
         "String" => DataType::String,
         "Void" => DataType::Void,
+        "nothing" => DataType::Void,
         _ => {
             context.handle_parse_error(ParseError::InvalidReturnType {
                 line: context.get_curr().line_number,

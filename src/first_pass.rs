@@ -69,6 +69,7 @@ fn parse_function_declaration(tokens: &[Token], mut idx: usize) -> (FunctionHead
         "Number" => DataType::Number,
         "String" => DataType::String,
         "Void" => DataType::Void,
+        "nothing" => DataType::Void,
         _ => DataType::Invalid,
     };
     idx += 1;
@@ -98,6 +99,7 @@ fn parse_function_parameters(tokens: &[Token], mut idx: usize) -> (Vec<Parameter
             "Number" => DataType::Number,
             "String" => DataType::String,
             "Void" => DataType::Void,
+            "nothing" => DataType::Void,
             _ => DataType::Invalid,
         };
         idx += 1;

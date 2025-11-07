@@ -124,11 +124,12 @@ impl ParseError {
                     format_token_error(return_type)
                 );
                 eprintln!(
-                    "  {} Valid return types are: {}, {}, {}",
+                    "  {} Valid return types are: {}, {}, or {}",
                     error_line_end(),
                     format_token("Number"),
                     format_token("String"),
-                    format_token("Void")
+                    //format_token("Void"),
+                    format_token("nothing")
                 );
             }
             ParseError::MissingAssignmentOperator { line } => {
