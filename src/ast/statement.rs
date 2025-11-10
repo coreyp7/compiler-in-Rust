@@ -23,7 +23,8 @@ pub struct VariableAssignmentStatement {
     pub var_name: String,
     pub var_data_type: DataType,
     //pub assigned_value: Value,
-    pub assigned_expr: Expression,
+    //pub assigned_expr: Expression,
+    pub assigned_logical: Logical,
     pub line_var_was_declared_on: u32,
     pub line_number: u32,
 }

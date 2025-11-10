@@ -75,12 +75,15 @@ fn to_code_str_var_decl(var_decl: &VariableDeclarationStatement) -> String {
 }
 
 fn to_code_str_var_assignment(var_assign: &VariableAssignmentStatement) -> String {
+    /* BOOL REFACTOR
     format!(
         "{} = {};\n",
         var_assign.var_name,
         //to_code_str_value(&var_assign.assigned_value)
         to_code_str_expr(&var_assign.assigned_expr)
     )
+    */
+    String::new()
 }
 
 fn to_code_str_value(value: &Value) -> String {
@@ -330,7 +333,7 @@ fn to_code_str_print(print_stmt: &PrintStatement) -> String {
         newline_or_empty.push_str("\n");
     }
 
-    expr_str = match print_stmt.expression.datatype {
+    expr_str = match print_stmt.expression.data_type {
         DataType::Number => format!("printf(\"%d\",{});", expr_str),
         DataType::String => format!("printf({});", expr_str),
         _ => "not either of these".to_string(),
@@ -355,7 +358,7 @@ fn to_code_str_println(println_stmt: &PrintlnStatement) -> String {
     // right now we just use a c macro (with newline version)
     //if println_stmt.expression.datatype ==
     //expr_str = format!("printf({});\n", expr_str);
-    expr_str = match println_stmt.expression.datatype {
+    expr_str = match println_stmt.expression.data_type {
         DataType::Number => format!("printf(\"%d\",{});\n", expr_str),
         DataType::String => format!("printf({});\n", expr_str),
         _ => "not either of these".to_string(),

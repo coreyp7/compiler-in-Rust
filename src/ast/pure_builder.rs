@@ -254,7 +254,11 @@ fn parse_unary(mut context: BuilderContext) -> (Unary, BuilderContext) {
     let (primary, returned_context) = parse_value(context);
     context = returned_context;
 
-    let unary = Unary { operation, primary };
+    let unary = Unary {
+        operation,
+        primary,
+        data_type: DataType::Unknown,
+    };
 
     (unary, context)
 }
@@ -372,7 +376,8 @@ fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statemen
         var_name: identity_lexeme,
         var_data_type: DataType::Unknown, // unknown until semantic analysis
         //assigned_value: val,
-        assigned_expr: expr,
+        //assigned_expr: expr,
+        assigned_logical: Logical::new(),
         line_var_was_declared_on: 0, // unknown until semantic analysis
         line_number,
     });

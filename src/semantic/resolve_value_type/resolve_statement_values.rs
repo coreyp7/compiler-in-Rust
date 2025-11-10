@@ -108,11 +108,13 @@ pub fn resolve_variable_assignment_stmt_types(
         var_ass_stmt.var_data_type = var_def.data_type.clone();
     }
 
+    /* BOOL REFACTOR
     resolve_expression_values(
         &mut var_ass_stmt.assigned_expr,
         function_header_map,
         symbol_table,
     );
+    */
 }
 
 fn resolve_value(val: &mut Value, function_header_map: &FunctionTable, symbol_table: &SymbolTable) {
@@ -170,6 +172,7 @@ pub fn resolve_expression_values(
     function_header_map: &FunctionTable,
     symbol_table: &SymbolTable,
 ) {
+    /* BOOL REFACTOR
     for term in &mut expression.terms {
         resolve_term_values(term, function_header_map, symbol_table);
     }
@@ -232,6 +235,7 @@ pub fn resolve_expression_values(
 
     println!("done resolving expression: {:#?}", expression);
     println!("--------------------------------------");
+    */
 }
 
 /// This might be sketchy but leaving for now.

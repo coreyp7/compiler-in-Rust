@@ -92,12 +92,14 @@ impl Value {
 pub struct Unary {
     pub operation: Option<ExpressionOperator>,
     pub primary: Value,
+    pub data_type: DataType,
 }
 
 #[derive(Debug, Clone)]
 pub struct Term {
     pub unarys: Vec<Unary>,
     pub operations: Vec<TermOperator>,
+    pub data_type: DataType,
 }
 
 impl Term {
@@ -105,6 +107,7 @@ impl Term {
         Term {
             unarys: Vec::new(),
             operations: Vec::new(),
+            data_type: DataType::Unknown,
         }
     }
 }
@@ -120,7 +123,7 @@ pub enum TermOperator {
 pub struct Expression {
     pub terms: Vec<Term>,
     pub operators: Vec<ExpressionOperator>,
-    pub datatype: DataType,
+    pub data_type: DataType,
 }
 
 impl Expression {
@@ -128,7 +131,7 @@ impl Expression {
         Expression {
             terms: Vec::new(),
             operators: Vec::new(),
-            datatype: DataType::Unknown,
+            data_type: DataType::Unknown,
         }
     }
 }
@@ -145,6 +148,8 @@ pub enum ExpressionOperator {
 pub struct Comparison {
     pub expressions: Vec<Expression>,
     pub operators: Vec<ComparisonOperator>,
+    // does is the comparison valid and evaluates to a boolean?
+    pub is_valid: bool,
 }
 
 impl Comparison {
@@ -152,6 +157,7 @@ impl Comparison {
         Comparison {
             expressions: Vec::new(),
             operators: Vec::new(),
+            is_valid: true,
         }
     }
 }
@@ -173,6 +179,7 @@ pub enum ComparisonOperator {
 pub struct Logical {
     pub comparisons: Vec<Comparison>,
     pub operators: Vec<LogicalOperator>,
+    pub is_valid: bool,
 }
 
 impl Logical {
@@ -180,6 +187,7 @@ impl Logical {
         Logical {
             comparisons: Vec::new(),
             operators: Vec::new(),
+            is_valid: true, // assume its innocent until proven guilty
         }
     }
 }

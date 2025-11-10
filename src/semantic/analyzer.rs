@@ -6,9 +6,9 @@ use crate::ast::{
 use crate::ast::{Expression, Logical, Term, Unary};
 use crate::ast::{FunctionTable, ReturnStatement};
 use crate::semantic::SemanticError;
-use crate::semantic::resolve_value_type::resolve_expression_values;
 use crate::semantic::resolve_value_type::resolve_variable_assignment_stmt_types;
 use crate::semantic::resolve_value_type::resolve_variable_declaration_types;
+use crate::semantic::resolve_value_type::{resolve_expression_values, resolve_logical_values};
 use crate::semantic::type_check::add_type_check_errors_for_logical;
 use crate::semantic::type_check::type_check_expression;
 use crate::symbol_table::{self, SymbolTable};
@@ -97,8 +97,15 @@ fn analyze_variable_assignment(
     // - type check
     // I can't think of anything else rn so just do these
 
+    /*
     resolve_variable_assignment_stmt_types(
         var_ass,
+        function_table,
+        &state.context_stack.last().unwrap().symbol_table,
+    );
+    */
+    resolve_logical_values(
+        &mut var_ass.assigned_logical,
         function_table,
         &state.context_stack.last().unwrap().symbol_table,
     );
@@ -106,6 +113,7 @@ fn analyze_variable_assignment(
     //println!("Updated statement in ast:");
     //println!("{:#?}", var_ass);
 
+    /* BOOL REFACTOR
     // Check the variable being assigned to exists in this scope
     // TODO: helper functions for this shit needs to be made lol
     let var_op = state
@@ -136,6 +144,7 @@ fn analyze_variable_assignment(
             });
         }
     }
+    */
 
     state
 }
@@ -148,10 +157,21 @@ fn analyze_variable_declaration(
     let mut state = state;
 
     // Not done in AST, so we need to do it here.
+    /*
     resolve_variable_declaration_types(
         var_decl,
         function_table,
         &state.context_stack.last().unwrap().symbol_table,
+    );
+    */
+    resolve_logical_values(
+        &mut var_decl.assigned_logical,
+        function_table,
+        &state.context_stack.last().unwrap().symbol_table,
+    );
+    println!(
+        "Here's the variable '{}' after resolution:{:#?}",
+        var_decl.symbol_name, var_decl
     );
 
     //println!("Updated statement in ast:");
@@ -227,7 +247,7 @@ fn analyze_print_statement(
         current_symbol_table,
     );
 
-    if print_stmt.expression.datatype == DataType::Invalid {
+    if print_stmt.expression.data_type == DataType::Invalid {
         state.errors.push(SemanticError::ExpressionInvalid {
             line: print_stmt.line_declared_on,
         })
@@ -435,7 +455,7 @@ fn ensure_return_type_matches_function(
     let current_function = function_table.get_using_id(current_function_context);
 
     if let Some(current_function) = current_function {
-        let return_stmt_value_type = &return_stmt.return_value.as_ref().unwrap().datatype;
+        let return_stmt_value_type = &return_stmt.return_value.as_ref().unwrap().data_type;
         if return_stmt_value_type == &DataType::Invalid {
             // This should mean that the expression cannot evaluate to a
             // single type, since they're adding different types together.
