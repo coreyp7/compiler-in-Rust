@@ -87,11 +87,14 @@ pub fn resolve_variable_declaration_types(
     // Check that the value_type is a function call
     // if function call: Set the assigned value data_type
     // using the function_header_map
+
+    /* DURING BOOL REFACTOR
     resolve_expression_values(
         &mut var_decl_stmt.assigned_expr,
         function_header_map,
         symbol_table,
     );
+    */
 }
 
 pub fn resolve_variable_assignment_stmt_types(
@@ -113,6 +116,7 @@ pub fn resolve_variable_assignment_stmt_types(
 }
 
 fn resolve_value(val: &mut Value, function_header_map: &FunctionTable, symbol_table: &SymbolTable) {
+    /* DURING BOOL REFACTOR
     let val_type = &val.value_type;
     match val_type {
         // TODO: could this be moved into a more generic 'resolve value' function?
@@ -152,6 +156,7 @@ fn resolve_value(val: &mut Value, function_header_map: &FunctionTable, symbol_ta
             // These don't need type resolution from function table or symbol table
         }
     }
+    */
 }
 
 /// Also will resolve the type of the expression

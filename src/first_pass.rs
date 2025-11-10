@@ -65,9 +65,12 @@ fn parse_function_declaration(tokens: &[Token], mut idx: usize) -> (FunctionHead
     idx += 1; // skip 'returns' keyword, should be validated first
 
     // Convert string type to DataType enum
+    // TODO: could be moved into its own function elsewhere.
+    // Datatype could implement some function that does this.
     let function_return_type = match tokens[idx].lexeme.as_str() {
         "Number" => DataType::Number,
         "String" => DataType::String,
+        "Boolean" => DataType::Boolean,
         "Void" => DataType::Void,
         "nothing" => DataType::Void,
         _ => DataType::Invalid,

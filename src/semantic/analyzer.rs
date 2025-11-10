@@ -168,6 +168,8 @@ fn analyze_variable_declaration(
 
     // Now do comprehensive type checking of the expression.
     // Check that the expression assigned matches the declared type of the variable.
+
+    /* DURING BOOL REFACTOR
     state = type_check_expression(
         &var_decl.assigned_expr,
         &var_decl.data_type,
@@ -175,6 +177,7 @@ fn analyze_variable_declaration(
         state,
         function_table,
     );
+    */
 
     state
 }
@@ -247,6 +250,7 @@ pub fn analyze_value(
     let mut state = state;
     let current_context = state.context_stack.last().unwrap();
 
+    /* DURING BOOL REFACTOR
     match value.value_type {
         ValueType::Variable => {
             if !current_context.symbol_table.contains_name(&value.raw_text) {
@@ -282,7 +286,7 @@ pub fn analyze_value(
             });
         }
     }
-
+    */
     state
 }
 

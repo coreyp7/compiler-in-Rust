@@ -32,6 +32,7 @@ pub enum GeneralOperator {
 pub enum DataType {
     Number,
     String,
+    Boolean,
     Void,
     Unknown, // Used when type needs to be resolved before semantic analysis
     Invalid,
@@ -43,6 +44,7 @@ pub enum ValueType {
     Expression,
     InlineNumber,
     InlineString,
+    InlineBoolean,
     Variable,
     Invalid,
 }

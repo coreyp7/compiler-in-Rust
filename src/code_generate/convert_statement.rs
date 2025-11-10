@@ -15,6 +15,7 @@ impl fmt::Display for DataType {
             DataType::Number => write!(f, "int"),
             DataType::String => write!(f, "char*"),
             DataType::Void => write!(f, "void"),
+            DataType::Boolean => write!(f, "bool"),
             DataType::Unknown => write!(f, "auto"),
             DataType::Invalid => write!(f, "/* invalid type */"),
         }
@@ -61,6 +62,7 @@ pub fn to_code_str(statement: &Statement) -> String {
 }
 
 fn to_code_str_var_decl(var_decl: &VariableDeclarationStatement) -> String {
+    /* DURING BOOL REFACTOR
     format!(
         "{} {} = {};\n",
         var_decl.data_type.to_string(),
@@ -68,6 +70,8 @@ fn to_code_str_var_decl(var_decl: &VariableDeclarationStatement) -> String {
         //to_code_str_value(&var_decl.assigned_value)
         to_code_str_expr(&var_decl.assigned_expr)
     )
+    */
+    String::new()
 }
 
 fn to_code_str_var_assignment(var_assign: &VariableAssignmentStatement) -> String {

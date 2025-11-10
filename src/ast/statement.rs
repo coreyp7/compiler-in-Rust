@@ -14,7 +14,8 @@ pub struct VariableDeclarationStatement {
     pub data_type: DataType,
     pub line_declared_on: u32,
     //pub assigned_value: Value,
-    pub assigned_expr: Expression,
+    //pub assigned_expr: Expression,
+    pub assigned_logical: Logical, // we can have bools now :)
 }
 
 #[derive(Debug)]

@@ -79,7 +79,7 @@ impl FromStr for TokenType {
             "while" => Ok(TokenType::While),
             "do" => Ok(TokenType::Do),
             "endWhile" => Ok(TokenType::EndWhile),
-            "Number" | "String" => Ok(TokenType::VarDeclaration),
+            "Number" | "String" | "Boolean" => Ok(TokenType::VarDeclaration),
             "update" => Ok(TokenType::UpdateKeyword),
             "function" => Ok(TokenType::FunctionDeclaration),
             "return" => Ok(TokenType::Return),

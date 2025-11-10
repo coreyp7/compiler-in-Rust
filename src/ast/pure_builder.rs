@@ -20,7 +20,8 @@ fn create_invalid_statement() -> Statement {
         data_type: DataType::Invalid,
         line_declared_on: 0,
         //assigned_value: Value::invalid(),
-        assigned_expr: Expression::new(),
+        //assigned_expr: Expression::new(),
+        assigned_logical: Logical::new(),
     })
 }
 
@@ -130,6 +131,7 @@ fn parse_variable_declaration(mut context: BuilderContext) -> (Statement, Builde
     let data_type = match context.get_curr().lexeme.as_str() {
         "Number" => DataType::Number,
         "String" => DataType::String,
+        "Boolean" => DataType::Boolean,
         _ => {
             context.handle_parse_error(ParseError::InvalidDataType {
                 line: context.get_curr().line_number,
@@ -159,7 +161,8 @@ fn parse_variable_declaration(mut context: BuilderContext) -> (Statement, Builde
     context.advance();
 
     // Parse the assigned value
-    let (expr, mut context) = parse_expression(context);
+    //let (expr, mut context) = parse_expression(context);
+    let (logical, mut context) = parse_logical(context);
 
     // Expect semicolon
     expect_token!(
@@ -175,7 +178,8 @@ fn parse_variable_declaration(mut context: BuilderContext) -> (Statement, Builde
         data_type,
         line_declared_on,
         //assigned_value: value,
-        assigned_expr: expr,
+        //assigned_expr: expr,
+        assigned_logical: logical,
     });
 
     (statement, context)
@@ -256,12 +260,14 @@ fn parse_unary(mut context: BuilderContext) -> (Unary, BuilderContext) {
 }
 
 fn parse_logical(mut context: BuilderContext) -> (Logical, BuilderContext) {
+    println!("Entered parse_logical: {:#?} ", context.get_curr());
     let mut logical = Logical::new();
 
     let (comparison1, returned_context) = parse_comparison(context);
     context = returned_context;
     logical.comparisons.push(comparison1);
 
+    println!("In parse_logical; curr token is {:#?}", context.get_curr());
     while !context.is_at_end()
         && matches!(
             context.get_curr().token_type,
@@ -277,6 +283,7 @@ fn parse_logical(mut context: BuilderContext) -> (Logical, BuilderContext) {
         logical.comparisons.push(comparison2);
     }
 
+    println!("parse logical is done: {:#?}", logical);
     (logical, context)
 }
 
@@ -287,29 +294,30 @@ fn parse_comparison(mut context: BuilderContext) -> (Comparison, BuilderContext)
     context = returned_context;
     comparison.expressions.push(expr1);
 
-    if context.is_at_end()
-        || !matches!(
-            context.get_curr().token_type,
-            TokenType::EqualEqual
-                | TokenType::NotEqual
-                | TokenType::LessThan
-                | TokenType::LessThanEqualTo
-                | TokenType::GreaterThan
-                | TokenType::GreaterThanEqualTo
-        )
-    {
-        context.handle_parse_error(ParseError::UnexpectedToken {
-            line: context.get_curr().line_number,
-            expected: "comparison operator (==, !=, <, <=, >, >=)".to_string(),
-            found: if context.is_at_end() {
-                "end of file".to_string()
-            } else {
-                context.get_curr().lexeme.clone()
-            },
-        });
-        return (comparison, context);
-    }
-
+    /* DURING BOOL REFACTOR
+        if context.is_at_end()
+            || !matches!(
+                context.get_curr().token_type,
+                TokenType::EqualEqual
+                    | TokenType::NotEqual
+                    | TokenType::LessThan
+                    | TokenType::LessThanEqualTo
+                    | TokenType::GreaterThan
+                    | TokenType::GreaterThanEqualTo
+            )
+        {
+            context.handle_parse_error(ParseError::UnexpectedToken {
+                line: context.get_curr().line_number,
+                expected: "comparison operator (==, !=, <, <=, >, >=)".to_string(),
+                found: if context.is_at_end() {
+                    "end of file".to_string()
+                } else {
+                    context.get_curr().lexeme.clone()
+                },
+            });
+            return (comparison, context);
+        }
+    */
     while !context.is_at_end()
         && matches!(
             context.get_curr().token_type,
@@ -547,6 +555,12 @@ fn parse_value(mut context: BuilderContext) -> (Value, BuilderContext) {
         TokenType::Str => Value::new(
             DataType::String,
             ValueType::InlineString,
+            token.lexeme.clone(),
+        ),
+        TokenType::True | TokenType::False => Value::new(
+            // boolean coverage
+            DataType::Boolean,
+            ValueType::InlineBoolean,
             token.lexeme.clone(),
         ),
         TokenType::Identity => {
