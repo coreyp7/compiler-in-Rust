@@ -149,7 +149,11 @@ pub struct Comparison {
     pub expressions: Vec<Expression>,
     pub operators: Vec<ComparisonOperator>,
     // does is the comparison valid and evaluates to a boolean?
-    pub is_valid: bool,
+    //pub is_valid: bool,
+    /// If comparison has zero operators, that means this is just an expression,
+    /// which evaluates to any type.
+    /// If there's > 1 ops, then this should always be a boolean.
+    pub data_type: DataType,
 }
 
 impl Comparison {
@@ -157,7 +161,7 @@ impl Comparison {
         Comparison {
             expressions: Vec::new(),
             operators: Vec::new(),
-            is_valid: true,
+            data_type: DataType::Unknown,
         }
     }
 }

@@ -264,14 +264,14 @@ fn parse_unary(mut context: BuilderContext) -> (Unary, BuilderContext) {
 }
 
 fn parse_logical(mut context: BuilderContext) -> (Logical, BuilderContext) {
-    println!("Entered parse_logical: {:#?} ", context.get_curr());
+    //println!("Entered parse_logical: {:#?} ", context.get_curr());
     let mut logical = Logical::new();
 
     let (comparison1, returned_context) = parse_comparison(context);
     context = returned_context;
     logical.comparisons.push(comparison1);
 
-    println!("In parse_logical; curr token is {:#?}", context.get_curr());
+    //println!("In parse_logical; curr token is {:#?}", context.get_curr());
     while !context.is_at_end()
         && matches!(
             context.get_curr().token_type,
@@ -287,7 +287,7 @@ fn parse_logical(mut context: BuilderContext) -> (Logical, BuilderContext) {
         logical.comparisons.push(comparison2);
     }
 
-    println!("parse logical is done: {:#?}", logical);
+    //println!("parse logical is done: {:#?}", logical);
     (logical, context)
 }
 

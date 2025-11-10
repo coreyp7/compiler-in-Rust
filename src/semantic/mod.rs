@@ -2,6 +2,7 @@ mod analyzer;
 mod resolve_value_type;
 mod semantic_error;
 mod type_check;
+mod validate;
 
 pub use analyzer::analyze_statements;
 pub use resolve_value_type::resolve_all_value_types_in_ast;

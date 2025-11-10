@@ -17,7 +17,7 @@ pub fn resolve_logical_values(
 ) {
     for (idx, comparison) in &mut logical.comparisons.iter_mut().enumerate() {
         resolve_comparison_values(comparison, function_header_map, symbol_table);
-        if !comparison.is_valid {
+        if comparison.data_type == DataType::Invalid {
             logical.is_valid = false;
         }
     }
@@ -28,6 +28,7 @@ pub fn resolve_comparison_values(
     function_header_map: &FunctionTable,
     symbol_table: &SymbolTable,
 ) {
+    // NOTE: if there's only one expression
     let mut all_expr_type = DataType::Unknown;
 
     for (idx, expr) in &mut comparison.expressions.iter_mut().enumerate() {
@@ -40,11 +41,14 @@ pub fn resolve_comparison_values(
 
         // If there are conflicting types (which is not allowed),
         // set the datatype to invalid and return early.
-        if all_expr_type != expr.data_type {
-            comparison.is_valid = false; // this should be default true
-            break;
+        if all_expr_type != DataType::Invalid && all_expr_type != expr.data_type {
+            //comparison.is_valid = false; // this should be default true
+            //comparison.data_type = DataType::Invalid;
+            all_expr_type = DataType::Invalid;
         }
     }
+
+    comparison.data_type = all_expr_type;
 }
 
 pub fn resolve_expression_values_and_update_data_type(

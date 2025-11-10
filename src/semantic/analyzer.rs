@@ -11,6 +11,7 @@ use crate::semantic::resolve_value_type::resolve_variable_declaration_types;
 use crate::semantic::resolve_value_type::{resolve_expression_values, resolve_logical_values};
 use crate::semantic::type_check::add_type_check_errors_for_logical;
 use crate::semantic::type_check::type_check_expression;
+use crate::semantic::validate::validate_logical;
 use crate::symbol_table::{self, SymbolTable};
 
 pub struct SemanticContext {
@@ -169,13 +170,15 @@ fn analyze_variable_declaration(
         function_table,
         &state.context_stack.last().unwrap().symbol_table,
     );
+    /*
     println!(
         "Here's the variable '{}' after resolution:{:#?}",
         var_decl.symbol_name, var_decl
     );
+    */
 
-    //println!("Updated statement in ast:");
-    //println!("{:#?}", var_decl);
+    let logical_err = validate_logical(&var_decl.assigned_logical, var_decl.line_declared_on);
+    state.errors.extend(logical_err);
 
     if let Err(error) = add_variable_to_current_scope(
         &var_decl.symbol_name,
