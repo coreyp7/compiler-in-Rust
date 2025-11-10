@@ -86,12 +86,8 @@ fn parse_statement(mut context: BuilderContext) -> (Option<Statement>, BuilderCo
             let (stmt, ctx) = parse_return_statement(context);
             (Some(stmt), ctx)
         }
-        TokenType::Print => {
+        TokenType::Print | TokenType::Println => {
             let (stmt, ctx) = parse_print_statement(context);
-            (Some(stmt), ctx)
-        }
-        TokenType::Println => {
-            let (stmt, ctx) = parse_println_statement(context);
             (Some(stmt), ctx)
         }
         TokenType::Identity => {
@@ -513,6 +509,7 @@ fn parse_return_statement(mut context: BuilderContext) -> (Statement, BuilderCon
 
 fn parse_print_statement(mut context: BuilderContext) -> (Statement, BuilderContext) {
     let line_declared_on = context.get_curr().line_number;
+    let is_print_ln = context.get_curr().token_type == TokenType::Println;
 
     context.advance(); // skip print
 
@@ -528,28 +525,7 @@ fn parse_print_statement(mut context: BuilderContext) -> (Statement, BuilderCont
     let statement = Statement::Print(PrintStatement {
         line_declared_on,
         expression: expr,
-    });
-
-    (statement, context)
-}
-
-fn parse_println_statement(mut context: BuilderContext) -> (Statement, BuilderContext) {
-    let line_declared_on = context.get_curr().line_number;
-
-    context.advance(); // skip println
-
-    let (expr, mut context) = parse_expression(context);
-
-    expect_token!(
-        context,
-        TokenType::Semicolon,
-        "Expected semicolon after println statement"
-    );
-    context.advance();
-
-    let statement = Statement::Println(PrintlnStatement {
-        line_declared_on,
-        expression: expr,
+        is_print_ln,
     });
 
     (statement, context)

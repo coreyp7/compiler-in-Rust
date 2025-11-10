@@ -315,23 +315,49 @@ fn logical_operator_to_str(op: &LogicalOperator) -> &'static str {
 }
 
 fn to_code_str_print(print_stmt: &PrintStatement) -> String {
-    let expr_str = to_code_str_expr(&print_stmt.expression);
+    let mut expr_str = to_code_str_expr(&print_stmt.expression);
 
     // TODO: The data type the expr evaluates to should be resolved by now, and
     // we can look at it and adjust the printf statement accordingly.
+    // TODO: change this depending on ln flag later
+    //let newline_or_empty = print_stmt.is_print_ln ? "\n" : "";
+    let mut newline_or_empty = String::new();
+    if print_stmt.is_print_ln {
+        newline_or_empty.push_str("\n");
+    }
+
+    expr_str = match print_stmt.expression.datatype {
+        DataType::Number => format!("printf(\"%d\",{});", expr_str),
+        DataType::String => format!("printf({});", expr_str),
+        _ => "not either of these".to_string(),
+    };
+
+    if print_stmt.is_print_ln {
+        expr_str.push_str("printf(\"\\n\");\n");
+    }
 
     // right now we just use a c macro (no newline version)
-    format!("plank_print_no_newline({});\n", expr_str)
+    //expr_str = format!("plank_print_no_newline({});", expr_str);
+    expr_str.push_str("\n"); // purely for readability while debugging
+    expr_str
 }
 
 fn to_code_str_println(println_stmt: &PrintlnStatement) -> String {
-    let expr_str = to_code_str_expr(&println_stmt.expression);
+    let mut expr_str = to_code_str_expr(&println_stmt.expression);
 
     // TODO: The data type the expr evaluates to should be resolved by now, and
     // we can look at it and adjust the printf statement accordingly.
 
     // right now we just use a c macro (with newline version)
-    format!("plank_println({});\n", expr_str)
+    //if println_stmt.expression.datatype ==
+    //expr_str = format!("printf({});\n", expr_str);
+    expr_str = match println_stmt.expression.datatype {
+        DataType::Number => format!("printf(\"%d\",{});\n", expr_str),
+        DataType::String => format!("printf({});\n", expr_str),
+        _ => "not either of these".to_string(),
+    };
+
+    expr_str
 }
 
 fn to_code_str_if(if_stmt: &IfStatement) -> String {
