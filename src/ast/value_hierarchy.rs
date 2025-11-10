@@ -6,6 +6,8 @@ use crate::tokenizer::TokenType;
 /// However, we want to typecheck and validate Expressions.
 /// It'd be really helpful if we could store all of the operators across an
 /// entire expression in a single vec. So, this shit exists.
+///
+#[derive(PartialEq, Eq, Hash, Debug)]
 pub enum GeneralOperator {
     // expression/unary
     Plus,

@@ -30,6 +30,7 @@
  * - Expressions (marked as Expression type)
  */
 
+use crate::ast::GeneralOperator;
 use crate::ast::Statement;
 use crate::ast::Term;
 use crate::ast::Unary;
@@ -38,6 +39,7 @@ use crate::ast::ValueType;
 use crate::ast::VariableAssignmentStatement;
 use crate::ast::VariableDeclarationStatement;
 use crate::ast::{Comparison, DataType, Expression, FunctionTable, Logical};
+use crate::ast::{convert_expression_op_to_general, convert_term_op_to_general};
 use crate::symbol_table::SymbolTable;
 
 pub fn resolve_all_value_types_in_ast(
@@ -167,21 +169,64 @@ pub fn resolve_expression_values(
         resolve_term_values(term, function_header_map, symbol_table);
     }
 
+    println!("--------------------------------------");
+    println!("resolving expression: {:#?}", expression);
+
     // Resolve the datatype of the expression itself.
     // Set it to invalid if there's mixing of types.
     // In future I can modify to allow.
     expression.datatype = get_first_value_of_entire_expr(expression).data_type.clone();
-    for term in &expression.terms {
-        for unary in &term.unarys {
-            if unary.primary.data_type != expression.datatype {
-                //is_expr_err = true;
 
+    let mut used_ops: Vec<GeneralOperator> = Vec::new();
+    for op in &expression.operators {
+        if let Some(general_op) = convert_expression_op_to_general(op.clone()) {
+            used_ops.push(general_op);
+        }
+    }
+
+    // TODO: This is lazy and stupid. Can change to be more readable and less stupid.
+    for term in &expression.terms {
+        for op in &term.operations {
+            if let Some(general_op) = convert_term_op_to_general(op.clone()) {
+                used_ops.push(general_op);
+            }
+        }
+
+        for unary in &term.unarys {
+            if let Some(op) = &unary.operation {
+                if let Some(general_op) = convert_expression_op_to_general(op.clone()) {
+                    used_ops.push(general_op);
+                }
+            }
+
+            if unary.primary.data_type != expression.datatype {
                 // Set datatype to invalid to indicate the expression couldn't be
                 // evaluated to a single type.
                 expression.datatype = DataType::Invalid;
             }
         }
     }
+
+    if expression.datatype != DataType::String {
+        return;
+    }
+
+    // Check if any operations are invalid for strings
+    let has_invalid_string_ops = used_ops.iter().any(|op| match op {
+        GeneralOperator::EqualEqual | GeneralOperator::NotEqual => false,
+        _ => true, // All other operations are invalid for strings
+    });
+
+    if has_invalid_string_ops {
+        // TODO: in the future, we should have a specific error for this that we
+        // add to the errors vec.
+        expression.datatype = DataType::Invalid;
+    }
+
+    // this is a string; only allow equal equal, not equal
+
+    println!("done resolving expression: {:#?}", expression);
+    println!("--------------------------------------");
 }
 
 /// This might be sketchy but leaving for now.

@@ -12,7 +12,9 @@ pub use statement::*; // all statement types
 
 pub use function_table::{FunctionSymbol, FunctionTable, Parameter};
 pub use parse_error::ParseError;
+pub use value_hierarchy::GeneralOperator;
 pub use value_hierarchy::{
     Comparison, ComparisonOperator, DataType, Expression, ExpressionOperator, Logical,
-    LogicalOperator, Term, TermOperator, Unary, Value, ValueType,
+    LogicalOperator, Term, TermOperator, Unary, Value, ValueType, convert_comparison_op_to_general,
+    convert_expression_op_to_general, convert_logical_op_to_general, convert_term_op_to_general,
 };
