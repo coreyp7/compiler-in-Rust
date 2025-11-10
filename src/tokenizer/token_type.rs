@@ -8,6 +8,9 @@ pub enum TokenType {
     Number,
     Identity,
     Str,
+    Boolean,
+    True,
+    False,
     // Keywords
     Label = 100, //unused
     //NumberType, // for declaring variable 'Number'
@@ -83,6 +86,9 @@ impl FromStr for TokenType {
             "returns" => Ok(TokenType::Returns),
             "endFunction" => Ok(TokenType::EndFunction),
             "else" => Ok(TokenType::Else),
+            "Boolean" => Ok(TokenType::Boolean),
+            "true" => Ok(TokenType::True),
+            "false" => Ok(TokenType::False),
             _ => Err(()),
         }
     }
@@ -142,6 +148,9 @@ impl TokenType {
             TokenType::Arrow => "->",
             TokenType::EndFunction => "endFunction",
             TokenType::Semicolon => ";",
+            TokenType::Boolean => "bool",
+            TokenType::True => "true",
+            TokenType::False => "false",
         }
     }
 }
