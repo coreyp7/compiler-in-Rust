@@ -174,9 +174,16 @@ fn analyze_variable_declaration(
     );
 
     let logical_err = validate_logical(&var_decl.assigned_logical, var_decl.line_declared_on);
-    state.errors.extend(logical_err);
+    if logical_err.len() > 0 {
+        // if there's a problem with the logical being assigned to the var,
+        // we can't add it to our map.
+        // Also prevents duplicate errors for the same statement.
+        // Return early.
+        state.errors.extend(logical_err);
+        return state;
+    }
 
-    // type check with var being declared
+    // type check logical type with var being declared
     let declared_var_type = &var_decl.data_type;
     let assigned_logical_type = &var_decl.assigned_logical.data_type;
     if assigned_logical_type != declared_var_type {
