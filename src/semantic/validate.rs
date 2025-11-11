@@ -8,7 +8,7 @@ pub fn validate_logical(logical: &Logical, line: u32) -> Vec<SemanticError> {
     let mut errors: Vec<SemanticError> = Vec::new();
 
     // If any of the expressions are invalid, just leave we're done here.
-    if !logical.is_valid {
+    if logical.data_type == DataType::Invalid {
         // TODO: add errors that say the logical is invalid.
         errors.push(SemanticError::UnexpectedStatement {
             line: line,
@@ -23,8 +23,6 @@ pub fn validate_logical(logical: &Logical, line: u32) -> Vec<SemanticError> {
         return errors;
     }
 
-    println!("corey made it here");
-
     // All of these must evaluate to booleans.
     // You can't say ("string" && 3); that doesn't make any sense.
     for comparison in &mut logical.comparisons.iter() {
@@ -35,6 +33,7 @@ pub fn validate_logical(logical: &Logical, line: u32) -> Vec<SemanticError> {
                 explanation: "logical is invalid; cannot have non boolean in logical expression."
                     .to_string(),
             });
+            println!("Logical is invalid: {:#?}", logical);
             return errors;
         }
     }

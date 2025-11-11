@@ -15,11 +15,29 @@ pub fn resolve_logical_values(
     function_header_map: &FunctionTable,
     symbol_table: &SymbolTable,
 ) {
+    // If no logical operators, the comparison drives what type this is.
+    if logical.operators.len() == 0 {
+        resolve_comparison_values(
+            logical.comparisons.get_mut(0).unwrap(), // sketch
+            function_header_map,
+            symbol_table,
+        );
+        logical.data_type = logical.comparisons[0].data_type.clone(); // little sketch
+        return;
+    }
+
+    // if any of the our comparisons are invalid, this entire logical is invalid.
     for (idx, comparison) in &mut logical.comparisons.iter_mut().enumerate() {
         resolve_comparison_values(comparison, function_header_map, symbol_table);
         if comparison.data_type == DataType::Invalid {
-            logical.is_valid = false;
+            logical.data_type = DataType::Invalid;
         }
+    }
+
+    // If there were no invalid comparisons, and there was more than 1,
+    // then we know this evaluates to a bool.
+    if logical.data_type != DataType::Invalid {
+        logical.data_type = DataType::Boolean;
     }
 }
 
@@ -28,7 +46,18 @@ pub fn resolve_comparison_values(
     function_header_map: &FunctionTable,
     symbol_table: &SymbolTable,
 ) {
-    // NOTE: if there's only one expression
+    // If no comparison ops, then the type is driven by the sole expression.
+    // Do it up here to make logic downstairs easier.
+    if comparison.operators.len() == 0 {
+        resolve_expression_values_and_update_data_type(
+            comparison.expressions.get_mut(0).unwrap(),
+            function_header_map,
+            symbol_table,
+        );
+        comparison.data_type = comparison.expressions[0].data_type.clone();
+        return;
+    }
+
     let mut all_expr_type = DataType::Unknown;
 
     for (idx, expr) in &mut comparison.expressions.iter_mut().enumerate() {
@@ -40,15 +69,19 @@ pub fn resolve_comparison_values(
         }
 
         // If there are conflicting types (which is not allowed),
-        // set the datatype to invalid and return early.
+        // set the datatype to invalid.
         if all_expr_type != DataType::Invalid && all_expr_type != expr.data_type {
-            //comparison.is_valid = false; // this should be default true
-            //comparison.data_type = DataType::Invalid;
             all_expr_type = DataType::Invalid;
         }
     }
 
-    comparison.data_type = all_expr_type;
+    if all_expr_type == DataType::Invalid {
+        comparison.data_type = DataType::Invalid;
+    } else if comparison.operators.len() > 0 {
+        // we've resolved everything and all the types have been consistent.
+        // We have > 0 ops, so, the type of our comparison must be a boolean.
+        comparison.data_type = DataType::Boolean;
+    }
 }
 
 pub fn resolve_expression_values_and_update_data_type(

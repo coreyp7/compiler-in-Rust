@@ -1,3 +1,5 @@
+use std::ops::DerefMut;
+
 use crate::ast::{
     DataType, FunctionDeclarationStatement, IfStatement, PrintStatement, RawFunctionCallStatement,
     Statement, Value, ValueType, VariableAssignmentStatement, VariableDeclarationStatement,
@@ -170,15 +172,20 @@ fn analyze_variable_declaration(
         function_table,
         &state.context_stack.last().unwrap().symbol_table,
     );
-    /*
-    println!(
-        "Here's the variable '{}' after resolution:{:#?}",
-        var_decl.symbol_name, var_decl
-    );
-    */
 
     let logical_err = validate_logical(&var_decl.assigned_logical, var_decl.line_declared_on);
     state.errors.extend(logical_err);
+
+    // type check with var being declared
+    let declared_var_type = &var_decl.data_type;
+    let assigned_logical_type = &var_decl.assigned_logical.data_type;
+    if assigned_logical_type != declared_var_type {
+        state.errors.push(SemanticError::TypeMismatch {
+            expected: declared_var_type.clone(),
+            found: assigned_logical_type.clone(),
+            line: var_decl.line_declared_on,
+        });
+    }
 
     if let Err(error) = add_variable_to_current_scope(
         &var_decl.symbol_name,

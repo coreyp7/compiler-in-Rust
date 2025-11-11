@@ -183,7 +183,8 @@ pub enum ComparisonOperator {
 pub struct Logical {
     pub comparisons: Vec<Comparison>,
     pub operators: Vec<LogicalOperator>,
-    pub is_valid: bool,
+    //pub is_valid: bool,
+    pub data_type: DataType,
 }
 
 impl Logical {
@@ -191,7 +192,8 @@ impl Logical {
         Logical {
             comparisons: Vec::new(),
             operators: Vec::new(),
-            is_valid: true, // assume its innocent until proven guilty
+            //is_valid: true, // assume its innocent until proven guilty
+            data_type: DataType::Unknown,
         }
     }
 }
