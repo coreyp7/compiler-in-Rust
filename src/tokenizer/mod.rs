@@ -3,6 +3,7 @@ mod token_type;
 
 // public api imports for this module
 pub use token::Token;
+pub use token::TokenMatch;
 pub use token_type::TokenType;
 //
 
@@ -14,23 +15,25 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::str::FromStr;
 
-// ============================================================================
-// Data Structures and Enums
-// ============================================================================
+/// This module is a bit of a mess, but there hasn't really been a reason to
+/// change it since writing, since it works fine.
+/// TODO: put datatype mappings (and other maps created adhoc) in a common file
+pub fn tokenize_file(src_file: &mut File) -> Vec<Token> {
+    let reader = BufReader::new(src_file);
+    let mut token_vec: Vec<Token> = Vec::new();
+    let mut line_number = 1;
 
-#[derive(Debug)]
-enum TokenMatch {
-    Single(TokenType),
-    Double(char, TokenType), // (next_char, token_if_matched)
-    Comment,                 // Special case for comments
+    for line_result in reader.lines() {
+        if let Ok(line_str) = line_result {
+            let mut tokens = tokenize_line(line_str, line_number);
+            token_vec.append(&mut tokens);
+            line_number += 1;
+        }
+    }
+    token_vec.push(create_token(TokenType::EOF, String::new(), line_number, 0));
+
+    token_vec
 }
-
-// Note: The Tokenizer struct was previously defined here but is not currently used.
-// It could be useful for future refactoring to make the tokenizer stateful.
-
-// ============================================================================
-// Utility Functions
-// ============================================================================
 
 fn create_token(
     token_type_param: TokenType,
@@ -48,7 +51,6 @@ fn create_token(
 
 fn get_char_token_map() -> HashMap<char, TokenMatch> {
     use TokenMatch::*;
-    //use TokenType::*;
 
     [
         ('+', Single(Plus)),
@@ -83,10 +85,6 @@ fn get_single_char_fallback(ch: char) -> TokenType {
         _ => TokenType::UnsupportedSymbolError,
     }
 }
-
-// ============================================================================
-// Core Tokenization Logic
-// ============================================================================
 
 /**
 Can either be:
@@ -315,10 +313,6 @@ fn create_token_at_byte_in_line(
     }
 }
 
-// ============================================================================
-// Main Tokenization Functions
-// ============================================================================
-
 fn tokenize_line(line: String, line_number: u32) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
     let line_bytes: &[u8] = line.as_bytes();
@@ -366,24 +360,4 @@ fn tokenize_line(line: String, line_number: u32) -> Vec<Token> {
     */
 
     tokens
-}
-
-/**
- * TODO: check validity of file just in case.
- */
-pub fn tokenize_file(src_file: &mut File) -> Vec<Token> {
-    let reader = BufReader::new(src_file);
-    let mut token_vec: Vec<Token> = Vec::new();
-    let mut line_number = 1;
-
-    for line_result in reader.lines() {
-        if let Ok(line_str) = line_result {
-            let mut tokens = tokenize_line(line_str, line_number);
-            token_vec.append(&mut tokens);
-            line_number += 1;
-        }
-    }
-    token_vec.push(create_token(TokenType::EOF, String::new(), line_number, 0));
-
-    token_vec
 }

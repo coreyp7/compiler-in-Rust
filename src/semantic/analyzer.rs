@@ -1,18 +1,16 @@
-use std::ops::DerefMut;
-
 use crate::ast::{
     DataType, FunctionDeclarationStatement, IfStatement, PrintStatement, RawFunctionCallStatement,
-    Statement, Value, ValueType, VariableAssignmentStatement, VariableDeclarationStatement,
-    WhileStatement,
+    Statement, VariableAssignmentStatement, VariableDeclarationStatement, WhileStatement,
 };
-use crate::ast::{Expression, Logical, Term, Unary};
 use crate::ast::{FunctionTable, ReturnStatement};
-use crate::semantic::SemanticError;
-use crate::semantic::resolve_value_type::{resolve_logical_values, resolve_value};
-use crate::semantic::type_check::add_type_check_errors_for_logical;
-//use crate::semantic::type_check::type_check_expression;
+
+use crate::semantic::type_resolution::{resolve_logical_values, resolve_value};
+
 use crate::semantic::validate::validate_logical;
-use crate::symbol_table::{self, SymbolTable};
+
+use crate::symbol_table::SymbolTable;
+
+use crate::semantic::SemanticError;
 
 pub struct SemanticContext {
     pub symbol_table: SymbolTable,
@@ -299,16 +297,27 @@ fn analyze_if_stmt(
     let symbol_table = &state.context_stack.last().unwrap().symbol_table; // TODO: make a helper function for this LOL
     resolve_logical_values(&mut stmt.condition, function_table, symbol_table);
 
-    // what needs to be checked?
-    // Well, maybe the Logical should be checked to ensure that the types are correct.
-    // There's a function that does this kind of thing for expressions ...
-    // look for it and mimick behavior
-    state = add_type_check_errors_for_logical(
-        state,
-        &mut stmt.condition,
-        function_table,
-        stmt.line_declared_on,
-    );
+    let logical_err = validate_logical(&stmt.condition, stmt.line_declared_on);
+    if logical_err.len() > 0 {
+        // if there's a problem with the logical being assigned to the var,
+        // we can't add it to our map.
+        // Also prevents duplicate errors for the same statement.
+        // Return early.
+        state.errors.extend(logical_err);
+        return state;
+    }
+
+    // TODO: need to check all the statements inside of the if stmt, right?
+    // TODO: also don't we need to alter the scope stack to account for the new
+    // block of code??
+
+    // push new scope
+    analyze_statements(&mut stmt.if_body, function_table);
+    // pop if block scope
+
+    if let Some(else_statement_vec) = stmt.else_body.as_mut() {
+        analyze_statements(else_statement_vec, function_table);
+    }
 
     state
 }
@@ -325,16 +334,19 @@ fn analyze_while_stmt(
     let symbol_table = &state.context_stack.last().unwrap().symbol_table; // TODO: make a helper function for this LOL
     resolve_logical_values(&mut stmt.condition, function_table, symbol_table);
 
-    // what needs to be checked?
-    // Well, maybe the Logical should be checked to ensure that the types are correct.
-    // There's a function that does this kind of thing for expressions ...
-    // look for it and mimick behavior
-    state = add_type_check_errors_for_logical(
-        state,
-        &mut stmt.condition,
-        function_table,
-        stmt.line_declared_on,
-    );
+    let logical_err = validate_logical(&stmt.condition, stmt.line_declared_on);
+    if logical_err.len() > 0 {
+        // if there's a problem with the logical being assigned to the var,
+        // we can't add it to our map.
+        // Also prevents duplicate errors for the same statement.
+        // Return early.
+        state.errors.extend(logical_err);
+        return state;
+    }
+
+    // push new scope
+    analyze_statements(&mut stmt.body, function_table);
+    // pop if block scope
 
     state
 }
