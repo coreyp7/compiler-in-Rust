@@ -99,26 +99,60 @@ fn analyze_variable_assignment(
     // What things do we need to validate here?
     // - type check
     // I can't think of anything else rn so just do these
+    let mut line_number = 0;
 
-    /*
-    resolve_variable_assignment_stmt_types(
-        var_ass,
-        function_table,
-        &state.context_stack.last().unwrap().symbol_table,
-    );
-    */
+    let var_op = state
+        .context_stack
+        .last()
+        .unwrap()
+        .symbol_table
+        .get(&var_ass.var_name);
+
     resolve_logical_values(
         &mut var_ass.assigned_logical,
         function_table,
         &state.context_stack.last().unwrap().symbol_table,
     );
 
+    match var_op {
+        Some(var_def) => {
+            // type check logical type with var being declared
+            line_number = var_def.line_declared_on;
+            let declared_var_type = &var_def.data_type;
+            let assigned_logical_type = &var_ass.assigned_logical.data_type;
+            if assigned_logical_type != declared_var_type {
+                state.errors.push(SemanticError::TypeMismatch {
+                    expected: declared_var_type.clone(),
+                    found: assigned_logical_type.clone(),
+                    line: var_def.line_declared_on,
+                });
+            }
+        }
+        None => {
+            //println!("NONE found for {}", var_ass.var_name);
+            state.errors.push(SemanticError::VariableNotDeclared {
+                name: var_ass.var_name.clone(),
+                line: var_ass.line_number,
+            });
+        }
+    }
+
+    let logical_err = validate_logical(&var_ass.assigned_logical, line_number);
+    if logical_err.len() > 0 {
+        // if there's a problem with the logical being assigned to the var,
+        // we can't add it to our map.
+        // Also prevents duplicate errors for the same statement.
+        // Return early.
+        state.errors.extend(logical_err);
+        return state;
+    }
+
     //println!("Updated statement in ast:");
     //println!("{:#?}", var_ass);
 
-    /* BOOL REFACTOR
     // Check the variable being assigned to exists in this scope
     // TODO: helper functions for this shit needs to be made lol
+    /*
     let var_op = state
         .context_stack
         .last()
@@ -132,7 +166,7 @@ fn analyze_variable_assignment(
             // Type check the expression with its assignment
             let expected_type = var_def.data_type.clone();
             state = type_check_expression(
-                &var_ass.assigned_expr,
+                &var_ass.assigned_logical,
                 &expected_type,
                 var_ass.line_number,
                 state,
@@ -160,13 +194,6 @@ fn analyze_variable_declaration(
     let mut state = state;
 
     // Not done in AST, so we need to do it here.
-    /*
-    resolve_variable_declaration_types(
-        var_decl,
-        function_table,
-        &state.context_stack.last().unwrap().symbol_table,
-    );
-    */
     resolve_logical_values(
         &mut var_decl.assigned_logical,
         function_table,

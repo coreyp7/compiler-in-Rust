@@ -33,7 +33,7 @@ pub fn validate_logical(logical: &Logical, line: u32) -> Vec<SemanticError> {
                 explanation: "logical is invalid; cannot have non boolean in logical expression."
                     .to_string(),
             });
-            println!("Logical is invalid: {:#?}", logical);
+            //println!("Logical is invalid: {:#?}", logical);
             return errors;
         }
     }

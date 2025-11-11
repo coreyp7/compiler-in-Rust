@@ -23,6 +23,7 @@ pub fn resolve_logical_values(
             symbol_table,
         );
         logical.data_type = logical.comparisons[0].data_type.clone(); // little sketch
+        //println!("returning logical from resolve: {:#?}", logical);
         return;
     }
 

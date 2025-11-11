@@ -362,7 +362,8 @@ fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statemen
     context.advance();
 
     //let (val, mut context) = parse_value(context);
-    let (expr, mut context) = parse_expression(context);
+    //let (expr, mut context) = parse_expression(context);
+    let (logical, mut context) = parse_logical(context);
 
     // Expect semicolon
     expect_token!(
@@ -377,7 +378,7 @@ fn parse_identity_assignment_statement(mut context: BuilderContext) -> (Statemen
         var_data_type: DataType::Unknown, // unknown until semantic analysis
         //assigned_value: val,
         //assigned_expr: expr,
-        assigned_logical: Logical::new(),
+        assigned_logical: logical,
         line_var_was_declared_on: 0, // unknown until semantic analysis
         line_number,
     });
