@@ -522,12 +522,13 @@ fn parse_return_statement(mut context: BuilderContext) -> (Statement, BuilderCon
 }
 
 fn parse_print_statement(mut context: BuilderContext) -> (Statement, BuilderContext) {
-    let line_declared_on = context.get_curr().line_number;
+    let line = context.get_curr().line_number;
     let is_print_ln = context.get_curr().token_type == TokenType::Println;
 
     context.advance(); // skip print
 
-    let (expr, mut context) = parse_expression(context);
+    //let (expr, mut context) = parse_expression(context);
+    let (logical, mut context) = parse_logical(context);
 
     expect_token!(
         context,
@@ -537,8 +538,9 @@ fn parse_print_statement(mut context: BuilderContext) -> (Statement, BuilderCont
     context.advance();
 
     let statement = Statement::Print(PrintStatement {
-        line_declared_on,
-        expression: expr,
+        line,
+        //expression: expr,
+        logical,
         is_print_ln,
     });
 

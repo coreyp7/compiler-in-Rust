@@ -101,18 +101,19 @@ fn analyze_variable_assignment(
     // I can't think of anything else rn so just do these
     let mut line_number = 0;
 
+    resolve_logical_values(
+        &mut var_ass.assigned_logical,
+        function_table,
+        &state.context_stack.last().unwrap().symbol_table,
+    );
+
+    // TODO: put this shit into its own function, its rlly large rn
     let var_op = state
         .context_stack
         .last()
         .unwrap()
         .symbol_table
         .get(&var_ass.var_name);
-
-    resolve_logical_values(
-        &mut var_ass.assigned_logical,
-        function_table,
-        &state.context_stack.last().unwrap().symbol_table,
-    );
 
     match var_op {
         Some(var_def) => {
@@ -285,15 +286,25 @@ fn analyze_print_statement(
 ) -> AnalysisState {
     let current_symbol_table = &state.context_stack.last().unwrap().symbol_table;
 
-    resolve_expression_values(
-        &mut print_stmt.expression,
+    resolve_logical_values(
+        &mut print_stmt.logical,
         function_table,
         current_symbol_table,
     );
 
-    if print_stmt.expression.data_type == DataType::Invalid {
+    let logical_err = validate_logical(&print_stmt.logical, print_stmt.line);
+    if logical_err.len() > 0 {
+        // if there's a problem with the logical being assigned to the var,
+        // we can't add it to our map.
+        // Also prevents duplicate errors for the same statement.
+        // Return early.
+        state.errors.extend(logical_err);
+        return state;
+    }
+
+    if print_stmt.logical.data_type == DataType::Invalid {
         state.errors.push(SemanticError::ExpressionInvalid {
-            line: print_stmt.line_declared_on,
+            line: print_stmt.line,
         })
     }
 

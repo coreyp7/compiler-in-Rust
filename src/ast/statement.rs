@@ -45,8 +45,8 @@ pub struct ReturnStatement {
 
 #[derive(Debug)]
 pub struct PrintStatement {
-    pub line_declared_on: u32,
-    pub expression: Expression,
+    pub line: u32,
+    pub logical: Logical,
     pub is_print_ln: bool,
 }
 

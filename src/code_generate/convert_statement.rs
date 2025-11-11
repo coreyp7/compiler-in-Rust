@@ -322,7 +322,8 @@ fn logical_operator_to_str(op: &LogicalOperator) -> &'static str {
 }
 
 fn to_code_str_print(print_stmt: &PrintStatement) -> String {
-    let mut expr_str = to_code_str_expr(&print_stmt.expression);
+    /*
+    let mut expr_str = to_code_str_expr(&print_stmt.logical);
 
     // TODO: The data type the expr evaluates to should be resolved by now, and
     // we can look at it and adjust the printf statement accordingly.
@@ -347,6 +348,8 @@ fn to_code_str_print(print_stmt: &PrintStatement) -> String {
     //expr_str = format!("plank_print_no_newline({});", expr_str);
     expr_str.push_str("\n"); // purely for readability while debugging
     expr_str
+    */
+    String::new()
 }
 
 fn to_code_str_println(println_stmt: &PrintlnStatement) -> String {
