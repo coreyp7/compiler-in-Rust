@@ -2,8 +2,9 @@ use crate::ast::DataType;
 use crate::ast::{Comparison, Expression, Logical, Term, Unary};
 use crate::semantic::SemanticError;
 
-// this needs to be given state so we can add errors.
-// Or maybe it can return a vec of errors? Idk.
+/// Validates that the logical has a valid type, and doesn't break any rules.
+/// If the returned vec is empty, then that means everything is okay.
+/// Typcially called after resolving a logical's datatype.
 pub fn validate_logical(logical: &Logical, line: u32) -> Vec<SemanticError> {
     let mut errors: Vec<SemanticError> = Vec::new();
 

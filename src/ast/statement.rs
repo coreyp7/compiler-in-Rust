@@ -3,6 +3,18 @@ use crate::ast::DataType;
 use crate::ast::Value;
 use crate::ast::value_hierarchy::{Expression, Logical};
 
+#[derive(Debug)]
+pub enum Statement {
+    VariableDeclaration(VariableDeclarationStatement),
+    VariableAssignment(VariableAssignmentStatement),
+    FunctionDeclaration(FunctionDeclarationStatement),
+    RawFunctionCall(RawFunctionCallStatement),
+    Return(ReturnStatement),
+    Print(PrintStatement),
+    If(IfStatement),
+    While(WhileStatement),
+}
+
 /**
  * Contains 'Statement' enum, and all of the specific Statement structs
  * that make up the AST, and is analyzed by the semantic module.
@@ -33,6 +45,15 @@ pub struct FunctionDeclarationStatement {
     pub body: Vec<Statement>,
 }
 
+/// This is pretty much a wrapper struct so you can just call a function without
+/// assigning it to anything. Thus, its just a Value, since Values encompass
+/// function calls.
+#[derive(Debug)]
+pub struct RawFunctionCallStatement {
+    pub line: u32,
+    pub value: Value,
+}
+
 #[derive(Debug)]
 pub struct ReturnStatement {
     pub line_declared_on: u32,
@@ -59,25 +80,4 @@ pub struct WhileStatement {
     pub line_declared_on: u32,
     pub condition: Logical,
     pub body: Vec<Statement>,
-}
-
-/// This is pretty much a wrapper struct so you can just call a function without
-/// assigning it to anything. Thus, its just a Value, since Values encompass
-/// function calls.
-#[derive(Debug)]
-pub struct RawFunctionCallStatement {
-    pub line: u32,
-    pub value: Value,
-}
-
-#[derive(Debug)]
-pub enum Statement {
-    VariableDeclaration(VariableDeclarationStatement),
-    VariableAssignment(VariableAssignmentStatement),
-    FunctionDeclaration(FunctionDeclarationStatement),
-    RawFunctionCall(RawFunctionCallStatement),
-    Return(ReturnStatement),
-    Print(PrintStatement),
-    If(IfStatement),
-    While(WhileStatement),
 }
