@@ -1,8 +1,8 @@
 use crate::ast::{Comparison, Expression, RawFunctionCallStatement, Term, Unary};
 use crate::ast::{ComparisonOperator, ExpressionOperator, LogicalOperator, TermOperator};
 use crate::ast::{
-    DataType, IfStatement, PrintStatement, PrintlnStatement, ReturnStatement, Value,
-    VariableAssignmentStatement, VariableDeclarationStatement, WhileStatement,
+    DataType, IfStatement, PrintStatement, ReturnStatement, Value, VariableAssignmentStatement,
+    VariableDeclarationStatement, WhileStatement,
 };
 use crate::ast::{FunctionDeclarationStatement, FunctionSymbol, Statement, ValueType};
 use std::fmt;
@@ -54,7 +54,6 @@ pub fn to_code_str(statement: &Statement) -> String {
         Statement::VariableAssignment(var_assign_st) => to_code_str_var_assignment(var_assign_st),
         Statement::Return(return_statement) => to_code_str_return(return_statement),
         Statement::Print(print_statement) => to_code_str_print(print_statement),
-        Statement::Println(println_statement) => to_code_str_println(println_statement),
         Statement::If(if_statement) => to_code_str_if(if_statement),
         Statement::While(while_statement) => to_code_str_while(while_statement),
         Statement::RawFunctionCall(stmt) => to_code_str_raw_function_call(stmt),
@@ -128,13 +127,7 @@ fn to_code_str_function_call(value: &Value) -> String {
 
 fn to_code_str_return(return_stmt: &ReturnStatement) -> String {
     let mut code_str = String::new();
-    let return_expr_option = &return_stmt.return_value;
-    match return_expr_option {
-        Some(expr) => code_str.push_str(&format!("return {};\n", to_code_str_expr(expr))),
-        None => {
-            // TODO add handling
-        }
-    }
+    // TODO: parse logical of return
     code_str
 }
 
@@ -350,24 +343,6 @@ fn to_code_str_print(print_stmt: &PrintStatement) -> String {
     expr_str
     */
     String::new()
-}
-
-fn to_code_str_println(println_stmt: &PrintlnStatement) -> String {
-    let mut expr_str = to_code_str_expr(&println_stmt.expression);
-
-    // TODO: The data type the expr evaluates to should be resolved by now, and
-    // we can look at it and adjust the printf statement accordingly.
-
-    // right now we just use a c macro (with newline version)
-    //if println_stmt.expression.datatype ==
-    //expr_str = format!("printf({});\n", expr_str);
-    expr_str = match println_stmt.expression.data_type {
-        DataType::Number => format!("printf(\"%d\",{});\n", expr_str),
-        DataType::String => format!("printf({});\n", expr_str),
-        _ => "not either of these".to_string(),
-    };
-
-    expr_str
 }
 
 fn to_code_str_if(if_stmt: &IfStatement) -> String {

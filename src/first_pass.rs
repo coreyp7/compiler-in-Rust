@@ -99,9 +99,12 @@ fn parse_function_parameters(tokens: &[Token], mut idx: usize) -> (Vec<Parameter
         }
 
         let param_type = match tokens[idx].lexeme.as_str() {
+            // TODO: move this out somewhwere so we can use it universally
+            // across all modules.
             "Number" => DataType::Number,
             "String" => DataType::String,
             "Void" => DataType::Void,
+            "Boolean" => DataType::Boolean,
             "nothing" => DataType::Void,
             _ => DataType::Invalid,
         };

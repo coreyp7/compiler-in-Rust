@@ -256,7 +256,8 @@ fn analyze_function_declaration(
     let mut state = state;
     state = push_scope(&func_decl.function_name, state, function_table);
 
-    // Check return statement requirement
+    // Only check return type requirement.
+    // Type checking of the return is done in analyze_return function
     if let Some(last_statement_in_body) = func_decl.body.last() {
         let does_return_exist = matches!(last_statement_in_body, Statement::Return(_));
         let is_function_return_type_void = func_decl.return_type == DataType::Void;
@@ -420,6 +421,15 @@ fn analyze_return_stmt(
     function_table: &FunctionTable,
 ) -> AnalysisState {
     // TODO: check if return type is void or something
+    resolve_logical_values(
+        &mut return_stmt.return_value,
+        function_table,
+        &state.context_stack.last().unwrap().symbol_table, // TODO: make a helper function for this LOL
+    );
+
+    state = ensure_return_type_matches_function(state, function_table, return_stmt);
+
+    /*
     if let Some(ref mut return_expr) = return_stmt.return_value {
         resolve_expression_values(
             return_expr,
@@ -433,6 +443,7 @@ fn analyze_return_stmt(
             explanation: "Return statement found outside of function".to_string(),
         })
     }
+    */
 
     state
 }
@@ -510,7 +521,7 @@ fn ensure_return_type_matches_function(
     let current_function = function_table.get_using_id(current_function_context);
 
     if let Some(current_function) = current_function {
-        let return_stmt_value_type = &return_stmt.return_value.as_ref().unwrap().data_type;
+        let return_stmt_value_type = &return_stmt.return_value.data_type;
         if return_stmt_value_type == &DataType::Invalid {
             // This should mean that the expression cannot evaluate to a
             // single type, since they're adding different types together.

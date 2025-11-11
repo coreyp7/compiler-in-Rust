@@ -1,8 +1,8 @@
 use super::builder_context::BuilderContext;
 use super::parse_error::ParseError;
 use super::statement::{
-    FunctionDeclarationStatement, IfStatement, PrintStatement, PrintlnStatement, ReturnStatement,
-    Statement, VariableDeclarationStatement, WhileStatement,
+    FunctionDeclarationStatement, IfStatement, PrintStatement, ReturnStatement, Statement,
+    VariableDeclarationStatement, WhileStatement,
 };
 
 use crate::ast::value_hierarchy::{
@@ -433,6 +433,7 @@ fn parse_function_declaration(mut context: BuilderContext) -> (Statement, Builde
         "Number" => DataType::Number,
         "String" => DataType::String,
         "Void" => DataType::Void,
+        "Boolean" => DataType::Boolean,
         "nothing" => DataType::Void,
         _ => {
             context.handle_parse_error(ParseError::InvalidReturnType {
@@ -501,8 +502,7 @@ fn parse_return_statement(mut context: BuilderContext) -> (Statement, BuilderCon
 
     // What types of things can be returned?
     // A value I suppose.
-    //let (val, mut context) = parse_value(context);
-    let (expr, mut context) = parse_expression(context);
+    let (logical, mut context) = parse_logical(context);
 
     // Expect semicolon
     expect_token!(
@@ -515,7 +515,7 @@ fn parse_return_statement(mut context: BuilderContext) -> (Statement, BuilderCon
     // For now, just create a simple return statement
     let statement = Statement::Return(ReturnStatement {
         line_declared_on,
-        return_value: Some(expr),
+        return_value: logical,
     });
 
     (statement, context)

@@ -13,8 +13,6 @@ pub struct VariableDeclarationStatement {
     pub symbol_name: String,
     pub data_type: DataType,
     pub line_declared_on: u32,
-    //pub assigned_value: Value,
-    //pub assigned_expr: Expression,
     pub assigned_logical: Logical, // we can have bools now :)
 }
 
@@ -22,8 +20,6 @@ pub struct VariableDeclarationStatement {
 pub struct VariableAssignmentStatement {
     pub var_name: String,
     pub var_data_type: DataType,
-    //pub assigned_value: Value,
-    //pub assigned_expr: Expression,
     pub assigned_logical: Logical,
     pub line_var_was_declared_on: u32,
     pub line_number: u32,
@@ -40,7 +36,7 @@ pub struct FunctionDeclarationStatement {
 #[derive(Debug)]
 pub struct ReturnStatement {
     pub line_declared_on: u32,
-    pub return_value: Option<Expression>,
+    pub return_value: Logical,
 }
 
 #[derive(Debug)]
@@ -48,12 +44,6 @@ pub struct PrintStatement {
     pub line: u32,
     pub logical: Logical,
     pub is_print_ln: bool,
-}
-
-#[derive(Debug)]
-pub struct PrintlnStatement {
-    pub line_declared_on: u32,
-    pub expression: Expression,
 }
 
 #[derive(Debug)]
@@ -88,7 +78,6 @@ pub enum Statement {
     RawFunctionCall(RawFunctionCallStatement),
     Return(ReturnStatement),
     Print(PrintStatement),
-    Println(PrintlnStatement),
     If(IfStatement),
     While(WhileStatement),
 }
