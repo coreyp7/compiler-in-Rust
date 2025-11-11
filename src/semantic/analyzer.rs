@@ -12,7 +12,7 @@ use crate::semantic::resolve_value_type::resolve_variable_assignment_stmt_types;
 use crate::semantic::resolve_value_type::resolve_variable_declaration_types;
 use crate::semantic::resolve_value_type::{resolve_expression_values, resolve_logical_values};
 use crate::semantic::type_check::add_type_check_errors_for_logical;
-use crate::semantic::type_check::type_check_expression;
+//use crate::semantic::type_check::type_check_expression;
 use crate::semantic::validate::validate_logical;
 use crate::symbol_table::{self, SymbolTable};
 
@@ -312,109 +312,6 @@ fn analyze_print_statement(
     state
 }
 
-// This is only called in type_check rn (since value is so far down the
-// expression hierarchy)
-pub fn analyze_value(
-    value: &Value,
-    line: u32,
-    state: AnalysisState,
-    function_table: &FunctionTable,
-) -> AnalysisState {
-    // this is being done in a previous phase now
-    //state = resolve_value_type(value, state, function_table);
-
-    let mut state = state;
-    let current_context = state.context_stack.last().unwrap();
-
-    /* DURING BOOL REFACTOR
-    match value.value_type {
-        ValueType::Variable => {
-            if !current_context.symbol_table.contains_name(&value.raw_text) {
-                state.errors.push(SemanticError::VariableNotDeclared {
-                    name: value.raw_text.clone(),
-                    line,
-                });
-            }
-        }
-        ValueType::FunctionCall => {
-            if function_table
-                .get_id_with_function_name(&value.raw_text)
-                .is_none()
-            {
-                state.errors.push(SemanticError::FunctionNotDeclared {
-                    name: value.raw_text.clone(),
-                    line,
-                });
-            } else {
-                state = analyze_function_call(value, line, state, function_table);
-            }
-        }
-        ValueType::InlineNumber | ValueType::InlineString => {
-            // Inline values don't need validation
-        }
-        ValueType::Expression => {
-            // Expression validation would be more complex
-        }
-        ValueType::Invalid => {
-            state.errors.push(SemanticError::InvalidValueReference {
-                name: value.raw_text.clone(),
-                line,
-            });
-        }
-    }
-    */
-    state
-}
-
-/// Analyze function call parameters and validate them
-/// NOTE IM pretty sure you need to resolve all the values before
-/// you call this
-fn analyze_function_call(
-    value: &Value,
-    line: u32,
-    state: AnalysisState,
-    function_table: &FunctionTable,
-) -> AnalysisState {
-    let mut state = state;
-
-    // Validate function call parameters
-    if let Some(func_def) = function_table.get_func_def_using_str(&value.raw_text) {
-        if let Some(ref param_values) = value.param_values {
-            // Check parameter count
-            if param_values.len() != func_def.parameters.len() {
-                state.errors.push(SemanticError::IncorrectParameters {
-                    parameters_expected: func_def.parameters.len(),
-                    parameters_provided: param_values.len(),
-                    line,
-                });
-            }
-
-            // Validate each parameter expression and check types
-            for (i, param_expr) in param_values.iter().enumerate() {
-                // Type check the entire expression against the expected parameter type
-                if let Some(expected_param) = func_def.parameters.get(i) {
-                    state = type_check_expression(
-                        param_expr,
-                        &expected_param.data_type,
-                        line,
-                        state,
-                        function_table,
-                    );
-                }
-            }
-        } else if !func_def.parameters.is_empty() {
-            // Function expects parameters but none provided
-            state.errors.push(SemanticError::IncorrectParameters {
-                parameters_expected: func_def.parameters.len(),
-                parameters_provided: 0,
-                line,
-            });
-        }
-    }
-
-    state
-}
-
 fn analyze_return_stmt(
     return_stmt: &mut ReturnStatement,
     mut state: AnalysisState,
@@ -574,6 +471,15 @@ fn resolve_value_type(
             if let Some(func_def) = function_table.get_func_def_using_str(&value.raw_text) {
                 value.data_type = func_def.return_type.clone();
             }
+            // TODO: we need to resolve all the parameters passed into the function.
+            // These are logicals, not values.
+            for logical in value.params.iter_mut() {
+                resolve_logical_values(
+                    logical,
+                    function_table,
+                    &state.context_stack.last().unwrap().symbol_table,
+                );
+            }
         }
         _ => {} // Other types should already have correct data_type
     }
@@ -664,7 +570,42 @@ fn analyze_raw_func_call(
 ) -> AnalysisState {
     state = resolve_value_type(&mut stmt.value, state, function_table);
 
-    state = analyze_function_call(&stmt.value, stmt.line, state, function_table);
+    //state = analyze_function_call(&stmt.value, stmt.line, state, function_table);
+    match function_table.get_func_def_using_str(&stmt.value.raw_text) {
+        None => {
+            // This function doesn't exist. Add error.
+            state.errors.push(SemanticError::FunctionNotDeclared {
+                name: stmt.value.raw_text.clone(),
+                line: stmt.line,
+            })
+        }
+        Some(function_definition) => {
+            // the types of all the parameters should be resolved by now.
+            // Loop through definition, and confirm that it matches the call.
+            for (expected_param_idx, expected_param) in
+                function_definition.parameters.iter().enumerate()
+            {
+                if let Some(function_call_param) = stmt.value.params.get(expected_param_idx) {
+                    if function_call_param.data_type != expected_param.data_type {
+                        state.errors.push(SemanticError::UnexpectedStatement {
+                            line: stmt.line,
+                            explanation: format!(
+                                "Provided arguments to function {} are invalid.",
+                                stmt.value
+                            ),
+                        })
+                    }
+                } else {
+                    // the parameter wasn't found, also add error.
+                    state.errors.push(SemanticError::IncorrectParameters {
+                        parameters_expected: function_definition.parameters.len(),
+                        parameters_provided: stmt.value.params.len(),
+                        line: stmt.line,
+                    });
+                }
+            }
+        }
+    }
 
     state
 }

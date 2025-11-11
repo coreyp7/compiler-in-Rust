@@ -56,7 +56,8 @@ pub struct Value {
     pub raw_text: String, // The raw text from the source, for reference
     /// Only exists if value_type = FunctionCall; we need to record the expressions
     /// being passed in as params.
-    pub param_values: Option<Vec<Expression>>,
+    //pub param_values: Option<Vec<Expression>>,
+    pub params: Vec<Logical>,
 }
 
 impl Value {
@@ -65,7 +66,7 @@ impl Value {
             data_type,
             value_type,
             raw_text,
-            param_values: None,
+            params: Vec::new(),
         }
     }
 
@@ -73,13 +74,13 @@ impl Value {
         data_type: DataType,
         value_type: ValueType,
         raw_text: String,
-        param_values: Vec<Expression>,
+        params: Vec<Logical>,
     ) -> Self {
         Value {
             data_type,
             value_type,
             raw_text,
-            param_values: Some(param_values),
+            params: params,
         }
     }
 
@@ -144,7 +145,7 @@ pub enum ExpressionOperator {
 }
 
 /// A comparison expression (handles equality, inequality, etc.)
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Comparison {
     pub expressions: Vec<Expression>,
     pub operators: Vec<ComparisonOperator>,
@@ -167,7 +168,7 @@ impl Comparison {
 }
 
 /// Operators that can appear at the comparison level (==, !=, <, >, etc.)
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ComparisonOperator {
     equalequal,
     notequal,
@@ -179,7 +180,7 @@ pub enum ComparisonOperator {
 }
 
 /// A logical expression (handles AND, OR, NOT)
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Logical {
     pub comparisons: Vec<Comparison>,
     pub operators: Vec<LogicalOperator>,
@@ -199,7 +200,7 @@ impl Logical {
 }
 
 /// Operators that can appear at the logical level (&&, ||, !)
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LogicalOperator {
     And,
     Or,

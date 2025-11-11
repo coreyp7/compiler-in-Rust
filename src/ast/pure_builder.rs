@@ -628,15 +628,14 @@ fn parse_value(mut context: BuilderContext) -> (Value, BuilderContext) {
 
 // Called when a function call is found, gathers all expressions specified in a function
 // calls parameters.
-fn parse_function_call_parameters(
-    mut context: BuilderContext,
-) -> (Vec<Expression>, BuilderContext) {
+fn parse_function_call_parameters(mut context: BuilderContext) -> (Vec<Logical>, BuilderContext) {
     // so it'll be expression comma expression etc....
 
-    let mut passed_expressions: Vec<Expression> = Vec::new();
+    let mut passed_expressions: Vec<Logical> = Vec::new();
 
     while !context.is_at_end() && context.get_curr().token_type != TokenType::RightParen {
-        let (expr, ctx) = parse_expression(context);
+        //let (expr, ctx) = parse_expression(context);
+        let (expr, ctx) = parse_logical(context);
         context = ctx;
         passed_expressions.push(expr);
 

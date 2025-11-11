@@ -151,9 +151,10 @@ fn resolve_value(val: &mut Value, function_header_map: &FunctionTable, symbol_ta
                     val.data_type = func_decl.return_type.clone();
                     // TODO: we need to also resolve all of the logicals passed into the parameters of this function.
                     // How should this be done?
-                    for param in val.param_values.as_mut().unwrap() {
+                    for param in val.params.iter_mut() {
                         // TODO: resolve logical here. Should work since we're passing a mutable reference,
                         // and only once at a time.
+                        resolve_logical_values(param, function_header_map, symbol_table);
                     }
                 }
                 None => {
