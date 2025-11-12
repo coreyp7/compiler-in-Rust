@@ -61,28 +61,22 @@ pub fn to_code_str(statement: &Statement) -> String {
 }
 
 fn to_code_str_var_decl(var_decl: &VariableDeclarationStatement) -> String {
-    /* DURING BOOL REFACTOR
     format!(
         "{} {} = {};\n",
         var_decl.data_type.to_string(),
         var_decl.symbol_name,
         //to_code_str_value(&var_decl.assigned_value)
-        to_code_str_expr(&var_decl.assigned_expr)
+        to_code_str_logical(&var_decl.assigned_logical)
     )
-    */
-    String::new()
 }
 
 fn to_code_str_var_assignment(var_assign: &VariableAssignmentStatement) -> String {
-    /* BOOL REFACTOR
     format!(
         "{} = {};\n",
         var_assign.var_name,
         //to_code_str_value(&var_assign.assigned_value)
-        to_code_str_expr(&var_assign.assigned_expr)
+        to_code_str_logical(&var_assign.assigned_logical)
     )
-    */
-    String::new()
 }
 
 fn to_code_str_value(value: &Value) -> String {
@@ -124,9 +118,10 @@ fn to_code_str_function_call(value: &Value) -> String {
 }
 
 fn to_code_str_return(return_stmt: &ReturnStatement) -> String {
-    let mut code_str = String::new();
-    // TODO: parse logical of return
-    code_str
+    format!(
+        "return {};\n",
+        to_code_str_logical(&return_stmt.return_value)
+    )
 }
 
 pub fn to_code_str_func_decl_stmt(
@@ -139,14 +134,13 @@ pub fn to_code_str_func_decl_stmt(
 
     code.push_str("{\n");
 
-    // Generate code for function body
     for statement in &func_stmt.body {
         code.push_str("   ");
+
         // WARNING: this will break I think if a function is declared in a function.
         code.push_str(&to_code_str(statement));
     }
 
-    // Close function
     code.push_str("}\n");
     code
 }
@@ -159,7 +153,6 @@ pub fn convert_function_header_to_code_str(function_def: &FunctionSymbol) -> Str
         function_def.identifier
     ));
 
-    // Params
     for (i, param) in function_def.parameters.iter().enumerate() {
         code_str.push_str(&format!("{} {}", param.data_type, param.name));
         if i < function_def.parameters.len() - 1 {
@@ -174,11 +167,9 @@ pub fn convert_function_header_to_code_str(function_def: &FunctionSymbol) -> Str
 pub fn to_code_str_expr(expr: &Expression) -> String {
     let mut code_str = String::new();
 
-    // Handle the first term
     if !expr.terms.is_empty() {
         code_str.push_str(&to_code_str_term(&expr.terms[0]));
 
-        // Handle subsequent terms with operators
         for (idx, term) in expr.terms.iter().skip(1).enumerate() {
             if idx < expr.operators.len() {
                 code_str.push_str(&format!(
@@ -196,11 +187,9 @@ pub fn to_code_str_expr(expr: &Expression) -> String {
 fn to_code_str_term(term: &Term) -> String {
     let mut code_str = String::new();
 
-    // Handle the first unary
     if !term.unarys.is_empty() {
         code_str.push_str(&to_code_str_unary(&term.unarys[0]));
 
-        // Handle subsequent unarys with operations
         for (idx, unary) in term.unarys.iter().skip(1).enumerate() {
             if idx < term.operations.len() {
                 code_str.push_str(&format!(
@@ -218,12 +207,10 @@ fn to_code_str_term(term: &Term) -> String {
 fn to_code_str_unary(unary: &Unary) -> String {
     let mut code_str = String::new();
 
-    // Handle unary operator if present
     if let Some(ref operation) = unary.operation {
         code_str.push_str(&expression_operator_to_str(operation));
     }
 
-    // Handle the primary value
     code_str.push_str(&to_code_str_value(&unary.primary));
 
     code_str
@@ -232,11 +219,9 @@ fn to_code_str_unary(unary: &Unary) -> String {
 pub fn to_code_str_comparison(comparison: &Comparison) -> String {
     let mut code_str = String::new();
 
-    // Handle the first expression
     if !comparison.expressions.is_empty() {
         code_str.push_str(&to_code_str_expr(&comparison.expressions[0]));
 
-        // Handle subsequent expressions with operators
         for (idx, expr) in comparison.expressions.iter().skip(1).enumerate() {
             if idx < comparison.operators.len() {
                 code_str.push_str(&format!(
@@ -254,11 +239,9 @@ pub fn to_code_str_comparison(comparison: &Comparison) -> String {
 pub fn to_code_str_logical(logical: &crate::ast::Logical) -> String {
     let mut code_str = String::new();
 
-    // Handle the first comparison
     if !logical.comparisons.is_empty() {
         code_str.push_str(&to_code_str_comparison(&logical.comparisons[0]));
 
-        // Handle subsequent comparisons with logical operators
         for (idx, comparison) in logical.comparisons.iter().skip(1).enumerate() {
             if idx < logical.operators.len() {
                 code_str.push_str(&format!(
@@ -313,8 +296,7 @@ fn logical_operator_to_str(op: &LogicalOperator) -> &'static str {
 }
 
 fn to_code_str_print(print_stmt: &PrintStatement) -> String {
-    /*
-    let mut expr_str = to_code_str_expr(&print_stmt.logical);
+    let mut expr_str = to_code_str_logical(&print_stmt.logical);
 
     // TODO: The data type the expr evaluates to should be resolved by now, and
     // we can look at it and adjust the printf statement accordingly.
@@ -325,9 +307,11 @@ fn to_code_str_print(print_stmt: &PrintStatement) -> String {
         newline_or_empty.push_str("\n");
     }
 
-    expr_str = match print_stmt.expression.data_type {
+    expr_str = match print_stmt.logical.data_type {
         DataType::Number => format!("printf(\"%d\",{});", expr_str),
         DataType::String => format!("printf({});", expr_str),
+        // TODO: change this to print string of boolean
+        DataType::Boolean => format!("printf(\"%d\",{});", expr_str),
         _ => "not either of these".to_string(),
     };
 
@@ -335,12 +319,8 @@ fn to_code_str_print(print_stmt: &PrintStatement) -> String {
         expr_str.push_str("printf(\"\\n\");\n");
     }
 
-    // right now we just use a c macro (no newline version)
-    //expr_str = format!("plank_print_no_newline({});", expr_str);
     expr_str.push_str("\n"); // purely for readability while debugging
     expr_str
-    */
-    String::new()
 }
 
 fn to_code_str_if(if_stmt: &IfStatement) -> String {
@@ -357,7 +337,7 @@ fn to_code_str_if(if_stmt: &IfStatement) -> String {
     if let Some(else_body) = &if_stmt.else_body {
         code_str.push_str("} else {\n");
         for statement in else_body {
-            code_str.push_str("   ");
+            //code_str.push_str("   ");
             code_str.push_str(&to_code_str(statement));
         }
     }

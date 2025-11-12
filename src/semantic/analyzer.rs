@@ -303,12 +303,16 @@ fn analyze_if_stmt(
     // block of code??
 
     push_scope_for_new_block(&mut state);
-    analyze_statements(&mut stmt.if_body, function_table);
+    for statement in stmt.if_body.iter_mut() {
+        state = analyze_statement(statement, state, function_table);
+    }
     state = pop_scope(state);
 
     if let Some(else_statement_vec) = stmt.else_body.as_mut() {
         push_scope_for_new_block(&mut state);
-        analyze_statements(else_statement_vec, function_table);
+        for statement in else_statement_vec {
+            state = analyze_statement(statement, state, function_table);
+        }
         state = pop_scope(state);
     }
 
@@ -338,7 +342,9 @@ fn analyze_while_stmt(
     }
 
     push_scope_for_new_block(&mut state);
-    analyze_statements(&mut stmt.body, function_table);
+    for statement in stmt.body.iter_mut() {
+        state = analyze_statement(statement, state, function_table);
+    }
     state = pop_scope(state);
 
     state
