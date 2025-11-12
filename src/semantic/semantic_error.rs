@@ -235,7 +235,7 @@ impl SemanticError {
             SemanticError::ExpressionInvalid { line } => {
                 error_header("Expression type is invalid", *line);
                 eprintln!(
-                    "  {} Expression evaluates to invalid type. Are you adding different types together?",
+                    "  {} Expression evaluates to invalid type. ",
                     error_line_start(),
                 );
             }

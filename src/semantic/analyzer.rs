@@ -212,7 +212,7 @@ fn analyze_function_declaration(
     function_table: &FunctionTable,
 ) -> AnalysisState {
     let mut state = state;
-    state = push_scope(&func_decl.function_name, state, function_table);
+    state = push_scope_for_function(&func_decl.function_name, state, function_table);
 
     // Only check return type requirement.
     // Type checking of the return is done in analyze_return function
@@ -251,17 +251,8 @@ fn analyze_print_statement(
         current_symbol_table,
     );
 
-    let logical_err = validate_logical(&print_stmt.logical, print_stmt.line);
-    if logical_err.len() > 0 {
-        // if there's a problem with the logical being assigned to the var,
-        // we can't add it to our map.
-        // Also prevents duplicate errors for the same statement.
-        // Return early.
-        state.errors.extend(logical_err);
-        return state;
-    }
-
     if print_stmt.logical.data_type == DataType::Invalid {
+        // TODO: improve this error message
         state.errors.push(SemanticError::ExpressionInvalid {
             line: print_stmt.line,
         })
@@ -311,12 +302,14 @@ fn analyze_if_stmt(
     // TODO: also don't we need to alter the scope stack to account for the new
     // block of code??
 
-    // push new scope
+    push_scope_for_new_block(&mut state);
     analyze_statements(&mut stmt.if_body, function_table);
-    // pop if block scope
+    state = pop_scope(state);
 
     if let Some(else_statement_vec) = stmt.else_body.as_mut() {
+        push_scope_for_new_block(&mut state);
         analyze_statements(else_statement_vec, function_table);
+        state = pop_scope(state);
     }
 
     state
@@ -344,9 +337,9 @@ fn analyze_while_stmt(
         return state;
     }
 
-    // push new scope
+    push_scope_for_new_block(&mut state);
     analyze_statements(&mut stmt.body, function_table);
-    // pop if block scope
+    state = pop_scope(state);
 
     state
 }
@@ -437,7 +430,7 @@ fn ensure_return_type_matches_function(
 }
 
 /// TODO; move into module specific to analysis state functions
-fn push_scope(
+fn push_scope_for_function(
     function_name: &str,
     state: AnalysisState,
     function_table: &FunctionTable,
@@ -467,6 +460,23 @@ fn push_scope(
         }
     }
     state
+}
+
+/// aka if/while stmts
+fn push_scope_for_new_block(state: &mut AnalysisState) {
+    // let mut new_symbol_table = state.context_stack.last().unwrap().symbol_table.clone();
+    let mut new_symbol_table = SymbolTable::new();
+
+    // lazy clone
+    for (key, value) in state.context_stack.last().unwrap().symbol_table.iter() {
+        new_symbol_table.insert(&value.identifier, &value.data_type, &value.line_declared_on);
+    }
+
+    let new_context = SemanticContext {
+        symbol_table: new_symbol_table,
+        scope: None, // will this break anything?
+    };
+    state.context_stack.push(new_context);
 }
 
 /// TODO; move into module specific to analysis state functions

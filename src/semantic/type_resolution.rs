@@ -172,7 +172,7 @@ pub fn resolve_value(
             let var_type_op = symbol_table.get(&val.raw_text);
             match var_type_op {
                 Some(var_type) => val.data_type = var_type.data_type.clone(),
-                None => (), // TODO: maybe do something? nah, this hsould be handled in analysis
+                None => val.data_type = DataType::Invalid, // TODO: maybe do something? nah, this hsould be handled in analysis
             }
         }
         ValueType::Expression
