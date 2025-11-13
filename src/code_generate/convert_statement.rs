@@ -74,7 +74,6 @@ fn to_code_str_var_assignment(var_assign: &VariableAssignmentStatement) -> Strin
     format!(
         "{} = {};\n",
         var_assign.var_name,
-        //to_code_str_value(&var_assign.assigned_value)
         to_code_str_logical(&var_assign.assigned_logical)
     )
 }
@@ -94,6 +93,10 @@ fn to_code_str_value(value: &Value) -> String {
             code_str.push_str("\"");
             code_str.push_str(&value.raw_text);
             code_str.push_str("\"");
+            code_str
+        }
+        ValueType::InlineBoolean => {
+            code_str.push_str(&value.raw_text);
             code_str
         }
         _ => code_str,
