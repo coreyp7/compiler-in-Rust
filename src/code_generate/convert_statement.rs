@@ -66,6 +66,7 @@ fn to_code_str_var_decl(var_decl: &VariableDeclarationStatement) -> String {
         var_decl.data_type.to_string(),
         var_decl.symbol_name,
         //to_code_str_value(&var_decl.assigned_value)
+        // TODO: null terminate the string here somehow
         to_code_str_logical(&var_decl.assigned_logical)
     )
 }
@@ -221,21 +222,56 @@ fn to_code_str_unary(unary: &Unary) -> String {
 
 pub fn to_code_str_comparison(comparison: &Comparison) -> String {
     let mut code_str = String::new();
+    // How will this work?
+    // check if the common expression type of the comparison is a String.
+    // If it is, then this comparison needs to be generated differently with strcmp.
+    // Otherwise, generate normally.
+    //
+    // When generating string comparison, we need to loop through the list of expressions,
+    // and make a strcmp for each "pair".
+    //let comparison_expressions_are_strings = true; // TODO: set this with a function
+    let comparison_expressions_are_strings =
+        comparison.expressions[0].data_type == DataType::String;
 
-    if !comparison.expressions.is_empty() {
-        code_str.push_str(&to_code_str_expr(&comparison.expressions[0]));
-
-        for (idx, expr) in comparison.expressions.iter().skip(1).enumerate() {
-            if idx < comparison.operators.len() {
-                code_str.push_str(&format!(
-                    " {} ",
-                    comparison_operator_to_str(&comparison.operators[idx])
-                ));
-            }
-            code_str.push_str(&to_code_str_expr(expr));
-        }
+    if comparison_expressions_are_strings && comparison.expressions.len() > 1 {
+        return to_code_str_comparison_of_string_expressions(comparison);
     }
 
+    code_str.push_str(&to_code_str_expr(&comparison.expressions[0]));
+
+    for (idx, expr) in comparison.expressions.iter().skip(1).enumerate() {
+        if idx < comparison.operators.len() {
+            code_str.push_str(&format!(
+                " {} ",
+                comparison_operator_to_str(&comparison.operators[idx])
+            ));
+        }
+        code_str.push_str(&to_code_str_expr(expr));
+    }
+
+    code_str
+}
+
+fn to_code_str_comparison_of_string_expressions(comparison: &Comparison) -> String {
+    let mut code_str = String::new();
+    for (idx, expression) in comparison.expressions.iter().enumerate() {
+        if idx == comparison.expressions.len() - 1 {
+            //stop here
+            break;
+        }
+
+        code_str.push_str("strcmp(");
+        code_str.push_str(&to_code_str_expr(expression));
+        code_str.push_str(",");
+        code_str.push_str(&to_code_str_expr(&comparison.expressions[idx + 1]));
+        code_str.push_str(")");
+
+        // TODO: incorporate !=, rn its only ==
+        if idx < comparison.expressions.len() - 2 {
+            code_str.push_str(" && "); //purely for debugging readability
+            //code_str.push_str(comparison_operator_to_str(&comparison.operators[idx]));
+        }
+    }
     code_str
 }
 
