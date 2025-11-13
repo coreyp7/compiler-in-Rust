@@ -527,8 +527,21 @@ fn parse_print_statement(mut context: BuilderContext) -> (Statement, BuilderCont
 
     context.advance(); // skip print
 
-    //let (expr, mut context) = parse_expression(context);
+    expect_token!(
+        context,
+        TokenType::LeftParen,
+        "Expected opening parenthes after print function."
+    );
+    context.advance(); // skip print
+
     let (logical, mut context) = parse_logical(context);
+
+    expect_token!(
+        context,
+        TokenType::RightParen,
+        "Expected closing parenthes after expression in print function."
+    );
+    context.advance();
 
     expect_token!(
         context,
