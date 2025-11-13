@@ -6,40 +6,10 @@ use crate::semantic::SemanticError;
 /// Validates that the logical has a valid type, and doesn't break any rules.
 /// If the returned vec is empty, then that means everything is okay.
 /// Typcially called after resolving a logical's datatype.
+/// NOTE: just a direct call to get_operation_errors_logical, but leaving just
+/// in case we add more tests here, and it can be encapsulated in this function.
 pub fn validate_logical(logical: &Logical, line: u32) -> Vec<SemanticError> {
     let mut errors: Vec<SemanticError> = Vec::new();
-
-    // If any of the expressions are invalid, just leave we're done here.
-    // (The logical's datatype will be set to invalid appropriately)
-    /* NOTE: I'm commenting this out because I think all of the other error coverage covers this,
-     * and with more comprehensive errors. So for now, I'm leaving here just in case.
-    if logical.data_type == DataType::Invalid {
-        // TODO: add errors that say the logical is invalid.
-        errors.push(SemanticError::UnexpectedStatement {
-            line: line,
-            explanation: "one of the comparisons in the logical is invalid.".to_string(),
-        });
-        return errors;
-    }
-    */
-
-    // All of these must evaluate to booleans.
-    // You can't say ("string" && 3); that doesn't make any sense.
-    /* NOTE: this too? requires testing.
-
-    for comparison in &mut logical.comparisons.iter() {
-        if comparison.data_type != DataType::Boolean {
-            // TODO: add error for this comparison here.
-            errors.push(SemanticError::UnexpectedStatement {
-                line: line,
-                explanation: "logical is invalid; cannot have non boolean in logical expression."
-                    .to_string(),
-            });
-            //println!("Logical is invalid: {:#?}", logical);
-            return errors;
-        }
-    }
-    */
 
     // make sure operations are being used correctly.
     let errors_prop_ops = get_operation_errors_logical(logical, line);
