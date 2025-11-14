@@ -5,7 +5,7 @@ The language is named plank.
 If you'd like to use this wonderful language, feel free. 
 ```
 String speech: celebrate();
-println speech;
+println(speech);
 
 function celebrate () returns String: 
     return "hello, plank";
