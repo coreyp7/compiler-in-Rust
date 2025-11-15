@@ -365,7 +365,7 @@ fn to_code_str_print(print_stmt: &PrintStatement) -> String {
         DataType::Number => format!("printf(\"%d\",{});", expr_str),
         DataType::String => format!("printf({});", expr_str),
         // TODO: change this to print string of boolean
-        DataType::Boolean => format!("printf(\"%d\",{});", expr_str),
+        DataType::Boolean => format!("printf(\"%s\", {} ? \"true\" : \"false\");", expr_str),
         _ => "not either of these".to_string(),
     };
 
