@@ -26,7 +26,7 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.value_type {
             ValueType::InlineNumber => write!(f, "{}", &self.raw_text),
-            ValueType::InlineString => write!(f, "\"{}\"\\0", &self.raw_text),
+            ValueType::InlineString => write!(f, "\"{}\"", &self.raw_text),
             ValueType::Variable => write!(f, "{}", &self.raw_text),
             ValueType::FunctionCall => {
                 // NOTE:
@@ -93,7 +93,6 @@ fn to_code_str_value(value: &Value) -> String {
         ValueType::InlineString => {
             code_str.push_str("\"");
             code_str.push_str(&value.raw_text);
-            code_str.push_str("\\0");
             code_str.push_str("\"");
             code_str
         }
