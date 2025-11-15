@@ -26,7 +26,7 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.value_type {
             ValueType::InlineNumber => write!(f, "{}", &self.raw_text),
-            ValueType::InlineString => write!(f, "\"{}\"", &self.raw_text),
+            ValueType::InlineString => write!(f, "\"{}\"\\0", &self.raw_text),
             ValueType::Variable => write!(f, "{}", &self.raw_text),
             ValueType::FunctionCall => {
                 // NOTE:
@@ -93,6 +93,7 @@ fn to_code_str_value(value: &Value) -> String {
         ValueType::InlineString => {
             code_str.push_str("\"");
             code_str.push_str(&value.raw_text);
+            code_str.push_str("\\0");
             code_str.push_str("\"");
             code_str
         }
@@ -260,10 +261,25 @@ fn to_code_str_comparison_of_string_expressions(comparison: &Comparison) -> Stri
             break;
         }
 
-        code_str.push_str("strcmp(");
+        // Get the comparison operator for this pair
+        let op = if idx < comparison.operators.len() {
+            &comparison.operators[idx]
+        } else {
+            &ComparisonOperator::equalequal // Default fallback
+        };
+
+        code_str.push_str("(strcmp(");
         code_str.push_str(&to_code_str_expr(expression));
-        code_str.push_str(",");
+        code_str.push_str(", ");
         code_str.push_str(&to_code_str_expr(&comparison.expressions[idx + 1]));
+        code_str.push_str(") ");
+
+        match op {
+            ComparisonOperator::equalequal => code_str.push_str("== 0"),
+            ComparisonOperator::notequal => code_str.push_str("!= 0"),
+            _ => code_str.push_str("ERROR INCORRECT OPERATOR"), // Default to equality
+        }
+
         code_str.push_str(")");
 
         // TODO: incorporate !=, rn its only ==
