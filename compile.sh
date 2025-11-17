@@ -2,10 +2,13 @@
 
 # TODO: update this 
 #plankCompilerPath="plank_compiler"
+
 releaseDir="./target/release"
-plankCompilerPath="./target/release/compiler"
 warningsFile="${releaseDir}/warnings.txt"
+
+plankCompilerPath="./target/release/compiler"
 #plankCompilerPath="./target/debug/compiler"
+
 exitEarly=0
 setup=0
 debug=0
@@ -32,6 +35,9 @@ while [ "${1:-}" != '' ]; do
         ;;
         '-n' | '--isSafeToCompile')
         isSafeToCompile=1
+        ;;
+        '-D' | '--dev')
+        plankCompilerPath="./target/debug/compiler"
         ;;
     esac
     shift

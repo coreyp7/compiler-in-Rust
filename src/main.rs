@@ -18,7 +18,6 @@ use first_pass::gather_declarations;
 
 mod semantic;
 use semantic::analyze_statements;
-use semantic::resolve_all_value_types_in_ast;
 
 mod code_generate;
 use code_generate::generate_code_str;
