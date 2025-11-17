@@ -4,3 +4,4 @@
 *.c
 docs
 .github
+run_test.sh
