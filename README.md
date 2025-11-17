@@ -1,6 +1,6 @@
 
 # About
-I wrote my first lanugage programming lanugage (compiler) so I could learn Rust. <br>
+I wrote a compiler so I could learn Rust. <br>
 The language is named plank.
 If you'd like to use this wonderful language, feel free. 
 ```
@@ -29,7 +29,7 @@ To compile a .plank file, run compile.sh with the following args:
 | -o (--output) | Directory to output executable in |
 | -s (--setup) | Compiles the Plank compiler in the repo you cloned (not needed after initial setup)|
 
-## A plank example: Finding our favorite number
+## A plank example: Finding our favorite number (found in example.plank)
 ```
 println("hello, plank");
 
