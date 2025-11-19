@@ -160,7 +160,6 @@ fn analyze_variable_declaration(
     );
 
     let logical_err = validate_logical(&var_decl.assigned_logical, var_decl.line_declared_on);
-    println!("After validate_logical: {:#?}", logical_err);
     if logical_err.len() > 0 {
         // if there's a problem with the logical being assigned to the var,
         // we can't add it to our map.

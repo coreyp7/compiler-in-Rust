@@ -89,6 +89,8 @@ impl FromStr for TokenType {
             "Boolean" => Ok(TokenType::Boolean),
             "true" => Ok(TokenType::True),
             "false" => Ok(TokenType::False),
+            "and" => Ok(TokenType::DoubleAmpersand),
+            "or" => Ok(TokenType::DoubleBar),
             _ => Err(()),
         }
     }

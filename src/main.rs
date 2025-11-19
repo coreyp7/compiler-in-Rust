@@ -88,8 +88,6 @@ fn main() -> std::io::Result<()> {
             error.print_error();
         }
         return Ok(());
-    } else {
-        semantic::print_success_message();
     }
 
     // Generate c code str with ast

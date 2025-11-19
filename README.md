@@ -35,7 +35,6 @@ println("hello, plank");
 
 Number favoriteNumber: 7;
 Number secondFavNumber: favoriteNumber - 3;
-String name: "juandissimo";
 
 Number i: 0;
 while (i != favoriteNumber):
@@ -58,7 +57,13 @@ while (i != favoriteNumber):
     endIf
 endWhile
 
-println("What a pragmatic example of plank.");
+
+String name: "juandissimo";
+if(name == "juandissimo" and favoriteNumber < 10):
+    println("What a pragmatic example of plank.");
+else:
+    println("Uh oh.");
+endIf
 
 function add (Number numOne, Number numTwo) returns Number:
     return numOne + numTwo;
