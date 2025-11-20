@@ -3,10 +3,10 @@
 # TODO: update this 
 #plankCompilerPath="plank_compiler"
 
-releaseDir="./target/release"
+releaseDir="./target/debug"
 warningsFile="${releaseDir}/warnings.txt"
 
-plankCompilerPath="./target/release/compiler"
+plankCompilerPath="./target/debug/compiler"
 #plankCompilerPath="./target/debug/compiler"
 
 exitEarly=0
@@ -16,7 +16,19 @@ isSafeToCompile=0
 
 example_file_path="./example.plank"
 
-# Obtain args from user
+show_help() {
+    echo "Flags:"
+    echo "    -i, --src <filepath>       Plank source code file to compile"
+    echo "    -o, --output <dirpath>     Output dir the executable will be created in"
+    echo "    -s, --setup                Build the compiler and setup in this directory"
+    echo "    -h, --help                 You already figured this one out"
+    echo "Dev flags to play with:"
+    echo "    -d, --debug                Enable debug mode for compilation"
+    echo "    -n, --isSafeToCompile      Generate C code only, don't compile to executable"
+    echo "    -D, --dev                  Use the debug version of the compiler"
+    echo ""
+}
+
 while [ "${1:-}" != '' ]; do
     case "$1" in
       '-i' | '--src')
@@ -39,6 +51,10 @@ while [ "${1:-}" != '' ]; do
         '-D' | '--dev')
         plankCompilerPath="./target/debug/compiler"
         ;;
+        '-h' | '--help')
+        show_help
+        exit 0
+        ;;
     esac
     shift
   done
@@ -48,7 +64,7 @@ if [ $setup -eq 1 ]; then
 
     # TODO: need to clean up code so there's no warnings anymore
     touch $warningsFile
-    cargo build --quiet --release &> $warningsFile
+    cargo build --quiet &> $warningsFile
     
     # Ensure it was built correctly.
     if [ ! -f $plankCompilerPath ]; then
@@ -119,7 +135,7 @@ else
 fi
 rm $cCodeFile
 
-echo -e "\033[32m✓ Compilation successful: Plank program compiled to '$outputDir/plank_program.exe'\033[0m"
+echo -e "\033[32mCompilation successful: Plank program compiled to '$outputDir/plank_program.exe'\033[0m"
 
 
 
