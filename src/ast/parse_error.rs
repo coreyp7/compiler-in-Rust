@@ -217,7 +217,7 @@ impl ParseError {
 fn error_header(title: &str, line: u32) {
     eprintln!(
         "{} {} (line {})",
-        "✗ Parse Error:".bold().red(),
+        "Parse Error:".bold().red(),
         title.bold(),
         format_line(line)
     );
@@ -249,16 +249,4 @@ fn format_token(token: &str) -> ColoredString {
 
 fn format_token_error(token: &str) -> ColoredString {
     format!("'{}'", token).red().bold()
-}
-
-pub fn print_success_message() {
-    let message = format!("Parsing completed successfully! ✓").green();
-    println!("{}", message);
-}
-
-pub fn print_failures_message(error_count: usize) {
-    let message = format!("{} parsing errors found:", error_count).red();
-    eprintln!("-----------------------------------");
-    eprintln!("{}", message);
-    eprintln!("-----------------------------------");
 }
