@@ -79,7 +79,7 @@ fi
 
 # Validate all paths are valid
 if [ ! -f $plankCompilerPath ]; then
-    echo "Invalid arg: plank compiler doesn't exist, path is incorrect"
+    echo "Invalid arg: plank compiler doesn't exist; please run './compile.sh --setup' to build the plank compiler."
     exitEarly=1
 fi
 
